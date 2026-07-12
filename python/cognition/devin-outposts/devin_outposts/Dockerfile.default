@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+FROM daytonaio/sandbox:0.6.0
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEVIN_CHROME_PATH="/usr/bin/chromium"
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ca-certificates curl gh; \
+    gh --version; \
+    rm -rf /var/lib/apt/lists/*
+
+# devin-remote's generated shell init unconditionally touches
+# /opt/.devin/.devin_secrets.sh and expects /opt/.devin to exist, and it logs
+# to /var/log/devin when the directory is writable. The orchestrator downloads
+# and runs the pinned devin-remote binary directly, so no Devin CLI is needed.
+RUN set -eux; \
+    install -d -o daytona -g daytona /opt/.devin /var/log/devin; \
+    if [ -x /usr/bin/chromium ]; then /usr/bin/chromium --version >/dev/null; fi
+
+USER daytona
+WORKDIR /home/daytona

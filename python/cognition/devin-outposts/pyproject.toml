@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devin-outposts-daytona"
+version = "0.1.0"
+description = "Reference implementation for running Devin Outposts workers on Daytona sandboxes"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "daytona>=0.196.0",
+  "daytona-api-client>=0.196.0",
+  "httpx",
+  "python-dotenv",
+]
+
+
+[project.scripts]
+outposts-connect = "devin_outposts.connect:main"
+devin-outposts-orchestrator = "devin_outposts.orchestrator:main"
+build-devin-outposts-snapshot = "devin_outposts.build_linux_snapshot:main"
+build-devin-outposts-windows-snapshot = "devin_outposts.build_windows_snapshot:main"
+
+[tool.setuptools]
+packages = ["devin_outposts"]
+
+[tool.setuptools.package-data]
+devin_outposts = ["*.ps1", "Dockerfile.default"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

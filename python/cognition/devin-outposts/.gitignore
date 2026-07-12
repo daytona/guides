@@ -1,0 +1,12 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Orchestrator runtime state
+*.cursor
+*.pid
+logs/
+
+# Test cache
+.pytest_cache/
