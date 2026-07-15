@@ -279,7 +279,7 @@ Cleanup is best-effort: if `destroy()` or `sandbox.delete()` throws inside the `
 
 ## License
 
-MIT. See the root project `LICENSE`.
+Apache-2.0. See the root project `LICENSE`.
 
 ## References
 

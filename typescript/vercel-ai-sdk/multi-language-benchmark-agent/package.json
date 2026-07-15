@@ -18,7 +18,7 @@
     "daytona"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",
     "@daytona/sdk": "^0.163.0",

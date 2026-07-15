@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "OpenClaw AI assistant running in a Daytona sandbox.",
   "type": "module",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "start": "tsx src/index.ts",
     "serve": "tsx src/index.ts"

@@ -16,7 +16,7 @@
     "daytona"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@daytona/sdk": "^0.163.0",
     "@opencode-ai/sdk": "^1.0.0",
