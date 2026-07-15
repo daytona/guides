@@ -1,0 +1,92 @@
+# Developer Certificate of Origin (DCO) enforcement.
+#
+# Every non-merge commit in a pull request must carry a `Signed-off-by:` trailer
+# whose email matches the commit author, certifying the DCO v1.1
+# (https://developercertificate.org/). Contributors add it with `git commit -s`.
+#
+# Self-contained: reads the PR's commits via the API and validates each sign-off
+# (no external app/action to install). Runs on `pull_request` with a read-only
+# token, so it is safe for fork PRs. The `DCO` job is the stable status to
+# require in branch protection.
+
+name: dco
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dco:
+    name: DCO
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Signed-off-by on every commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          # Bots and automation cannot sign off -- exempt them. Explicit logins only.
+          ALLOWLIST: 'dependabot[bot],renovate[bot],github-actions[bot]'
+        run: |
+          set -euo pipefail
+
+          # Authoritative commit list for this PR (works for forks). --slurp wraps
+          # each page as an array element; `add` flattens them into one array.
+          commits=$(gh api --paginate --slurp "repos/$REPO/pulls/$PR/commits" | jq 'add')
+          len=$(jq 'length' <<<"$commits")
+          echo "Checking $len commit(s) in PR #$PR"
+
+          fail=0
+          for i in $(seq 0 $((len - 1))); do
+            sha=$(jq -r ".[$i].sha" <<<"$commits")
+            short=${sha:0:7}
+
+            # Skip merge commits (2+ parents): they carry no authored content.
+            if [ "$(jq -r ".[$i].parents | length" <<<"$commits")" -ge 2 ]; then
+              echo "skip $short (merge commit)"
+              continue
+            fi
+
+            # Skip allowlisted bot authors (they cannot add a sign-off). `.author.login`
+            # is GitHub's resolution of the commit to a real account (null if the email
+            # isn't linked), so it can't be forged by setting an arbitrary git author.
+            login=$(jq -r ".[$i].author.login // \"\"" <<<"$commits")
+            case ",$ALLOWLIST," in
+              *",$login,"*) echo "skip $short (allowlisted: $login)"; continue ;;
+            esac
+
+            author_email=$(jq -r ".[$i].commit.author.email" <<<"$commits" | tr '[:upper:]' '[:lower:]')
+            message=$(jq -r ".[$i].commit.message" <<<"$commits")
+
+            # Extract sign-off emails from the actual trailer block only, via
+            # `git interpret-trailers` -- a loose "Signed-off-by:" line elsewhere in
+            # the body must NOT count (case-insensitive email match).
+            signoff_emails=$(printf '%s\n' "$message" \
+              | git interpret-trailers --parse \
+              | grep -iE '^Signed-off-by:[[:space:]]*.+<.+>' \
+              | sed -E 's/.*<([^>]+)>.*/\1/' \
+              | tr '[:upper:]' '[:lower:]' || true)
+
+            if printf '%s\n' "$signoff_emails" | grep -qxF "$author_email"; then
+              echo "ok   $short ($author_email)"
+            else
+              echo "FAIL $short: no 'Signed-off-by:' matching author <$author_email>"
+              fail=1
+            fi
+          done
+
+          if [ "$fail" -ne 0 ]; then
+            echo ""
+            echo "::error::One or more commits are missing a matching DCO sign-off."
+            echo "Add one to each commit, then push again:"
+            echo "  - new commits:      git commit -s"
+            echo "  - existing commits: git rebase --signoff <base-branch> && git push --force-with-lease"
+            echo "The sign-off email must match the commit author. See CONTRIBUTING.md"
+            echo "and https://developercertificate.org/."
+            exit 1
+          fi
+          echo "All commits carry a valid DCO sign-off."

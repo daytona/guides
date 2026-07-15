@@ -65,7 +65,7 @@ Then follow the guide's own README to install dependencies and run it.
 
 ## Contributing
 
-Each guide is self-contained. Keep changes scoped to a single guide's folder, include a clear README, and provide a `.env.example` for any required keys.
+Each guide is self-contained — keep changes scoped to a single guide's folder, include a clear README, and provide a `.env.example` for any required keys. Every commit needs a [DCO](https://developercertificate.org/) sign-off (`git commit -s`), and first-time contributors sign the [CLA](CLA.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for the full process.
 
 ## License
 
