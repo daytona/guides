@@ -48,9 +48,9 @@ Create a `.env` file in the project directory with these variables.
 When this example is run, it follows this workflow:
 
 1. A single `POST /v2/threads` call describes the agent inline (harness `claude_code`, `machine_kind: daytona`, and an `entrypoint` that installs `pytest` and seeds a small project with a failing test suite), creates a thread, and starts the first turn from your `input`.
-2. The script opens the thread's server-sent events stream with `backfill`, which replays anything already emitted since creation so no events from the first turn are missed. The same connection then stays open across turns.
+2. The script opens the thread's server-sent events stream with `backfill`, which replays up to the most recent `BACKFILL` (1000) events emitted since creation, so the start of the first turn is captured in the brief gap before the stream connects. The same connection then stays open across turns.
 3. Brainbase boots an isolated Daytona sandbox, runs the `entrypoint` to seed the project, then runs the turn. The agent runs `pytest`, reads `intervals.py`, diagnoses the bug, fixes it, and re-runs until the suite is green — streaming its tool calls live.
-4. When the turn settles (its `idle` event arrives), the script sends a follow-up on the same thread — same sandbox, full context — asking the agent to add a `total_covered` function with tests and re-run the suite. (A just-finished turn holds its run slot for a moment, so the API can briefly answer `409`; the script simply retries until it frees.)
+4. When the turn settles (its `idle` event arrives), the script sends a follow-up on the same thread — same sandbox, full context — asking the agent to add a `total_covered` function with tests and re-run the suite. (A just-finished turn holds its run slot for a moment, so the API can briefly answer `409`; the script retries for up to 30 seconds until it frees.)
 5. After the turns finish, it reads the thread to show the Daytona sandbox that ran the agent, then prints the full transcript.
 
 ## Configuration
@@ -67,47 +67,43 @@ All agent settings live in [`src/config.ts`](src/config.ts):
 
 ```
 Creating a "claude_code" agent on daytona...
-Thread da43e80f-16e1-4cf2-971e-7ffd0b9fdb52 (agent 4578483b-ba07-424e-8e2e-b5164fe4247d)
+Thread fa45300b-7247-4cad-898c-38cfd8b35f25 (agent 4578483b-ba07-424e-8e2e-b5164fe4247d)
 
 ------------------------------------------------------------
 User: The Python project in /workspace has a failing test suite. Run pytest to see the failures, then find and fix the bug in intervals.py so the whole suite passes. Do not modify the tests.
   · mcp: brainbase-browser (ok), brainbase-memory (ok), brainbase-orchestration (ok)
   -> Terminal
-  -> Terminal
   -> Read File
 
-Agent: Bug: touching intervals (`start == last_end`) should merge, but the condition uses `<` instead of `<=`.
+Agent: The bug: `start < last_end` should be `<=` to merge touching intervals.
   -> Edit
   -> Terminal
 
-Agent: All 5 tests pass.
+Agent: All 5 tests pass. Fixed the merge condition in `intervals.py` (line 8) from `start < last_end` to `start <= last_end` so touching intervals (e.g. `(1,2)` and `(2,3)`) merge correctly.
   -> mcp__brainbase-idle__brainbase_idle
-● turn success: Fixed merge_intervals in intervals.py: changed `start < last_end` to `start <= last_end` so touching intervals merge correctly. All 5 tests in test_intervals.py now pass.
+● turn success: Fixed off-by-one in merge_intervals (changed `<` to `<=` on intervals.py:8) so touching intervals merge; full pytest suite now passes (5/5).
 
 ------------------------------------------------------------
 User: Add a function total_covered(intervals) to intervals.py that returns the total length covered by the intervals (merge overlapping ones first), add tests for it, and run pytest again.
-
-Agent: I'll add the function to `intervals.py`. Per CLAUDE.md I shouldn't modify the existing test file, so I'll add the new tests in a separate test file instead.
   -> Read File
   -> Edit
-  -> Write
+  -> Edit
+  -> Edit
   -> Terminal
 
-Agent: All 11 tests pass.
-  -> mcp__brainbase-idle__brainbase_idle
-● turn success: Added total_covered(intervals) to intervals.py (merges overlaps then sums lengths). Added 6 tests in a new test_total_covered.py (didn't touch existing test_intervals.py per instructions). Full suite: 11 passed.
+Agent: All 9 tests pass. Added `total_covered(intervals)` to `intervals.py` (sums lengths of merged intervals) and 4 new tests covering overlapping, touching, empty, and single-interval cases.
+● turn success: All 9 tests pass. Added `total_covered(intervals)` to `intervals.py` (sums lengths of merged intervals) and 4 new tests covering overlapping, touching, empty, and single-interval cases.
 
 ------------------------------------------------------------
-Ran on daytona sandbox: 61c22821-5db5-4094-acdc-055c4f0bcafd
+Ran on daytona sandbox: 5521cb88-48ee-41bc-893d-427e4b148f3f
 Final status: success
 
 Transcript (13 messages):
   user: The Python project in /workspace has a failing test suite. Run pytest to see the failures, then find and fix the bug in…
-  assistant: Bug: touching intervals (`start == last_end`) should merge, but the condition uses `<` instead of `<=`.
-  assistant: All 5 tests pass.
+  assistant: The bug: `start < last_end` should be `<=` to merge touching intervals.
+  assistant: All 5 tests pass. Fixed the merge condition in `intervals.py` (line 8) from `start < last_end` to `start <= last_end` s…
   user: Add a function total_covered(intervals) to intervals.py that returns the total length covered by the intervals (merge o…
-  assistant: I'll add the function to `intervals.py`. Per CLAUDE.md I shouldn't modify the existing test file, so I'll add the new t…
-  assistant: All 11 tests pass.
+  assistant: All 9 tests pass. Added `total_covered(intervals)` to `intervals.py` (sums lengths of merged intervals) and 4 new tests…
 ```
 
 ## License

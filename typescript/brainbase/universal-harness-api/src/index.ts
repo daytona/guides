@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as dotenv from 'dotenv'
+// Load .env before importing ./config, which reads process.env at module load.
+import 'dotenv/config'
 import { ApiError, BrainbaseClient } from './client.js'
 import { Renderer } from './render.js'
 import { agent, initialInput, followUpInput, BRAINBASE_BASE_URL } from './config.js'
-
-dotenv.config()
 
 const RULE = '-'.repeat(60)
 
@@ -16,7 +15,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Append a message and start the next turn. A turn's run lease lingers briefly
 // after its `idle` event, so the API can answer 409 ("task is busy") for a
-// moment; retry until the lease is released.
+// moment; retry (up to ~30s) until the lease is released.
 async function sendAndRun(client: BrainbaseClient, threadId: string, content: string): Promise<void> {
   const deadline = Date.now() + 30_000
   for (;;) {
@@ -31,6 +30,12 @@ async function sendAndRun(client: BrainbaseClient, threadId: string, content: st
       throw err
     }
   }
+}
+
+// Ask Brainbase to stop the current turn, but never block longer than `ms` so
+// Ctrl+C and the timeout path stay responsive if the network stalls.
+async function bestEffortInterrupt(client: BrainbaseClient, threadId: string, ms = 3_000): Promise<void> {
+  await Promise.race([client.interrupt(threadId).catch(() => {}), sleep(ms)])
 }
 
 // Abort the stream if no events arrive for this long (a safety net so the
@@ -66,27 +71,24 @@ async function main(): Promise<void> {
   console.log(`Thread ${thread_id} (agent ${agent_id})`)
   console.log(`\n${RULE}\nUser: ${initialInput}`)
 
-  // Open the thread's event stream. `backfill` replays events already emitted
-  // since creation, so nothing from the first turn is missed; the same
-  // connection then stays open and carries every following turn.
-  const controller = new AbortController()
-  const stream = await client.openEventStream(thread_id, { backfill: BACKFILL, signal: controller.signal })
-
   // Track why we abort, so the abort is reported correctly (or not) below.
+  const controller = new AbortController()
   let abortReason: 'timeout' | 'interrupt' | null = null
 
-  // Ctrl+C asks Brainbase to stop the running turn (server-side) and tears the
-  // local stream down cleanly.
+  // Register Ctrl+C handling before opening the stream: the turn is already
+  // running server-side, so an interrupt while connecting must still stop it.
   const onSigint = () => {
     console.log('\nInterrupting...')
     abortReason = 'interrupt'
     controller.abort()
-    client
-      .interrupt(thread_id)
-      .catch(() => {})
-      .finally(() => process.exit(0))
+    void bestEffortInterrupt(client, thread_id).finally(() => process.exit(0))
   }
   process.once('SIGINT', onSigint)
+
+  // Open the thread's event stream. `backfill` replays up to the most recent
+  // BACKFILL events emitted since creation, so the start of the first turn is
+  // captured; the same connection then stays open and carries every turn.
+  const stream = await client.openEventStream(thread_id, { backfill: BACKFILL, signal: controller.signal })
 
   const renderer = new Renderer()
   const followUps = [followUpInput]
@@ -102,6 +104,7 @@ async function main(): Promise<void> {
   }
   arm()
 
+  let completed = false
   try {
     for await (const event of stream.events()) {
       arm()
@@ -111,7 +114,10 @@ async function main(): Promise<void> {
       // thread — same sandbox, full context — or finish if there are none left.
       if (event.type === 'idle') {
         const next = followUps.shift()
-        if (!next) break
+        if (!next) {
+          completed = true
+          break
+        }
         console.log(`\n${RULE}\nUser: ${next}`)
         await sendAndRun(client, thread_id, next)
       }
@@ -121,12 +127,19 @@ async function main(): Promise<void> {
     // Ctrl+C is handled by the SIGINT handler (which exits the process); only
     // the inactivity watchdog needs to report here.
     if (abortReason === 'interrupt') return
-    console.error('\nStream stopped (inactivity timeout).')
+    console.error('\nStream stopped (inactivity timeout); interrupting the turn.')
+    await bestEffortInterrupt(client, thread_id)
   } finally {
     if (timer) clearTimeout(timer)
     await stream.close()
     controller.abort()
     process.removeListener('SIGINT', onSigint)
+  }
+
+  // A clean run ends when the final turn reports idle; if the stream closed
+  // first, the transcript below may be incomplete.
+  if (!completed && !controller.signal.aborted) {
+    console.error('\nStream ended before the final turn settled; results may be incomplete.')
   }
 
   // Show the Daytona sandbox that ran the agent, plus the final transcript.

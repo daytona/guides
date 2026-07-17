@@ -9,11 +9,14 @@ import type { AgentSpec } from './client.js'
 export const BRAINBASE_BASE_URL = process.env.BRAINBASE_BASE_URL ?? 'https://api.brainbaselabs.com'
 
 // Bash that runs inside the Daytona sandbox before the agent launches (cwd is
-// /workspace). It installs the test runner and seeds a tiny Python project with
-// a deliberately failing test suite — the "ticket" the agent picks up. The bug:
-// merge_intervals uses `<` where it should use `<=`, so touching intervals like
-// (1, 2) and (2, 3) are not merged and two of the five tests fail.
-const seedEntrypoint = `python3 -m pip install -q pytest
+// /workspace). `set -e` makes any failed step fail the whole entrypoint instead
+// of being masked by a later one. It seeds a tiny Python project with a
+// deliberately failing test suite — the "ticket" the agent picks up — then
+// installs the test runner last, so a failed install surfaces without skipping
+// the seeding. The bug: merge_intervals uses `<` where it should use `<=`, so
+// touching intervals like (1, 2) and (2, 3) are not merged and two of the five
+// tests fail.
+const seedEntrypoint = `set -e
 cat > /workspace/intervals.py <<'PY'
 def merge_intervals(intervals):
     if not intervals:
@@ -50,7 +53,8 @@ def test_empty():
 
 def test_single():
     assert merge_intervals([(5, 7)]) == [(5, 7)]
-PY`
+PY
+python3 -m pip install -q pytest`
 
 // The whole agent, described inline. Brainbase creates it, boots a sandbox on
 // the chosen provider, and runs its turns — all from this one spec.
