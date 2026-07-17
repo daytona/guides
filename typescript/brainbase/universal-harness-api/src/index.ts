@@ -5,7 +5,7 @@
 
 // Load .env before importing ./config, which reads process.env at module load.
 import 'dotenv/config'
-import { ApiError, BrainbaseClient } from './client.js'
+import { ApiError, BrainbaseClient, EventStream } from './client.js'
 import { Renderer } from './render.js'
 import { agent, initialInput, followUpInput, BRAINBASE_BASE_URL } from './config.js'
 
@@ -88,7 +88,15 @@ async function main(): Promise<void> {
   // Open the thread's event stream. `backfill` replays up to the most recent
   // BACKFILL events emitted since creation, so the start of the first turn is
   // captured; the same connection then stays open and carries every turn.
-  const stream = await client.openEventStream(thread_id, { backfill: BACKFILL, signal: controller.signal })
+  let stream: EventStream
+  try {
+    stream = await client.openEventStream(thread_id, { backfill: BACKFILL, signal: controller.signal })
+  } catch (err) {
+    // Ctrl+C during connect aborts this request; let the SIGINT handler's
+    // best-effort interrupt and exit take over instead of crashing with exit 1.
+    if (controller.signal.aborted) return
+    throw err
+  }
 
   const renderer = new Renderer()
   const followUps = [followUpInput]
@@ -136,9 +144,10 @@ async function main(): Promise<void> {
     process.removeListener('SIGINT', onSigint)
   }
 
-  // A clean run ends when the final turn reports idle; if the stream closed
-  // first, the transcript below may be incomplete.
-  if (!completed && !controller.signal.aborted) {
+  // A clean run ends when the final turn reports idle. If the stream closed
+  // first (not via our timeout/interrupt, which set abortReason), warn that the
+  // transcript below may be incomplete.
+  if (!completed && abortReason === null) {
     console.error('\nStream ended before the final turn settled; results may be incomplete.')
   }
 

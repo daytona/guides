@@ -125,10 +125,10 @@ export class BrainbaseClient {
       const detail = await res.text().catch(() => '')
       throw new ApiError(res.status, res.statusText, detail)
     }
-    // Some endpoints (e.g. interrupt) can answer 204 or an empty body; don't
-    // try to JSON-parse nothing.
+    // Some endpoints (e.g. interrupt) can answer 204 or an empty/whitespace
+    // body; don't try to JSON-parse nothing.
     if (res.status === 204) return undefined as T
-    const text = await res.text()
+    const text = (await res.text()).trim()
     return (text ? JSON.parse(text) : undefined) as T
   }
 

@@ -13,11 +13,13 @@ const DIM = useColor ? '\x1b[2m' : ''
 const RESET = useColor ? '\x1b[0m' : ''
 
 // Strip terminal escape/control sequences from untrusted event text so agent or
-// tool output can't spoof the console (tab, newline, and carriage return kept).
+// tool output can't spoof the console. Tabs and newlines are kept (agent
+// messages are often multi-line); carriage returns are dropped so they can't
+// overwrite the current line.
 function sanitize(text: string): string {
   return text
     .replace(/\u001B\[[0-9;?]*[ -/]*[@-~]/g, '')
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '')
 }
 
 // Pull display text out of an event/message payload, which may be a string,
@@ -38,59 +40,37 @@ function extractText(data: any): string {
   return ''
 }
 
-// Renders a thread's event stream to the console: streams assistant text as it
-// arrives and labels tool calls, MCP status, and turn outcomes. Some harnesses
-// emit the final assistant message more than once per turn, so identical text
-// is de-duplicated within a turn.
+// Renders a thread's event stream to the console: assistant messages, tool
+// calls, MCP status, and turn outcomes as they arrive. Harnesses may send the
+// reply as streamed `assistant.message.chunk`s, as one complete
+// `assistant.message`, or both; either way the text is sanitized once (so an
+// escape sequence can't be split across chunks) and de-duplicated within a turn.
 export class Renderer {
-  private streaming = false
-  private streamBuffer = ''
   private lastAssistant = ''
+  private pending = ''
 
   handle(event: ThreadEvent): void {
     switch (event.type) {
+      // Streamed assistant text: accumulate raw and print once the message is
+      // complete, so sanitization sees whole escape sequences, not fragments.
       case 'assistant.message.chunk': {
-        const text = sanitize(extractText(event.data))
-        if (text) {
-          if (!this.streaming) {
-            process.stdout.write(`\n${BOLD}Agent:${RESET} `)
-            this.streaming = true
-            this.streamBuffer = ''
-          }
-          process.stdout.write(text)
-          this.streamBuffer += text
-        }
+        this.pending += extractText(event.data)
         break
       }
+      // A complete assistant message supersedes any chunks accumulated for it.
       case 'assistant.message': {
-        const text = sanitize(extractText(event.data))
-        if (this.streaming) {
-          // We streamed this message as chunks. If the final text extends what
-          // we showed (e.g. we connected mid-stream and missed the start), print
-          // the missing remainder so nothing is lost; otherwise just close it.
-          if (text && text !== this.streamBuffer) {
-            if (text.startsWith(this.streamBuffer)) {
-              process.stdout.write(text.slice(this.streamBuffer.length))
-            } else {
-              process.stdout.write(`\n${BOLD}Agent:${RESET} ${text}`)
-            }
-            this.streamBuffer = text
-          }
-          this.endStream()
-        } else if (text && text !== this.lastAssistant) {
-          console.log(`\n${BOLD}Agent:${RESET} ${text}`)
-          this.lastAssistant = text
-        }
+        this.pending = ''
+        this.printAgent(extractText(event.data))
         break
       }
       case 'tool_call.start': {
-        this.endStream()
+        this.flushPending()
         const name = sanitize(String(event.data?.name ?? event.data?.tool ?? event.data?.tool_name ?? 'tool'))
         console.log(`${DIM}  -> ${name}${RESET}`)
         break
       }
       case 'mcp.status': {
-        this.endStream()
+        this.flushPending()
         const servers: any[] = Array.isArray(event.data?.servers) ? event.data.servers : []
         if (servers.length) {
           const summary = servers.map((s) => sanitize(`${s.name} (${s.status})`)).join(', ')
@@ -99,7 +79,7 @@ export class Renderer {
         break
       }
       case 'idle': {
-        this.endStream()
+        this.flushPending()
         const status = sanitize(String(event.data?.status ?? 'idle'))
         const summary = event.data?.summary ? sanitize(String(event.data.summary)) : ''
         console.log(`${DIM}● turn ${status}${summary ? `: ${summary}` : ''}${RESET}`)
@@ -113,13 +93,21 @@ export class Renderer {
     }
   }
 
-  // Close off an in-progress streamed line before printing something else.
-  private endStream(): void {
-    if (this.streaming) {
-      process.stdout.write('\n')
-      this.streaming = false
-      this.lastAssistant = this.streamBuffer
-      this.streamBuffer = ''
+  // Flush assistant text that arrived as chunks without a terminating
+  // `assistant.message` (some harnesses only stream chunks).
+  private flushPending(): void {
+    const raw = this.pending
+    this.pending = ''
+    this.printAgent(raw)
+  }
+
+  // Print an assistant message, sanitized once and de-duplicated within a turn
+  // (some harnesses emit the final message more than once).
+  private printAgent(raw: string): void {
+    const text = sanitize(raw)
+    if (text && text !== this.lastAssistant) {
+      console.log(`\n${BOLD}Agent:${RESET} ${text}`)
+      this.lastAssistant = text
     }
   }
 }
