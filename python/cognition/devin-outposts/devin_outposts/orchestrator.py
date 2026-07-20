@@ -106,6 +106,7 @@ class Orchestrator:
         )
         try:
             self._start_janitor()
+            self._start_pending_poller()
             self._reattach_claimed_sessions()
             initial_cursor = self._initial_reconcile()
             watch_cursor = self.state.read_cursor() or initial_cursor
@@ -119,6 +120,31 @@ class Orchestrator:
             target=self._janitor_loop, name="devin-outposts-janitor", daemon=True
         )
         thread.start()
+
+    def _start_pending_poller(self) -> None:
+        # The watch stream is the primary signal, but it has been observed to
+        # withhold events while staying open (beta, 2026-07-20). This poller
+        # bounds claim latency so a pending session is never stuck waiting for
+        # the five-minute stream cycle; Devin gives up on a session whose
+        # machine takes that long to arrive.
+        thread = threading.Thread(
+            target=self._pending_poll_loop,
+            name="devin-outposts-pending-poll",
+            daemon=True,
+        )
+        thread.start()
+
+    def _pending_poll_loop(self) -> None:
+        while not self.stop_event.wait(self.config.pending_poll_seconds):
+            try:
+                self.poll_pending_once()
+            except Exception as exc:
+                LOGGER.warning("Pending poll failed: %s", self.config.redacted(exc))
+
+    def poll_pending_once(self) -> None:
+        entries, _ = self._list_all_entries(phase="pending")
+        for entry in entries:
+            self.reconcile(entry)
 
     def _reattach_claimed_sessions(self) -> None:
         entries, _ = self._list_all_entries(

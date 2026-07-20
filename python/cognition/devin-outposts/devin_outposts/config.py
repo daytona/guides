@@ -27,6 +27,7 @@ DEFAULT_MAX_CONCURRENT_SESSIONS = 5
 DEFAULT_WORKER_POLL_SECONDS = 5.0
 DEFAULT_WATCH_RECONNECT_SECONDS = 3.0
 DEFAULT_JANITOR_INTERVAL_SECONDS = 60.0
+DEFAULT_PENDING_POLL_SECONDS = 15.0
 DEFAULT_WINDOWS_WORKDIR = r"C:\repos"
 DEFAULT_WINDOWS_CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
@@ -60,6 +61,7 @@ class Config:
     worker_poll_seconds: float = DEFAULT_WORKER_POLL_SECONDS
     watch_reconnect_seconds: float = DEFAULT_WATCH_RECONNECT_SECONDS
     janitor_interval_seconds: float = DEFAULT_JANITOR_INTERVAL_SECONDS
+    pending_poll_seconds: float = DEFAULT_PENDING_POLL_SECONDS
 
     @classmethod
     def from_env(cls) -> "Config":

@@ -129,6 +129,47 @@ class AbsentQueueEntryTests(unittest.TestCase):
         self.assertFalse(sandbox.deleted)
 
 
+class PendingListQueue(DevinQueue):
+    """Queue that reports one pending entry via list, as the poller sees it."""
+
+    def __init__(self, entry: QueueEntry) -> None:
+        super().__init__("https://example.test/api", "outposts-secret")
+        self.entry = entry
+        self.list_phases: list[str | None] = []
+
+    def list(self, outpost=None, phase=None, acceptor_id=None, cursor=None, first=200):  # type: ignore[override]
+        self.list_phases.append(phase)
+        from devin_outposts.queue import Page
+
+        return Page(items=[self.entry])
+
+
+class PendingPollTests(unittest.TestCase):
+    """The pending poller bounds claim latency when the watch stream withholds
+    events: each sweep must reconcile every pending entry it lists."""
+
+    def test_poll_pending_once_reconciles_listed_entries(self) -> None:
+        entry = QueueEntry(
+            session_id=SESSION_ID,
+            outpost_id="outpost_env-outpost",
+            phase="pending",
+            session_status="running",
+            raw={},
+        )
+        state_dir = self.enterContext(tempfile.TemporaryDirectory())
+        queue = PendingListQueue(entry)
+        orchestrator = Orchestrator(make_config(Path(state_dir)), queue, FakeDaytona({}))
+        orchestrator.stop_event = ImmediateEvent()
+
+        reconciled: list[Any] = []
+        with patch.object(orchestrator, "reconcile", side_effect=reconciled.append):
+            orchestrator.poll_pending_once()
+
+        self.assertEqual(queue.list_phases, ["pending"])
+        self.assertEqual(len(reconciled), 1)
+        self.assertIs(reconciled[0], entry)
+
+
 class FakeExecResponse:
     def __init__(self, exit_code: int = 0, result: str = "") -> None:
         self.exit_code: int = exit_code

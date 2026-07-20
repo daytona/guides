@@ -112,6 +112,10 @@ A sandbox is named from its safe session identifier and labeled with its session
 
 A periodic janitor in the orchestrator performs a label-scoped sweep, excluding sessions currently served by this process. It stops suspended sandboxes and removes stale sandboxes whose sessions have ended, without sweeping unrelated Daytona resources.
 
+### Pending poller
+
+A lightweight poller lists pending queue entries every few seconds and reconciles them. The watch stream is the primary signal, but it has been observed to withhold events while staying open; without the poller a new session could wait out the full watch cycle before being claimed, longer than Devin waits for an outpost machine.
+
 ### Secret handling
 
 Worker credentials are passed through the process execution environment rather than interpolated into command strings, and configured secrets are redacted from exception logs. The Devin Outposts machine token and the Daytona API token have separate roles and are not interchangeable.
