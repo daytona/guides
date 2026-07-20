@@ -70,7 +70,7 @@ def make_config(state_dir: Path) -> Config:
     return Config(
         devin_outposts_token="outposts-secret",
         devin_api_url="https://example.test/api",
-        pool_id="outpost_env-pool",
+        outpost_id="outpost_env-outpost",
         snapshot_name="snapshot-name",
         max_concurrent_sessions=1,
         state_dir=state_dir,

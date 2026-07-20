@@ -25,7 +25,7 @@ class QueueEntry:
     """A Devin Outposts queue resource with parsed convenience fields."""
 
     session_id: str | None
-    pool_id: str | None = None
+    outpost_id: str | None = None
     kind: str | None = None
     platform: str | None = None
     remote_binary_sha: str | None = None
@@ -53,11 +53,11 @@ class QueueEntry:
                     _get(raw, "session_id", "sessionId", "id"),
                 )
             ),
-            pool_id=_str_or_none(
+            outpost_id=_str_or_none(
                 _first_present(
-                    _get(metadata, "pool_id", "poolId"),
-                    _get(spec, "pool_id", "poolId"),
-                    _get(raw, "pool_id", "poolId"),
+                    _get(metadata, "outpost_id", "outpostId"),
+                    _get(spec, "outpost_id", "outpostId"),
+                    _get(raw, "outpost_id", "outpostId"),
                 )
             ),
             kind=_str_or_none(_first_present(_get(spec, "kind"), _get(raw, "kind"))),
@@ -237,7 +237,7 @@ class DevinQueue:
 
     def list(
         self,
-        pool: str | None = None,
+        outpost: str | None = None,
         phase: str | None = None,
         acceptor_id: str | None = None,
         cursor: str | None = None,
@@ -249,7 +249,7 @@ class DevinQueue:
             "/outposts/devins",
             params=_drop_none(
                 {
-                    "pool": pool,
+                    "outpost": outpost,
                     "phase": phase,
                     "acceptor_id": acceptor_id,
                     "cursor": cursor,
@@ -285,9 +285,9 @@ class DevinQueue:
         )
 
     def watch(
-        self, pool: str | None = None, cursor: str | None = None
+        self, outpost: str | None = None, cursor: str | None = None
     ) -> Iterator[Event]:
-        params = _drop_none({"pool": pool, "cursor": cursor, "watch": "true"})
+        params = _drop_none({"outpost": outpost, "cursor": cursor, "watch": "true"})
         try:
             with self._client.stream(
                 "GET",
@@ -442,8 +442,8 @@ def _has_entry_shape(value: Any) -> bool:
             "status",
             "session_id",
             "sessionId",
-            "pool_id",
-            "poolId",
+            "outpost_id",
+            "outpostId",
         )
     )
 

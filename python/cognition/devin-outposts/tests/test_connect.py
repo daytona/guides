@@ -58,7 +58,7 @@ class PkceTests(unittest.TestCase):
             query,
             {
                 "callback_url": [CALLBACK_URL],
-                "pool_name": ["daytona-windows"],
+                "outpost_name": ["daytona-windows"],
                 "platform": ["windows"],
                 "code_challenge": ["challenge-value"],
             },
@@ -153,10 +153,10 @@ class TokenExchangeTests(unittest.TestCase):
             return httpx.Response(
                 200,
                 json={
-                    "outpost_pool_id": "outpost_env_pool",
+                    "outpost_id": "outpost_env_outpost",
                     "access_token": "cog_machine_secret",
                     "api_base_url": "https://api.devin.ai/opbeta/",
-                    "pool_name": "daytona-linux",
+                    "outpost_name": "daytona-linux",
                 },
             )
 
@@ -166,10 +166,10 @@ class TokenExchangeTests(unittest.TestCase):
         self.assertEqual(
             credentials,
             ConnectionCredentials(
-                outpost_pool_id="outpost_env_pool",
+                outpost_id="outpost_env_outpost",
                 access_token="cog_machine_secret",
                 api_base_url="https://api.devin.ai",
-                pool_name="daytona-linux",
+                outpost_name="daytona-linux",
             ),
         )
 
@@ -203,7 +203,7 @@ class TokenExchangeTests(unittest.TestCase):
             httpx.Response(
                 200,
                 json={
-                    "outpost_pool_id": "outpost_env_pool",
+                    "outpost_id": "outpost_env_outpost",
                     "access_token": "cog_secret",
                 },
             ),
@@ -228,8 +228,8 @@ class EnvFileTests(unittest.TestCase):
                 "# local settings\n"
                 "DEVIN_OUTPOSTS_TOKEN=old-token\n"
                 "DAYTONA_API_KEY=daytona-key\n"
-                "POOL_ID=old-pool\n"
-                "POOL_ID=stale-pool\n"
+                "OUTPOST_ID=old-outpost\n"
+                "OUTPOST_ID=stale-outpost\n"
                 "DEVIN_API_URL=https://old.example/opbeta/\n"
                 "# keep this comment\n",
                 encoding="utf-8",
@@ -239,7 +239,7 @@ class EnvFileTests(unittest.TestCase):
             update_env_file(
                 path,
                 ConnectionCredentials(
-                    outpost_pool_id="outpost_env_new",
+                    outpost_id="outpost_env_new",
                     access_token="cog_new_secret",
                     api_base_url="https://api.devin.ai/opbeta/",
                 ),
@@ -252,16 +252,16 @@ class EnvFileTests(unittest.TestCase):
             self.assertIn("# keep this comment", text)
             self.assertEqual(text.count("DEVIN_OUTPOSTS_TOKEN="), 1)
             self.assertEqual(text.count("DEVIN_API_URL="), 1)
-            self.assertEqual(text.count("POOL_ID="), 1)
+            self.assertEqual(text.count("OUTPOST_ID="), 1)
             self.assertIn("DEVIN_OUTPOSTS_TOKEN=cog_new_secret", text)
             self.assertIn("DEVIN_API_URL=https://api.devin.ai", text)
-            self.assertIn("POOL_ID=outpost_env_new", text)
+            self.assertIn("OUTPOST_ID=outpost_env_new", text)
             if os.name == "posix":
                 self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
     def test_new_file_is_private_and_placeholder_file_needs_no_force(self) -> None:
         credentials = ConnectionCredentials(
-            outpost_pool_id="outpost_env_new",
+            outpost_id="outpost_env_new",
             access_token="cog_new_secret",
             api_base_url="https://api.devin.ai",
         )
@@ -272,7 +272,7 @@ class EnvFileTests(unittest.TestCase):
                 new_path.read_text(encoding="utf-8"),
                 "DEVIN_OUTPOSTS_TOKEN=cog_new_secret\n"
                 "DEVIN_API_URL=https://api.devin.ai\n"
-                "POOL_ID=outpost_env_new\n",
+                "OUTPOST_ID=outpost_env_new\n",
             )
             if os.name == "posix":
                 self.assertEqual(stat.S_IMODE(new_path.stat().st_mode), 0o600)
@@ -280,11 +280,11 @@ class EnvFileTests(unittest.TestCase):
             placeholder_path = Path(directory) / ".env"
             placeholder_path.write_text(
                 "DEVIN_OUTPOSTS_TOKEN=replace-with-devin-outposts-token\n"
-                "POOL_ID=outpost_env_replace_with_pool_id\n",
+                "OUTPOST_ID=outpost_env_replace_with_outpost_id\n",
                 encoding="utf-8",
             )
             update_env_file(placeholder_path, credentials)
-            self.assertIn("POOL_ID=outpost_env_new", placeholder_path.read_text())
+            self.assertIn("OUTPOST_ID=outpost_env_new", placeholder_path.read_text())
 
 
 class MainFlowTests(unittest.TestCase):
@@ -292,7 +292,7 @@ class MainFlowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".env"
             path.write_text(
-                "DEVIN_OUTPOSTS_TOKEN=cog_existing\nPOOL_ID=outpost_env_existing\n",
+                "DEVIN_OUTPOSTS_TOKEN=cog_existing\nOUTPOST_ID=outpost_env_existing\n",
                 encoding="utf-8",
             )
             stdout = io.StringIO()
@@ -314,10 +314,10 @@ class MainFlowTests(unittest.TestCase):
     def test_success_binds_listener_before_browser_and_hides_secrets(self) -> None:
         events: list[str] = []
         credentials = ConnectionCredentials(
-            outpost_pool_id="outpost_env_new",
+            outpost_id="outpost_env_new",
             access_token="cog_machine_secret",
             api_base_url="https://api.devin.ai",
-            pool_name="daytona-linux",
+            outpost_name="daytona-linux",
         )
         listener_type = self._listener_type(events, code="callback-code")
 
@@ -325,7 +325,7 @@ class MainFlowTests(unittest.TestCase):
             path = Path(directory) / ".env"
             path.write_text(
                 "DEVIN_OUTPOSTS_TOKEN=replace-with-devin-outposts-token\n"
-                "POOL_ID=outpost_env_replace_with_pool_id\n",
+                "OUTPOST_ID=outpost_env_replace_with_outpost_id\n",
                 encoding="utf-8",
             )
             stdout = io.StringIO()
@@ -359,17 +359,17 @@ class MainFlowTests(unittest.TestCase):
         self.assertNotIn("cog_machine_secret", combined_output)
         self.assertNotIn("verifier-secret", combined_output)
 
-    def test_force_replaces_existing_pool_credentials(self) -> None:
+    def test_force_replaces_existing_outpost_credentials(self) -> None:
         events: list[str] = []
         credentials = ConnectionCredentials(
-            outpost_pool_id="outpost_env_replacement",
+            outpost_id="outpost_env_replacement",
             access_token="cog_replacement",
             api_base_url="https://api.devin.ai",
         )
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".env"
             path.write_text(
-                "DEVIN_OUTPOSTS_TOKEN=cog_existing\nPOOL_ID=outpost_env_existing\n",
+                "DEVIN_OUTPOSTS_TOKEN=cog_existing\nOUTPOST_ID=outpost_env_existing\n",
                 encoding="utf-8",
             )
             with (
@@ -387,7 +387,7 @@ class MainFlowTests(unittest.TestCase):
 
         self.assertEqual(result, 0)
         self.assertIn("DEVIN_OUTPOSTS_TOKEN=cog_replacement", text)
-        self.assertIn("POOL_ID=outpost_env_replacement", text)
+        self.assertIn("OUTPOST_ID=outpost_env_replacement", text)
 
     def test_timeout_and_interrupt_have_controlled_exit_codes(self) -> None:
         cases: tuple[tuple[BaseException, int], ...] = (

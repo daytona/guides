@@ -2,11 +2,11 @@
 
 ## Overview and component map
 
-Devin Outposts connects a Devin session queue to compute supplied by the operator. One orchestrator process runs for each Outposts pool on a user-controlled machine. It watches the early-access (`opbeta`) queue, claims runnable sessions, and reconciles each session with a Daytona sandbox. Inside that sandbox, a checksum-pinned `devin-remote` process connects the session to its Linux or Windows environment.
+Devin Outposts connects a Devin session queue to compute supplied by the operator. One orchestrator process runs for each outpost on a user-controlled machine. It watches the early-access (`opbeta`) queue, claims runnable sessions, and reconciles each session with a Daytona sandbox. Inside that sandbox, a checksum-pinned `devin-remote` process connects the session to its Linux or Windows environment.
 
 ```mermaid
 graph LR
-    O["Orchestrator<br/>one process per pool<br/>user-controlled machine"]
+    O["Orchestrator<br/>one process per outpost<br/>user-controlled machine"]
     Q["Devin Outposts queue<br/>opbeta API"]
     D["Daytona API"]
     subgraph S["Daytona sandbox"]
@@ -20,7 +20,7 @@ graph LR
     R <-->|"serve session"| Q
 ```
 
-The config loader (`devin_outposts.config`) builds the pool, sandbox, repository, platform, and credential settings from the environment. The queue client (`devin_outposts.queue`) deliberately exposes a small set of list, watch, get, claim, and release operations, and `devin_outposts.queue_shapes` absorbs payload drift on its behalf. The orchestrator (`devin_outposts.orchestrator`) turns queue state into lifecycle actions, while platform-specific worker launchers (`devin_outposts.worker`, `devin_outposts.worker_linux`, `devin_outposts.worker_windows`) prepare and supervise the remote process inside each sandbox. The [code map](../README.md#code-map) in the README summarizes every module in one line.
+The config loader (`devin_outposts.config`) builds the outpost, sandbox, repository, platform, and credential settings from the environment. The queue client (`devin_outposts.queue`) deliberately exposes a small set of list, watch, get, claim, and release operations, and `devin_outposts.queue_shapes` absorbs payload drift on its behalf. The orchestrator (`devin_outposts.orchestrator`) turns queue state into lifecycle actions, while platform-specific worker launchers (`devin_outposts.worker`, `devin_outposts.worker_linux`, `devin_outposts.worker_windows`) prepare and supervise the remote process inside each sandbox. The [code map](../README.md#code-map) in the README summarizes every module in one line.
 
 ## Session lifecycle
 
@@ -61,7 +61,7 @@ sequenceDiagram
     Q-->>O: Claim details and pinned remote SHA
     O->>D: Find sandbox by name
     alt Sandbox does not exist
-        O->>D: Create sandbox with session and pool labels
+        O->>D: Create sandbox with session and outpost labels
     else Sandbox already exists
         O->>D: Start sandbox and ensure labels
     end
@@ -106,7 +106,7 @@ The queue API is early-access and its payload shapes can drift. Fields may be to
 
 ### Sandbox names and labels as the reconciliation key
 
-A sandbox is named from its safe session identifier and labeled with its session and pool identifiers (`devin_outposts.sandbox`). Those values let a restarted orchestrator find the same sandbox, reattach a claimed worker, and limit reconciliation to resources belonging to its pool.
+A sandbox is named from its safe session identifier and labeled with its session and outpost identifiers (`devin_outposts.sandbox`). Those values let a restarted orchestrator find the same sandbox, reattach a claimed worker, and limit reconciliation to resources belonging to its outpost.
 
 ### Janitor
 

@@ -24,7 +24,7 @@ from .queue_shapes import (
     entry_acceptor_id,
     entry_phase,
     entry_platform,
-    entry_pool_id,
+    entry_outpost_id,
     entry_session_id,
     entry_session_status,
     event_cursor,
@@ -100,8 +100,8 @@ class Orchestrator:
 
     def run(self) -> None:
         LOGGER.info(
-            "Starting orchestrator for pool %s as acceptor %s",
-            self.config.pool_id,
+            "Starting orchestrator for outpost %s as acceptor %s",
+            self.config.outpost_id,
             self.config.acceptor_id,
         )
         try:
@@ -138,7 +138,7 @@ class Orchestrator:
     def _watch_forever(self, cursor: str | None) -> None:
         while not self.stop_event.is_set():
             try:
-                for event in self.queue.watch(self.config.pool_id, cursor=cursor):
+                for event in self.queue.watch(self.config.outpost_id, cursor=cursor):
                     if self.stop_event.is_set():
                         break
                     cursor = self._handle_event(event, cursor)
@@ -194,7 +194,7 @@ class Orchestrator:
             LOGGER.warning("Skipping queue entry without session_id")
             return
 
-        if entry_pool_id(entry) and entry_pool_id(entry) != self.config.pool_id:
+        if entry_outpost_id(entry) and entry_outpost_id(entry) != self.config.outpost_id:
             return
 
         phase = entry_phase(entry)
@@ -518,7 +518,7 @@ class Orchestrator:
         seen_cursors: set[str] = set()
         while True:
             page = self.queue.list(
-                self.config.pool_id,
+                self.config.outpost_id,
                 phase=phase,
                 acceptor_id=acceptor_id,
                 cursor=cursor,
@@ -562,7 +562,7 @@ class Orchestrator:
         current = dict(getattr(sandbox, "labels", None) or {})
         if any(current.get(key) != value for key, value in labels.items()):
             raise RuntimeError(
-                "sandbox labels do not match the requested Devin session and pool"
+                "sandbox labels do not match the requested Devin session and outpost"
             )
 
     def _stop_sandbox_if_inactive(self, session_id: str) -> None:
@@ -647,7 +647,7 @@ class Orchestrator:
     def run_janitor_once(self) -> None:
         if ListSandboxesQuery is None:
             return
-        query = ListSandboxesQuery(labels={"devin.pool_id": self.config.pool_id})
+        query = ListSandboxesQuery(labels={"devin.outpost_id": self.config.outpost_id})
         active = self._active_session_ids()
         for sandbox in self.daytona.list(query):
             session_id = sandbox_label(sandbox, "devin.session_id")

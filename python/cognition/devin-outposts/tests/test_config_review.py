@@ -13,38 +13,38 @@ from devin_outposts.config import Config, ConfigError, redact, resolve_acceptor_
 
 
 class AcceptorIdentityTests(unittest.TestCase):
-    def test_generated_identity_is_stable_per_pool_and_distinct_between_pools(
+    def test_generated_identity_is_stable_per_outpost_and_distinct_between_outposts(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             state_dir = Path(temp_dir)
             generated = [uuid.UUID(int=1), uuid.UUID(int=2)]
             with patch("devin_outposts.config.uuid.uuid4", side_effect=generated):
-                pool_a = resolve_acceptor_id(state_dir, "pool-a", None)
-                pool_b = resolve_acceptor_id(state_dir, "pool-b", None)
+                outpost_a = resolve_acceptor_id(state_dir, "outpost-a", None)
+                outpost_b = resolve_acceptor_id(state_dir, "outpost-b", None)
 
-            self.assertNotEqual(pool_a, pool_b)
-            self.assertEqual(resolve_acceptor_id(state_dir, "pool-a", None), pool_a)
-            self.assertEqual(resolve_acceptor_id(state_dir, "pool-b", None), pool_b)
+            self.assertNotEqual(outpost_a, outpost_b)
+            self.assertEqual(resolve_acceptor_id(state_dir, "outpost-a", None), outpost_a)
+            self.assertEqual(resolve_acceptor_id(state_dir, "outpost-b", None), outpost_b)
 
-    def test_explicit_identity_is_preserved_and_persisted_for_its_pool(self) -> None:
+    def test_explicit_identity_is_preserved_and_persisted_for_its_outpost(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             state_dir = Path(temp_dir)
 
             self.assertEqual(
-                resolve_acceptor_id(state_dir, "pool-a", "  deliberate-acceptor-a  "),
+                resolve_acceptor_id(state_dir, "outpost-a", "  deliberate-acceptor-a  "),
                 "deliberate-acceptor-a",
             )
             self.assertEqual(
-                resolve_acceptor_id(state_dir, "pool-b", "deliberate-acceptor-b"),
+                resolve_acceptor_id(state_dir, "outpost-b", "deliberate-acceptor-b"),
                 "deliberate-acceptor-b",
             )
             self.assertEqual(
-                resolve_acceptor_id(state_dir, "pool-a", None),
+                resolve_acceptor_id(state_dir, "outpost-a", None),
                 "deliberate-acceptor-a",
             )
             self.assertEqual(
-                resolve_acceptor_id(state_dir, "pool-b", None),
+                resolve_acceptor_id(state_dir, "outpost-b", None),
                 "deliberate-acceptor-b",
             )
 
@@ -54,7 +54,7 @@ class EnvironmentContractTests(unittest.TestCase):
         env = {
             "DEVIN_OUTPOSTS_TOKEN": " \t ",
             "DAYTONA_API_KEY": "   ",
-            "POOL_ID": "\n",
+            "OUTPOST_ID": "\n",
             "SNAPSHOT_NAME": "\r\n",
         }
         with (
@@ -67,7 +67,7 @@ class EnvironmentContractTests(unittest.TestCase):
         self.assertEqual(
             str(caught.exception),
             "Missing required environment variables: "
-            "DAYTONA_API_KEY, DEVIN_OUTPOSTS_TOKEN, POOL_ID, SNAPSHOT_NAME",
+            "DAYTONA_API_KEY, DEVIN_OUTPOSTS_TOKEN, OUTPOST_ID, SNAPSHOT_NAME",
         )
 
     def test_required_values_are_trimmed_before_being_returned(self) -> None:
@@ -75,7 +75,7 @@ class EnvironmentContractTests(unittest.TestCase):
             env = {
                 "DEVIN_OUTPOSTS_TOKEN": "  devin-token  ",
                 "DAYTONA_API_KEY": "  daytona-key  ",
-                "POOL_ID": "  pool-a  ",
+                "OUTPOST_ID": "  outpost-a  ",
                 "SNAPSHOT_NAME": "  snapshot-a  ",
                 "STATE_DIR": temp_dir,
             }
@@ -86,7 +86,7 @@ class EnvironmentContractTests(unittest.TestCase):
                 config = Config.from_env()
 
         self.assertEqual(config.devin_outposts_token, "devin-token")
-        self.assertEqual(config.pool_id, "pool-a")
+        self.assertEqual(config.outpost_id, "outpost-a")
         self.assertEqual(config.snapshot_name, "snapshot-a")
 
 

@@ -33,7 +33,7 @@ def make_config(state_dir: Path, **changes: Any) -> Config:
     config = Config(
         devin_outposts_token="outposts-secret",
         devin_api_url="https://example.test/api",
-        pool_id="pool-1",
+        outpost_id="outpost-1",
         snapshot_name="snapshot-1",
         max_concurrent_sessions=2,
         state_dir=state_dir,
@@ -118,8 +118,8 @@ class SandboxAdoptionTests(unittest.TestCase):
         self,
     ) -> None:
         for foreign_labels in (
-            {"devin.session_id": "another-session", "devin.pool_id": "pool-1"},
-            {"devin.session_id": SESSION_ID, "devin.pool_id": "another-pool"},
+            {"devin.session_id": "another-session", "devin.outpost_id": "outpost-1"},
+            {"devin.session_id": SESSION_ID, "devin.outpost_id": "another-outpost"},
             {},
         ):
             with self.subTest(labels=foreign_labels):
@@ -183,7 +183,7 @@ class RepositoryPlacementTests(unittest.TestCase):
 
 class LifecycleSandbox:
     def __init__(self, session_id: str) -> None:
-        self.labels = {"devin.session_id": session_id, "devin.pool_id": "pool-1"}
+        self.labels = {"devin.session_id": session_id, "devin.outpost_id": "outpost-1"}
         self.state = "started"
         self.stopped = False
         self.deleted = False

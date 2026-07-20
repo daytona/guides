@@ -34,9 +34,12 @@ def require_session_id(entry: Any) -> str:
     return session_id
 
 
-def entry_pool_id(entry: Any) -> str | None:
-    return _string_field(entry, "pool_id") or _string_field(
-        _field(entry, "metadata"), "pool_id"
+def entry_outpost_id(entry: Any) -> str | None:
+    return (
+        _string_field(entry, "outpost_id")
+        or _string_field(entry, "outpostId")
+        or _string_field(_field(entry, "metadata"), "outpost_id")
+        or _string_field(_field(entry, "metadata"), "outpostId")
     )
 
 

@@ -45,7 +45,7 @@ class RepoSpec:
 class Config:
     devin_outposts_token: str
     devin_api_url: str
-    pool_id: str
+    outpost_id: str
     snapshot_name: str
     max_concurrent_sessions: int
     state_dir: Path
@@ -68,7 +68,7 @@ class Config:
         required = {
             "DEVIN_OUTPOSTS_TOKEN": _empty_to_none(_env("DEVIN_OUTPOSTS_TOKEN")),
             "DAYTONA_API_KEY": _empty_to_none(_env("DAYTONA_API_KEY")),
-            "POOL_ID": _empty_to_none(_env("POOL_ID")),
+            "OUTPOST_ID": _empty_to_none(_env("OUTPOST_ID")),
             "SNAPSHOT_NAME": _empty_to_none(_env("SNAPSHOT_NAME")),
         }
         missing = sorted(name for name, value in required.items() if value is None)
@@ -77,7 +77,7 @@ class Config:
                 "Missing required environment variables: " + ", ".join(missing)
             )
         devin_outposts_token = cast(str, required["DEVIN_OUTPOSTS_TOKEN"])
-        pool_id = cast(str, required["POOL_ID"])
+        outpost_id = cast(str, required["OUTPOST_ID"])
         snapshot_name = cast(str, required["SNAPSHOT_NAME"])
 
         state_dir = Path(_env("STATE_DIR", DEFAULT_STATE_DIR)).expanduser()
@@ -85,7 +85,7 @@ class Config:
 
         acceptor_id = resolve_acceptor_id(
             state_dir,
-            pool_id,
+            outpost_id,
             _empty_to_none(_env("ACCEPTOR_ID")),
         )
 
@@ -110,7 +110,7 @@ class Config:
         return cls(
             devin_outposts_token=devin_outposts_token,
             devin_api_url=api_url,
-            pool_id=pool_id,
+            outpost_id=outpost_id,
             snapshot_name=snapshot_name,
             max_concurrent_sessions=max_concurrent,
             state_dir=state_dir,
@@ -154,9 +154,9 @@ def load_dotenv_if_available() -> None:
     load_dotenv(".env")
 
 
-def resolve_acceptor_id(state_dir: Path, pool_id: str, configured: str | None) -> str:
-    pool_key = hashlib.sha256(pool_id.encode("utf-8")).hexdigest()
-    path = state_dir / "pools" / pool_key / "acceptor_id"
+def resolve_acceptor_id(state_dir: Path, outpost_id: str, configured: str | None) -> str:
+    outpost_key = hashlib.sha256(outpost_id.encode("utf-8")).hexdigest()
+    path = state_dir / "outposts" / outpost_key / "acceptor_id"
     if configured:
         configured = configured.strip()
         if configured:

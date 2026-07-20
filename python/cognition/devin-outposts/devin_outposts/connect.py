@@ -1,4 +1,4 @@
-"""Connect a Devin Outposts pool and store its machine credentials locally."""
+"""Connect a Devin outpost and store its machine credentials locally."""
 from __future__ import annotations
 
 import argparse
@@ -31,13 +31,13 @@ CALLBACK_PORT = 8765
 CALLBACK_TIMEOUT_SECONDS = 600.0
 DEFAULT_ENV_FILE = Path(".env")
 
-_MANAGED_ENV_KEYS = ("DEVIN_OUTPOSTS_TOKEN", "DEVIN_API_URL", "POOL_ID")
+_MANAGED_ENV_KEYS = ("DEVIN_OUTPOSTS_TOKEN", "DEVIN_API_URL", "OUTPOST_ID")
 _PLACEHOLDERS = {
     "DEVIN_OUTPOSTS_TOKEN": "replace-with-devin-outposts-token",
-    "POOL_ID": "outpost_env_replace_with_pool_id",
+    "OUTPOST_ID": "outpost_env_replace_with_outpost_id",
 }
 _ENV_ASSIGNMENT = re.compile(
-    r"^\s*(?:export\s+)?(DEVIN_OUTPOSTS_TOKEN|DEVIN_API_URL|POOL_ID)\s*="
+    r"^\s*(?:export\s+)?(DEVIN_OUTPOSTS_TOKEN|DEVIN_API_URL|OUTPOST_ID)\s*="
 )
 _CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
 _SAFE_UNQUOTED_ENV_VALUE = re.compile(r"^[A-Za-z0-9_./:+-]+$")
@@ -45,10 +45,10 @@ _SAFE_UNQUOTED_ENV_VALUE = re.compile(r"^[A-Za-z0-9_./:+-]+$")
 
 @dataclass(frozen=True, slots=True)
 class ConnectionCredentials:
-    outpost_pool_id: str
+    outpost_id: str
     access_token: str
     api_base_url: str
-    pool_name: str | None = None
+    outpost_name: str | None = None
 
 
 class ConnectError(RuntimeError):
@@ -172,11 +172,11 @@ def generate_pkce() -> tuple[str, str]:
     return verifier, challenge
 
 
-def build_connect_url(code_challenge: str, pool_name: str, platform: str) -> str:
+def build_connect_url(code_challenge: str, outpost_name: str, platform: str) -> str:
     query = urlencode(
         {
             "callback_url": CALLBACK_URL,
-            "pool_name": pool_name,
+            "outpost_name": outpost_name,
             "platform": platform,
             "code_challenge": code_challenge,
         }
@@ -226,18 +226,18 @@ def exchange_code(
     if payload is None:
         raise ConnectError("Devin connection-token endpoint returned invalid JSON")
 
-    outpost_pool_id = _required_string(payload, "outpost_pool_id")
+    outpost_id = _required_string(payload, "outpost_id")
     access_token = _required_string(payload, "access_token")
     api_base_url = normalize_devin_api_url(_required_string(payload, "api_base_url"))
-    pool_name_value = payload.get("pool_name")
-    pool_name = pool_name_value.strip() if isinstance(pool_name_value, str) else None
-    if pool_name == "":
-        pool_name = None
+    outpost_name_value = payload.get("outpost_name")
+    outpost_name = outpost_name_value.strip() if isinstance(outpost_name_value, str) else None
+    if outpost_name == "":
+        outpost_name = None
     return ConnectionCredentials(
-        outpost_pool_id=outpost_pool_id,
+        outpost_id=outpost_id,
         access_token=access_token,
         api_base_url=api_base_url,
-        pool_name=pool_name,
+        outpost_name=outpost_name,
     )
 
 
@@ -251,7 +251,7 @@ def update_env_file(
     values = {
         "DEVIN_OUTPOSTS_TOKEN": credentials.access_token,
         "DEVIN_API_URL": normalize_devin_api_url(credentials.api_base_url),
-        "POOL_ID": credentials.outpost_pool_id,
+        "OUTPOST_ID": credentials.outpost_id,
     }
     for value in values.values():
         if "\r" in value or "\n" in value:
@@ -276,12 +276,12 @@ def _ensure_env_can_be_updated(path: Path, *, force: bool) -> None:
     except (OSError, ValueError) as exc:
         raise ConnectError(f"Could not read target env file {path}") from exc
 
-    for key in ("DEVIN_OUTPOSTS_TOKEN", "POOL_ID"):
+    for key in ("DEVIN_OUTPOSTS_TOKEN", "OUTPOST_ID"):
         value = configured.get(key)
         if value and value != _PLACEHOLDERS[key]:
             raise ConnectError(
                 "The target env file is already configured; pass --force to replace "
-                + "its Devin pool credentials, or --env-file to write a second pool's "
+                + "its Devin outpost credentials, or --env-file to write a second outpost's "
                 + "credentials to another file"
             )
 
@@ -376,10 +376,10 @@ def _sanitize_remote_description(
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="outposts-connect",
-        description="Connect a Devin Outposts pool and write its credentials to .env.",
+        description="Connect a Devin outpost and write its credentials to .env.",
     )
     parser.add_argument("--platform", choices=("linux", "windows"), default="linux")
-    parser.add_argument("--pool-name")
+    parser.add_argument("--outpost-name")
     parser.add_argument("--env-file", type=Path, default=DEFAULT_ENV_FILE)
     parser.add_argument("--force", action="store_true")
     return parser
@@ -388,14 +388,14 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
-    pool_name = (args.pool_name or f"daytona-{args.platform}").strip()
-    if not pool_name:
-        parser.error("--pool-name cannot be empty")
+    outpost_name = (args.outpost_name or f"daytona-{args.platform}").strip()
+    if not outpost_name:
+        parser.error("--outpost-name cannot be empty")
 
     try:
         _ensure_env_can_be_updated(args.env_file, force=args.force)
         verifier, challenge = generate_pkce()
-        url = build_connect_url(challenge, pool_name, args.platform)
+        url = build_connect_url(challenge, outpost_name, args.platform)
         with CallbackListener() as listener:
             print(f"Open this URL to connect Devin:\n{url}")
             try:
@@ -415,8 +415,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 
-    print(f"Connected pool: {credentials.pool_name or pool_name}")
-    print(f"Pool ID: {credentials.outpost_pool_id}")
+    print(f"Connected outpost: {credentials.outpost_name or outpost_name}")
+    print(f"Outpost ID: {credentials.outpost_id}")
     print(f"Devin API: {credentials.api_base_url}")
     print(f"Credentials saved to: {args.env_file}")
     return 0

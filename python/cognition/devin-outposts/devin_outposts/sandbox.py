@@ -1,6 +1,6 @@
 """Identify and inspect sandboxes across orchestrator restarts.
 
-The ``devin-<safe session id>`` name and ``devin.session_id`` / ``devin.pool_id``
+The ``devin-<safe session id>`` name and ``devin.session_id`` / ``devin.outpost_id``
 labels are the reconciliation key linking queue entries to sandboxes.
 """
 
@@ -35,7 +35,7 @@ SANDBOX_NAME_HASH_LENGTH = 24
 def labels_for(config: Config, session_id: str) -> dict[str, str]:
     return {
         "devin.session_id": session_id,
-        "devin.pool_id": config.pool_id,
+        "devin.outpost_id": config.outpost_id,
     }
 
 

@@ -1,6 +1,6 @@
 # Devin Outposts on Daytona
 
-Run Devin Outposts sessions on Daytona sandboxes, Linux or Windows. A user runs the orchestrator on a machine they control. The orchestrator watches a Devin Outposts queue, claims sessions for one Outposts pool, creates or resumes a Daytona sandbox for each session, launches the pinned `devin-remote` binary inside that sandbox, then releases and stops or deletes the sandbox when the session sleeps or ends.
+Run Devin Outposts sessions on Daytona sandboxes, Linux or Windows. A user runs the orchestrator on a machine they control. The orchestrator watches a Devin Outposts queue, claims sessions for one outpost, creates or resumes a Daytona sandbox for each session, launches the pinned `devin-remote` binary inside that sandbox, then releases and stops or deletes the sandbox when the session sleeps or ends.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ Run Devin Outposts sessions on Daytona sandboxes, Linux or Windows. A user runs 
 - A Daytona account and API key that can create snapshots and manage sandboxes.
 - Python 3.12 on the machine that runs the orchestrator.
 - A Devin organization administrator who can manage enterprise settings and service users.
-- Linux or Windows worker sandboxes. Each pool serves one platform; run one orchestrator process per pool.
+- Linux or Windows worker sandboxes. Each outpost serves one platform; run one orchestrator process per outpost.
 
 Install the package:
 
@@ -31,21 +31,21 @@ outposts-connect --platform linux
 ```
 
 The command opens Devin's connection page. A Devin organization administrator
-confirms the pool name and platform and clicks **Connect**. Devin redirects the
+confirms the outpost name and platform and clicks **Connect**. Devin redirects the
 browser to a temporary listener on `http://localhost:8765/callback`; the command
 exchanges that one-time code directly with Devin and writes
-`DEVIN_OUTPOSTS_TOKEN`, `DEVIN_API_URL`, and `POOL_ID` to this project's `.env`.
+`DEVIN_OUTPOSTS_TOKEN`, `DEVIN_API_URL`, and `OUTPOST_ID` to this project's `.env`.
 The listener then exits. The machine token does not pass through the browser,
 and nothing is written to a global environment store.
 
-For a Windows pool, the flow is identical:
+For a Windows outpost, the flow is identical:
 
 ```bash
 outposts-connect --platform windows
 ```
 
-To serve Linux and Windows pools at the same time, run one orchestrator per
-pool, each from its own checkout with its own `.env`.
+To serve Linux and Windows outposts at the same time, run one orchestrator per
+outpost, each from its own checkout with its own `.env`.
 
 The command and browser must run on the same machine because the callback uses
 `localhost`. For a headless or remote orchestrator host, run the connection on a
@@ -65,31 +65,31 @@ for the authorization flow.
 machine-serving contract. Do not treat it as interchangeable with a generic
 `DEVIN_API_TOKEN` from unrelated Devin API scripts.
 
-## Manual pool setup
+## Manual outpost setup
 
 If the connection flow is unavailable, install the Devin CLI and create one
-pool per platform with a pool-create token:
+outpost per platform with an outpost-create token:
 
 | Token | Scope | Used for |
 |---|---|---|
-| Devin pool-create token | `account.outposts.orchestrator` | One-time pool creation with `devin worker pool create`. Remove it from your shell after the pool exists. |
+| Devin outpost-create token | `account.outposts.orchestrator` | One-time outpost creation with `devin worker outpost create`. Remove it from your shell after the outpost exists. |
 
 ```bash
 export DEVIN_API_URL="https://api.devin.ai"
-export DEVIN_POOL_CREATE_TOKEN="replace-with-pool-create-token"
+export DEVIN_OUTPOST_CREATE_TOKEN="replace-with-outpost-create-token"
 
-devin worker pool create daytona-linux \
+devin worker outpost create daytona-linux \
   --platform linux \
   --description "Daytona Linux sandboxes for Devin Outposts" \
   --api-url "$DEVIN_API_URL" \
-  --token "$DEVIN_POOL_CREATE_TOKEN"
+  --token "$DEVIN_OUTPOST_CREATE_TOKEN"
 ```
 
-For Windows sandboxes, create a separate pool with `--platform windows` and run
+For Windows sandboxes, create a separate outpost with `--platform windows` and run
 a second orchestrator instance against it.
 
 Do not add `/opbeta` to `DEVIN_API_URL`; the queue client appends that path.
-Copy the returned pool ID into `POOL_ID` in `.env`, and set
+Copy the returned outpost ID into `OUTPOST_ID` in `.env`, and set
 `DEVIN_OUTPOSTS_TOKEN` to a service-user key with the
 `account.outposts.machine` scope.
 
@@ -117,7 +117,7 @@ Copy the printed snapshot name into `SNAPSHOT_NAME` in `.env` before starting th
 
 ## Build the Windows snapshot
 
-Windows pools use `devin_outposts/build_windows_snapshot.py` with `devin_outposts/provision_windows.ps1`. The
+Windows outposts use `devin_outposts/build_windows_snapshot.py` with `devin_outposts/provision_windows.ps1`. The
 provisioner installs pinned Git for Windows, Chrome for Testing, and the Devin
 CLI, then verifies them plus ffmpeg and Daytona Computer Use on a fresh sandbox
 created from the snapshot. The snapshot name derives from the provisioner hash
@@ -135,11 +135,11 @@ python -m devin_outposts.build_windows_snapshot
 
 The builder starts from the Daytona `windows-medium` snapshot by default; pass
 `--source-snapshot` to override. Copy the printed snapshot name into
-`SNAPSHOT_NAME` in the `.env` used by the Windows pool's orchestrator instance.
+`SNAPSHOT_NAME` in the `.env` used by the Windows outpost's orchestrator instance.
 
 ## Run the orchestrator
 
-After `.env` has `DEVIN_OUTPOSTS_TOKEN`, `DEVIN_API_URL`, `DAYTONA_API_KEY`, `POOL_ID`, and `SNAPSHOT_NAME`, start the orchestrator:
+After `.env` has `DEVIN_OUTPOSTS_TOKEN`, `DEVIN_API_URL`, `DAYTONA_API_KEY`, `OUTPOST_ID`, and `SNAPSHOT_NAME`, start the orchestrator:
 
 ```bash
 set -a
@@ -155,12 +155,12 @@ If you have not installed the package, run this instead:
 python -m devin_outposts.orchestrator
 ```
 
-Create Devin sessions from the Devin UI or Slack and select the Outposts pool you created. The orchestrator will claim matching sessions from that pool.
+Create Devin sessions from the Devin UI or Slack and select the outpost you created. The orchestrator will claim matching sessions from that outpost.
 
 ## Code map
 
 - `devin_outposts.config` — defines the environment contract for orchestration.
-- `devin_outposts.connect` — authorizes a pool through Devin and writes its machine credentials to `.env`.
+- `devin_outposts.connect` — authorizes an outpost through Devin and writes its machine credentials to `.env`.
 - `devin_outposts.queue` — provides the thin typed client for the early-access queue API.
 - `devin_outposts.queue_shapes` — normalizes drifting beta queue payload shapes.
 - `devin_outposts.sandbox` — identifies and inspects sandboxes across restarts.
@@ -180,7 +180,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the component and lifecyc
 | `DEVIN_OUTPOSTS_TOKEN` | Yes | Service-user key scoped for machine serving, `account.outposts.machine`. The orchestrator sends it as a bearer token to the queue API. Sandboxes never receive it; each remote gets only its claim's connect token. |
 | `DEVIN_API_URL` | Yes | Devin API base without `/opbeta`. Default public base is `https://api.devin.ai`. |
 | `DAYTONA_API_KEY` | Yes | Used by the Daytona SDK for snapshot creation and sandbox lifecycle operations. |
-| `POOL_ID` | Yes | The Outposts pool ID written by `outposts-connect` or returned by manual pool creation. Run one orchestrator process per pool. |
+| `OUTPOST_ID` | Yes | The outpost ID written by `outposts-connect` or returned by manual outpost creation. Run one orchestrator process per outpost. |
 | `SNAPSHOT_NAME` | Yes for the orchestrator | Snapshot used to create serving sandboxes. `build-devin-outposts-snapshot` can derive this when the variable is blank, but the orchestrator needs the actual snapshot name in `.env`. |
 | `MAX_CONCURRENT_SESSIONS` | No | Default `5`. The orchestrator does not claim more sessions than this at once. |
 | `ACCEPTOR_ID` | No | Leave blank for a generated ID that persists in `STATE_DIR`. Set it only when you need a stable, unique name for this orchestrator instance. Do not share one acceptor ID across instances. |
@@ -212,10 +212,10 @@ Serving sandboxes use this shape:
 
 - Name: `devin-{session_id}` after stripping unsafe characters from the queue session id.
 - Label: `devin.session_id={session_id}`
-- Label: `devin.pool_id={pool_id}`
+- Label: `devin.outpost_id={outpost_id}`
 - Auto-stop and auto-delete intervals: disabled at creation. The orchestrator decides when to stop or delete.
 
-The name lets operators find the sandbox for a Devin session in the Daytona dashboard. The labels let the janitor filter only sandboxes created by this reference implementation for the configured pool.
+The name lets operators find the sandbox for a Devin session in the Daytona dashboard. The labels let the janitor filter only sandboxes created by this reference implementation for the configured outpost.
 
 ## Repo handling
 
@@ -235,7 +235,7 @@ Run this before relying on the orchestrator in your own environment:
 
 1. Build the snapshot from `devin_outposts/Dockerfile.default`.
 2. Create a fresh sandbox from that snapshot and verify `gh --version` works inside it.
-3. Create a Devin session on the Outposts pool.
+3. Create a Devin session on the outpost.
 4. Confirm the orchestrator claims it, creates a sandbox, starts the worker, and completes a smoke prompt that writes `/tmp/outposts-refimpl-smoke.txt`.
 5. Let the session sleep, then message it again. Confirm the same sandbox starts and the smoke file still exists.
 6. Terminate the session. Confirm the orchestrator deletes the sandbox.
@@ -244,7 +244,7 @@ Run this before relying on the orchestrator in your own environment:
 ## Caveats
 
 - Outposts APIs are in early access. Keep the queue client thin and expect endpoint shapes to change.
-- The current Devin session-create API may not expose Outposts pool selection. If so, create sessions from the Devin UI or Slack and select the pool there.
+- The current Devin session-create API may not expose outpost selection. If so, create sessions from the Devin UI or Slack and select the outpost there.
 - Windows sandboxes run the remote in a non-interactive service session. Devin's browser tool works with the snapshot's Chrome, but the Devin Desktop stream does not render, and screen capture tools such as ffmpeg `gdigrab` fail in that session.
 - The default Windows snapshot ships Git, Chrome, and the Devin CLI only. Add language toolchains to `devin_outposts/provision_windows.ps1` when sessions must build or test code on Windows.
 
