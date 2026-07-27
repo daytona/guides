@@ -14,7 +14,7 @@ A headless coding agent powered by [Moonshot AI's Kimi CLI](https://www.kimi.com
 
 - Node.js 18 or newer
 - A Daytona API key from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
-- A Kimi API key from the [Moonshot AI platform](https://platform.moonshot.ai/)
+- A Kimi API key from the [Kimi API Platform](https://platform.kimi.ai/console/api-keys)
 
 ## Setup
 

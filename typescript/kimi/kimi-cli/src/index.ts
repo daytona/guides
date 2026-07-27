@@ -20,7 +20,7 @@ async function main() {
 
   if (!process.env.SANDBOX_KIMI_API_KEY) {
     console.error('Error: SANDBOX_KIMI_API_KEY environment variable is not set')
-    console.error('Get a Kimi API key from https://platform.moonshot.ai/')
+    console.error('Get a Kimi API key from https://platform.kimi.ai/console/api-keys')
     process.exit(1)
   }
 
