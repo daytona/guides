@@ -56,6 +56,46 @@ When this example is run, the agent follows the following workflow:
 4. A Daytona preview link is shown pointing to the OpenClaw Control UI.
 5. When the script is terminated (Ctrl+C), the sandbox is deleted—unless `PERSIST_SANDBOX` is set to `true`, in which case the sandbox is left running.
 
+## Alternative: inject the key as a Daytona Secret
+
+The quickstart loads everything in `.env.sandbox` - including `ANTHROPIC_API_KEY` - into the sandbox as plain environment variables, so anything running inside the sandbox (OpenClaw, its agents, any code they run) can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
+
+The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied by this guide's `package.json`) and a one-time Secret setup:
+
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create-secret.ts` in the project directory and run `npx tsx create-secret.ts`):
+
+   ```typescript
+   import { Daytona } from '@daytona/sdk'
+   import * as dotenv from 'dotenv'
+   import { readFileSync } from 'node:fs'
+
+   dotenv.config() // DAYTONA_API_KEY from .env
+
+   const sandboxEnv = dotenv.parse(readFileSync('.env.sandbox', 'utf8'))
+   const daytona = new Daytona()
+   await daytona.secret.create({
+     name: 'anthropic-api-key',
+     value: sandboxEnv.ANTHROPIC_API_KEY,
+     hosts: ['api.anthropic.com'], // the only host the real key may be sent to
+   })
+   ```
+
+2. In `src/index.ts`, add a `secrets:` mapping (environment variable name to Secret name) to the sandbox creation, and delete the `ANTHROPIC_API_KEY` line from `.env.sandbox` so the raw key is no longer injected. Any other variables in `.env.sandbox` keep flowing into the sandbox through `envVars` as before:
+
+   ```diff
+    const sandbox = await daytona.create({
+      snapshot: DAYTONA_SNAPSHOT,
+      autoStopInterval: 0,
+      envVars: readEnvFile(ENV_SANDBOX_PATH),
+   +  secrets: {
+   +    ANTHROPIC_API_KEY: 'anthropic-api-key',
+   +  },
+      public: MAKE_PUBLIC,
+    })
+   ```
+
+Inside the sandbox, `env` now shows `ANTHROPIC_API_KEY=dtn_secret_...`, yet OpenClaw still authenticates: the key is sent as the `x-api-key` HTTPS request header to `api.anthropic.com`, where the proxy swaps in the real value. Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. If you configure additional providers in `.env.sandbox`, create one Secret per key with that provider's API host. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+
 ## Example Output
 
 ```
