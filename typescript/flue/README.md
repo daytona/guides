@@ -217,6 +217,66 @@ The harness is intentionally minimal: a TypeScript orchestrator (`bug-fix.ts`), 
 
 Flue's design encourages keeping orchestration (sandbox lifecycle, payload validation, structured outputs) in TypeScript and **agent reasoning** in markdown. The `.ts` file is ~90 lines of plumbing; the actual TDD logic the LLM follows lives in the skill file and can be tuned without recompiling.
 
+## Alternative: inject the GitHub token as a Daytona Secret
+
+The quickstart passes `GITHUB_TOKEN` into the sandbox as a plain `GH_TOKEN` environment variable, so anything running inside the sandbox - including the coding agent itself - can read the raw token with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable token.
+
+One wrinkle is specific to GitHub tokens: the proxy substitutes placeholders in HTTPS request headers only, and it needs the placeholder to arrive unmodified. `gh` API calls send the token verbatim in an `Authorization` header, so they substitute cleanly - but git-over-HTTPS Basic auth (what `gh auth setup-git` configures for `git push`) Base64-encodes the credentials inside the sandbox, which mangles the placeholder before the proxy sees it. The fix, per the [Secrets documentation on HTTP Basic Auth](https://www.daytona.io/docs/en/secrets/), is a second Secret holding the complete pre-encoded header value, injected into git via `http.extraHeader`.
+
+The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied by this guide's `package.json`) and a one-time setup of two Secrets:
+
+1. Create both Secrets once for your organization (save as `create-secrets.ts` and run `DAYTONA_API_KEY=... GITHUB_TOKEN=... npx tsx create-secrets.ts`):
+
+   ```typescript
+   import { Daytona } from '@daytona/sdk'
+
+   const daytona = new Daytona()
+   const token = process.env.GITHUB_TOKEN!
+
+   // Raw token for gh CLI API calls (sent verbatim in an Authorization header)
+   await daytona.secret.create({
+     name: 'github-token',
+     value: token,
+     hosts: ['api.github.com'],
+   })
+
+   // Pre-encoded Basic auth header for git push/fetch over HTTPS
+   await daytona.secret.create({
+     name: 'github-git-auth',
+     value: 'Basic ' + Buffer.from(`x-access-token:${token}`).toString('base64'),
+     hosts: ['github.com'],
+   })
+   ```
+
+2. In `.flue/agents/bug-fix.ts`, swap the `GH_TOKEN` env var for a `secrets:` mapping (environment variable name to Secret name); the host-side `githubToken` / `requireEnv(env, 'GITHUB_TOKEN')` lookup is no longer needed:
+
+   ```diff
+    const sandbox = await client.create({
+   -  envVars: { GH_TOKEN: githubToken },
+   +  secrets: {
+   +    GH_TOKEN: 'github-token',
+   +    GH_GIT_AUTH: 'github-git-auth',
+   +  },
+    })
+   ```
+
+3. Still in `.flue/agents/bug-fix.ts`, replace the `gh auth setup-git` step with a git config that sends the pre-encoded header on every request to `github.com` (the credential helper would Base64-encode the placeholder; the `extraHeader` passes it through unmodified so the proxy can substitute it):
+
+   ```diff
+   -const ghSetup = await setup.shell('gh auth setup-git')
+   -if (ghSetup.exitCode !== 0) {
+   -  throw new Error(`gh auth setup-git failed: ${ghSetup.stderr || ghSetup.stdout}`)
+   -}
+   +const gitAuth = await setup.shell(
+   +  'git config --global http.https://github.com/.extraHeader "AUTHORIZATION: $GH_GIT_AUTH"',
+   +)
+   +if (gitAuth.exitCode !== 0) {
+   +  throw new Error(`git auth config failed: ${gitAuth.stderr || gitAuth.stdout}`)
+   +}
+   ```
+
+Inside the sandbox, `env` now shows `GH_TOKEN=dtn_secret_...` and `GH_GIT_AUTH=dtn_secret_...`, yet everything still authenticates: `gh api`, `gh issue view`, and `gh pr create` send `GH_TOKEN` in an `Authorization` header to `api.github.com`, and `git push` sends the `extraHeader` to `github.com` - in both cases the proxy swaps in the real value at egress. Requests to any other host carry only the harmless placeholders. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+
 ## Example Output
 
 A successful run against `vercel/ms` issue #284 produces output like this in the `flue dev` terminal:
