@@ -42,6 +42,44 @@ Then type a prompt at the `User:` prompt and watch the agent stream its work. Pr
 
 The script creates a Daytona sandbox with `GEMINI_API_KEY` and `GEMINI_CLI_TRUST_WORKSPACE=true` injected at create time, so the Gemini CLI authenticates headlessly (skipping browser OAuth) and bypasses the workspace-trust prompt that would otherwise block runs in a fresh directory. It installs `@google/gemini-cli` in the sandbox, then opens a PTY and runs `gemini -p "<prompt>" --yolo --output-format stream-json` for each turn. `--yolo` auto-approves tool calls so the run never blocks on a permission prompt, and `--output-format stream-json` emits newline-delimited JSON events that are parsed and printed live. The session ID from the `init` event is reused with `-r` for multi-turn continuity, and the sandbox is deleted automatically on exit.
 
+## Alternative: inject the key as a Daytona Secret
+
+The quickstart passes the Gemini key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
+
+The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied by this guide's `package.json`) and a one-time Secret setup:
+
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create-secret.ts` next to this guide's `.env` and run `npx tsx create-secret.ts`):
+
+   ```typescript
+   import { Daytona } from '@daytona/sdk'
+   import * as dotenv from 'dotenv'
+
+   dotenv.config()
+
+   const daytona = new Daytona()
+   await daytona.secret.create({
+     name: 'gemini-api-key',
+     value: process.env.SANDBOX_GEMINI_API_KEY!,
+     hosts: ['generativelanguage.googleapis.com'], // the only host the real key may be sent to
+   })
+   ```
+
+2. In `src/index.ts`, swap the `GEMINI_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name). `GEMINI_CLI_TRUST_WORKSPACE` carries no credentials and stays a plain env var:
+
+   ```diff
+    sandbox = await daytona.create({
+      envVars: {
+   -    GEMINI_API_KEY: process.env.SANDBOX_GEMINI_API_KEY,
+        GEMINI_CLI_TRUST_WORKSPACE: 'true',
+      },
+   +  secrets: {
+   +    GEMINI_API_KEY: 'gemini-api-key',
+   +  },
+    })
+   ```
+
+Inside the sandbox, `env` now shows `GEMINI_API_KEY=dtn_secret_...`, yet the CLI still authenticates: it sends the key as the `x-goog-api-key` HTTPS request header to `generativelanguage.googleapis.com`, where the proxy swaps in the real value. Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+
 ## Example Output
 
 ```
