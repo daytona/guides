@@ -230,22 +230,28 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time setup
    ```typescript
    import { Daytona } from '@daytona/sdk'
 
-   const daytona = new Daytona()
-   const token = process.env.GITHUB_TOKEN!
+   async function main() {
+     const token = process.env.GITHUB_TOKEN
+     if (!token) throw new Error('GITHUB_TOKEN is not set')
 
-   // Raw token for gh CLI API calls (sent verbatim in an Authorization header)
-   await daytona.secret.create({
-     name: 'github-token',
-     value: token,
-     hosts: ['api.github.com'],
-   })
+     const daytona = new Daytona()
 
-   // Pre-encoded Basic auth header for git push/fetch over HTTPS
-   await daytona.secret.create({
-     name: 'github-git-auth',
-     value: 'Basic ' + Buffer.from(`x-access-token:${token}`).toString('base64'),
-     hosts: ['github.com'],
-   })
+     // Raw token for gh CLI API calls (sent verbatim in an Authorization header)
+     await daytona.secret.create({
+       name: 'github-token',
+       value: token,
+       hosts: ['api.github.com'],
+     })
+
+     // Pre-encoded Basic auth header for git push/fetch over HTTPS
+     await daytona.secret.create({
+       name: 'github-git-auth',
+       value: 'Basic ' + Buffer.from(`x-access-token:${token}`).toString('base64'),
+       hosts: ['github.com'],
+     })
+   }
+
+   main()
    ```
 
 2. In `.flue/agents/bug-fix.ts`, swap the `GH_TOKEN` env var for a `secrets:` mapping (environment variable name to Secret name); the host-side `githubToken` / `requireEnv(env, 'GITHUB_TOKEN')` lookup is no longer needed:

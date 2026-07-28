@@ -71,13 +71,19 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
 
    dotenv.config() // DAYTONA_API_KEY from .env
 
-   const sandboxEnv = dotenv.parse(readFileSync('.env.sandbox', 'utf8'))
-   const daytona = new Daytona()
-   await daytona.secret.create({
-     name: 'anthropic-api-key',
-     value: sandboxEnv.ANTHROPIC_API_KEY,
-     hosts: ['api.anthropic.com'], // the only host the real key may be sent to
-   })
+   async function main() {
+     const sandboxEnv = dotenv.parse(readFileSync('.env.sandbox', 'utf8'))
+     if (!sandboxEnv.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set in .env.sandbox')
+
+     const daytona = new Daytona()
+     await daytona.secret.create({
+       name: 'anthropic-api-key',
+       value: sandboxEnv.ANTHROPIC_API_KEY,
+       hosts: ['api.anthropic.com'], // the only host the real key may be sent to
+     })
+   }
+
+   main()
    ```
 
 2. In `src/index.ts`, add a `secrets:` mapping (environment variable name to Secret name) to the sandbox creation, and delete the `ANTHROPIC_API_KEY` line from `.env.sandbox` so the raw key is no longer injected. Any other variables in `.env.sandbox` keep flowing into the sandbox through `envVars` as before:

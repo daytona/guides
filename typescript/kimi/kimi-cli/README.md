@@ -61,12 +61,19 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
 
    dotenv.config()
 
-   const daytona = new Daytona()
-   await daytona.secret.create({
-     name: 'kimi-api-key',
-     value: process.env.SANDBOX_KIMI_API_KEY!,
-     hosts: ['api.moonshot.ai'], // the only host the real key may be sent to
-   })
+   async function main() {
+     const value = process.env.SANDBOX_KIMI_API_KEY
+     if (!value) throw new Error('SANDBOX_KIMI_API_KEY is not set')
+
+     const daytona = new Daytona()
+     await daytona.secret.create({
+       name: 'kimi-api-key',
+       value,
+       hosts: ['api.moonshot.ai'], // the only host the real key may be sent to
+     })
+   }
+
+   main()
    ```
 
 2. In `src/index.ts`, swap the `KIMI_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name). Only the API key is secret - `KIMI_BASE_URL` and `KIMI_MODEL_NAME` carry no credentials and stay plain env vars, and all three variables remain required by the CLI:

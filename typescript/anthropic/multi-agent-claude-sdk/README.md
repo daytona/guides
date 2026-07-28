@@ -110,7 +110,7 @@ The two-agent system follows this workflow:
 
 ## Alternative: inject the key as a Daytona Secret
 
-The quickstart passes the Developer Agent's Anthropic key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key. The Orchestrator Agent runs on your machine, not in the sandbox, so its `ANTHROPIC_API_KEY` is unaffected.
+The quickstart passes the Developer Agent's Anthropic key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key. The Project Manager Agent runs on your machine, not in the sandbox, so its `ANTHROPIC_API_KEY` is unaffected.
 
 The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secret setup:
 
@@ -122,12 +122,19 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
 
    dotenv.config()
 
-   const daytona = new Daytona()
-   await daytona.secret.create({
-     name: 'anthropic-api-key',
-     value: (process.env.SANDBOX_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY)!,
-     hosts: ['api.anthropic.com'], // the only host the real key may be sent to
-   })
+   async function main() {
+     const value = process.env.SANDBOX_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY
+     if (!value) throw new Error('Set SANDBOX_ANTHROPIC_API_KEY or ANTHROPIC_API_KEY in .env')
+
+     const daytona = new Daytona()
+     await daytona.secret.create({
+       name: 'anthropic-api-key',
+       value,
+       hosts: ['api.anthropic.com'], // the only host the real key may be sent to
+     })
+   }
+
+   main()
    ```
 
 2. In `src/index.ts`, swap the `ANTHROPIC_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name):

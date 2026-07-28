@@ -56,12 +56,19 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
 
    dotenv.config()
 
-   const daytona = new Daytona()
-   await daytona.secret.create({
-     name: 'gemini-api-key',
-     value: process.env.SANDBOX_GEMINI_API_KEY!,
-     hosts: ['generativelanguage.googleapis.com'], // the only host the real key may be sent to
-   })
+   async function main() {
+     const value = process.env.SANDBOX_GEMINI_API_KEY
+     if (!value) throw new Error('SANDBOX_GEMINI_API_KEY is not set')
+
+     const daytona = new Daytona()
+     await daytona.secret.create({
+       name: 'gemini-api-key',
+       value,
+       hosts: ['generativelanguage.googleapis.com'], // the only host the real key may be sent to
+     })
+   }
+
+   main()
    ```
 
 2. In `src/index.ts`, swap the `GEMINI_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name). `GEMINI_CLI_TRUST_WORKSPACE` carries no credentials and stays a plain env var:
