@@ -52,6 +52,39 @@ When this example is run, the agent follows the following workflow:
 4. User queries are passed to the agent as JSON, and JSON responses are parsed and displayed to the user.
 5. When the script is terminated, the sandbox is deleted.
 
+## Alternative: inject the key as a Daytona Secret
+
+The quickstart passes the Letta key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
+
+The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied by this guide's `package.json`) and a one-time Secret setup:
+
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create-secret.ts` next to this guide's `.env` and run `npx tsx create-secret.ts`):
+
+   ```typescript
+   import { Daytona } from '@daytona/sdk'
+   import * as dotenv from 'dotenv'
+
+   dotenv.config()
+
+   const daytona = new Daytona()
+   await daytona.secret.create({
+     name: 'letta-api-key',
+     value: process.env.SANDBOX_LETTA_API_KEY!,
+     hosts: ['api.letta.com'], // the only host the real key may be sent to
+   })
+   ```
+
+2. In `src/index.ts`, swap the `LETTA_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name):
+
+   ```diff
+    sandbox = await daytona.create({
+   -  envVars: { LETTA_API_KEY: process.env.SANDBOX_LETTA_API_KEY },
+   +  secrets: { LETTA_API_KEY: 'letta-api-key' },
+    })
+   ```
+
+Inside the sandbox, `env` now shows `LETTA_API_KEY=dtn_secret_...`, yet Letta Code still authenticates: it sends the key as an HTTPS `Authorization` header to `api.letta.com`, where the proxy swaps in the real value. Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+
 ## Example Output
 
 ```
