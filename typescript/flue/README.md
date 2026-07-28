@@ -260,7 +260,7 @@ The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied b
     })
    ```
 
-3. Still in `.flue/agents/bug-fix.ts`, replace the `gh auth setup-git` step with a git config that sends the pre-encoded header on every request to `github.com` (the credential helper would Base64-encode the placeholder; the `extraHeader` passes it through unmodified so the proxy can substitute it):
+3. Still in `.flue/agents/bug-fix.ts`, replace the `gh auth setup-git` step with a git config that sends the pre-encoded header on every request to `github.com` (the credential helper would Base64-encode the placeholder; the `extraHeader` passes it through unmodified so the proxy can substitute it). One extra line is required for git specifically: sandboxes with Secrets attached route outbound HTTPS through Daytona's egress proxy, whose CA certificate is provided to curl, Node, Python, and Go through environment variables (`CURL_CA_BUNDLE`, `SSL_CERT_FILE`, and friends) - but git reads none of those, so it must be pointed at the same CA via `http.sslCAInfo` or every git HTTPS operation fails with an SSL certificate error:
 
    ```diff
    -const ghSetup = await setup.shell('gh auth setup-git')
@@ -268,7 +268,8 @@ The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied b
    -  throw new Error(`gh auth setup-git failed: ${ghSetup.stderr || ghSetup.stdout}`)
    -}
    +const gitAuth = await setup.shell(
-   +  'git config --global http.https://github.com/.extraHeader "AUTHORIZATION: $GH_GIT_AUTH"',
+   +  'git config --global http.sslCAInfo "$CURL_CA_BUNDLE" && ' +
+   +    'git config --global http.https://github.com/.extraHeader "AUTHORIZATION: $GH_GIT_AUTH"',
    +)
    +if (gitAuth.exitCode !== 0) {
    +  throw new Error(`git auth config failed: ${gitAuth.stderr || gitAuth.stdout}`)
