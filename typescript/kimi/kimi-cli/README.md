@@ -47,6 +47,45 @@ Each turn opens a PTY in the sandbox. Rather than run Kimi as a child of that sh
 
 Every prompt runs `kimi -p "<prompt>" --yolo`: `-p` processes a single prompt and exits, and `--yolo` auto-approves tool calls so the run never blocks on a confirmation. Every turn after the first adds `-C`, which continues the most recent session from the working directory, so context carries across prompts even though each turn is a separate CLI invocation. Kimi persists those sessions inside the sandbox; when you exit, the sandbox and everything stored inside it are deleted automatically.
 
+## Alternative: inject the key as a Daytona Secret
+
+The quickstart passes the Kimi key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
+
+The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied by this guide's `package.json`) and a one-time Secret setup:
+
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create-secret.ts` next to this guide's `.env` and run `npx tsx create-secret.ts`):
+
+   ```typescript
+   import { Daytona } from '@daytona/sdk'
+   import * as dotenv from 'dotenv'
+
+   dotenv.config()
+
+   const daytona = new Daytona()
+   await daytona.secret.create({
+     name: 'kimi-api-key',
+     value: process.env.SANDBOX_KIMI_API_KEY!,
+     hosts: ['api.moonshot.ai'], // the only host the real key may be sent to
+   })
+   ```
+
+2. In `src/index.ts`, swap the `KIMI_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name). Only the API key is secret - `KIMI_BASE_URL` and `KIMI_MODEL_NAME` carry no credentials and stay plain env vars, and all three variables remain required by the CLI:
+
+   ```diff
+    sandbox = await daytona.create({
+      envVars: {
+   -    KIMI_API_KEY: process.env.SANDBOX_KIMI_API_KEY,
+        KIMI_BASE_URL: 'https://api.moonshot.ai/v1',
+        KIMI_MODEL_NAME: 'kimi-k3',
+      },
+   +  secrets: {
+   +    KIMI_API_KEY: 'kimi-api-key',
+   +  },
+    })
+   ```
+
+Inside the sandbox, `env` now shows `KIMI_API_KEY=dtn_secret_...`, yet the CLI still authenticates: it sends the key as an HTTPS request header to `api.moonshot.ai`, where the proxy swaps in the real value. Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+
 ## Example Output
 
 > **Note:** The real output is more verbose - the CLI also prints the full contents of the files the agent writes and every verification command it runs while it works. The transcript below is trimmed to the tool summaries, the rendered QR codes, and the agent's responses for readability. Both codes scan: point your phone at them (most scanners handle the light-on-dark inversion of terminal themes automatically).
