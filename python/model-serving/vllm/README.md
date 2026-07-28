@@ -152,7 +152,7 @@ The Secret-based flow needs `daytona` 0.192.0 or newer and a one-time Secret set
     )
    ```
 
-Inside the sandbox, `env` shows `HF_TOKEN=dtn_secret_...`, yet Hugging Face downloads still authenticate: `huggingface_hub` sends the token as an HTTPS `Authorization` header to `huggingface.co`, where the proxy swaps in the real value (the CDN hosts that actually serve the files use signed URLs, not the token). Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+Inside the sandbox, `env` shows `HF_TOKEN=dtn_secret_...`, yet Hugging Face downloads still authenticate: `huggingface_hub` sends the token as an HTTPS `Authorization` header to `huggingface.co`, where the proxy swaps in the real value. The allowlist stays that small on purpose: `huggingface.co` only serves the authenticated resolve/metadata requests and then redirects the actual file downloads to CDN hosts, with a short-lived signature embedded in the redirect URL itself. The client drops the `Authorization` header on that cross-host redirect, so neither the token nor the placeholder ever travels to the CDNs - no CDN hosts need to be allowlisted, and downloads work unchanged. Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
 
 ## Configuration
 
