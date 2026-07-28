@@ -112,7 +112,7 @@ The two-agent system follows this workflow:
 
 The quickstart passes the Developer Agent's Anthropic key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key. The Orchestrator Agent runs on your machine, not in the sandbox, so its `ANTHROPIC_API_KEY` is unaffected.
 
-The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer (this guide's `package.json` pins `^0.201.0`, which satisfies it) and a one-time Secret setup:
+The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secret setup:
 
 1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create-secret.ts` next to this guide's `.env` and run `npx tsx create-secret.ts`). Store whichever key you want the Developer Agent to use - the quickstart's `SANDBOX_ANTHROPIC_API_KEY`-with-fallback logic moves here:
 

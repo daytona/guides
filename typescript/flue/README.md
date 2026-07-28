@@ -223,7 +223,7 @@ The quickstart passes `GITHUB_TOKEN` into the sandbox as a plain `GH_TOKEN` envi
 
 One wrinkle is specific to GitHub tokens: the proxy substitutes placeholders in HTTPS request headers only, and it needs the placeholder to arrive unmodified. `gh` API calls send the token verbatim in an `Authorization` header, so they substitute cleanly - but git-over-HTTPS Basic auth (what `gh auth setup-git` configures for `git push`) Base64-encodes the credentials inside the sandbox, which mangles the placeholder before the proxy sees it. The fix, per the [Secrets documentation on HTTP Basic Auth](https://www.daytona.io/docs/en/secrets/), is a second Secret holding the complete pre-encoded header value, injected into git via `http.extraHeader`.
 
-The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer (this guide's `package.json` pins `^0.201.0`, which satisfies it) and a one-time setup of two Secrets:
+The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time setup of two Secrets:
 
 1. Create both Secrets once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create-secrets.ts` and run `DAYTONA_API_KEY=... GITHUB_TOKEN=... npx tsx create-secrets.ts`):
 
