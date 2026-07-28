@@ -114,6 +114,54 @@ python -c "from daytona import Daytona; Daytona().get('SANDBOX_ID').delete()"
 
 The sandbox ID is printed by `serve_sglang.py`.
 
+## Alternative: inject the token as a Daytona Secret
+
+If you use an `HF_TOKEN` at all, the quickstart passes it into the sandbox as a plain environment variable, so anything running inside the sandbox can read the raw token with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. Code that dumps the environment or exfiltrates it never sees a usable token.
+
+The Secret-based flow needs `daytona` 0.201.0 or newer (already satisfied by this guide's `pyproject.toml`) and a one-time Secret setup:
+
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create_secret.py` next to this guide's `.env` and run `python create_secret.py`):
+
+   ```python
+   import os
+
+   from dotenv import load_dotenv
+
+   from daytona import CreateSecretParams, Daytona
+
+   load_dotenv()
+
+   daytona = Daytona()
+   daytona.secret.create(CreateSecretParams(
+       name="hf-token",
+       value=os.environ["HF_TOKEN"],
+       hosts=["huggingface.co"],  # the only host the real token may be sent to
+   ))
+   ```
+
+2. In `serve_sglang.py`, swap the `HF_TOKEN` env var for a `secrets` mapping (environment variable name to Secret name):
+
+   ```diff
+   -env_vars = {"HF_TOKEN": os.environ["HF_TOKEN"]} if os.environ.get("HF_TOKEN") else {}
+    print(f"creating GPU sandbox from {SGLANG_IMAGE} ...", flush=True)
+    sb = daytona.create(
+        CreateSandboxFromImageParams(
+            image=Image.base(SGLANG_IMAGE),
+            resources=Resources(
+                gpu=1,
+                gpu_type=[GpuType.H100, GpuType.RTX_PRO_6000],  # preference order
+            ),
+            auto_stop_interval=0,
+            ephemeral=True,
+   -        env_vars=env_vars,
+   +        secrets={"HF_TOKEN": "hf-token"},
+        ),
+        timeout=600,
+    )
+   ```
+
+Inside the sandbox, `env` shows `HF_TOKEN=dtn_secret_...`, yet Hugging Face downloads still authenticate: `huggingface_hub` sends the token as an HTTPS `Authorization` header to `huggingface.co`, where the proxy swaps in the real value (the CDN hosts that actually serve the files use signed URLs, not the token). Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+
 ## Configuration
 
 Constants at the top of `serve_sglang.py`:

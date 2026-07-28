@@ -12,7 +12,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "daytona>=0.185.0",
+    "daytona>=0.201.0",
     "python-dotenv>=1.2.1",
     "requests>=2.31.0",
     "openai>=1.60.0",
