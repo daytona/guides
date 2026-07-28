@@ -60,9 +60,9 @@ When this example is run, the agent follows the following workflow:
 
 The quickstart loads everything in `.env.sandbox` - including `ANTHROPIC_API_KEY` - into the sandbox as plain environment variables, so anything running inside the sandbox (OpenClaw, its agents, any code they run) can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
 
-The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied by this guide's `package.json`) and a one-time Secret setup:
+The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer (this guide's `package.json` pins `^0.201.0`, which satisfies it) and a one-time Secret setup:
 
-1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create-secret.ts` in the project directory and run `npx tsx create-secret.ts`):
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create-secret.ts` in the project directory and run `npx tsx create-secret.ts`):
 
    ```typescript
    import { Daytona } from '@daytona/sdk'

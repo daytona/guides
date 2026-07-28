@@ -118,9 +118,9 @@ The sandbox ID is printed by `serve_sglang.py`.
 
 If you use an `HF_TOKEN` at all, the quickstart passes it into the sandbox as a plain environment variable, so anything running inside the sandbox can read the raw token with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. Code that dumps the environment or exfiltrates it never sees a usable token.
 
-The Secret-based flow needs `daytona` 0.201.0 or newer (already satisfied by this guide's `pyproject.toml`) and a one-time Secret setup:
+The Secret-based flow needs `daytona` 0.192.0 or newer (this guide's `pyproject.toml` requires `>=0.201.0`, which satisfies it) and a one-time Secret setup:
 
-1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create_secret.py` next to this guide's `.env` and run `python create_secret.py`):
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create_secret.py` next to this guide's `.env` and run `python create_secret.py`):
 
    ```python
    import os
