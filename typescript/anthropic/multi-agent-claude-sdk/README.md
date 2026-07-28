@@ -108,6 +108,43 @@ The two-agent system follows this workflow:
 - 🟢 **Green text** = Project Manager Agent (high-level planning and coordination)
 - ⚪ **White text** = Developer Agent (code execution and output)
 
+## Alternative: inject the key as a Daytona Secret
+
+The quickstart passes the Developer Agent's Anthropic key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key. The Orchestrator Agent runs on your machine, not in the sandbox, so its `ANTHROPIC_API_KEY` is unaffected.
+
+The Secret-based flow needs `@daytona/sdk` 0.201.0 or newer (already satisfied by this guide's `package.json`) and a one-time Secret setup:
+
+1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/) or with a one-off script (save as `create-secret.ts` next to this guide's `.env` and run `npx tsx create-secret.ts`). Store whichever key you want the Developer Agent to use - the quickstart's `SANDBOX_ANTHROPIC_API_KEY`-with-fallback logic moves here:
+
+   ```typescript
+   import { Daytona } from '@daytona/sdk'
+   import * as dotenv from 'dotenv'
+
+   dotenv.config()
+
+   const daytona = new Daytona()
+   await daytona.secret.create({
+     name: 'anthropic-api-key',
+     value: (process.env.SANDBOX_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY)!,
+     hosts: ['api.anthropic.com'], // the only host the real key may be sent to
+   })
+   ```
+
+2. In `src/index.ts`, swap the `ANTHROPIC_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name):
+
+   ```diff
+    const sandbox = await daytona.create({
+   -  envVars: {
+   -    ANTHROPIC_API_KEY: sandboxApiKey,
+   -  },
+   +  secrets: {
+   +    ANTHROPIC_API_KEY: 'anthropic-api-key',
+   +  },
+    })
+   ```
+
+Inside the sandbox, `env` now shows `ANTHROPIC_API_KEY=dtn_secret_...`, yet the Developer Agent still authenticates: the Claude Agent SDK sends the key as the `x-api-key` HTTPS request header to `api.anthropic.com`, where the proxy swaps in the real value. Substitution happens only in HTTPS request headers toward allowed hosts - requests to any other host carry the harmless placeholder. See the [Secrets documentation](https://www.daytona.io/docs/en/secrets/) for the full substitution scope.
+
 ## Example Output
 
 ```
