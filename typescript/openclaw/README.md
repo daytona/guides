@@ -14,6 +14,7 @@ This example runs [OpenClaw](https://openclaw.ai/), a general purpose AI assista
 ## Prerequisites
 
 - **Node.js:** Version 18 or higher is required
+- **Daytona account:** the sandbox is created private, so opening the preview link requires being signed in to Daytona
 
 ## Environment Variables
 
@@ -50,11 +51,13 @@ Create these files in the project directory (copy from `.env.example` and `.env.
 
 When this example is run, the agent follows the following workflow:
 
-1. A new Daytona sandbox is created (using the `daytona-medium` snapshot with OpenClaw preinstalled).
-2. OpenClaw is configured with your `openclaw.json` and `.env.sandbox` secrets.
-3. The OpenClaw gateway starts inside the sandbox.
-4. A Daytona preview link is shown pointing to the OpenClaw Control UI.
-5. When the script is terminated (Ctrl+C), the sandbox is deleted—unless `PERSIST_SANDBOX` is set to `true`, in which case the sandbox is left running.
+1. A new Daytona sandbox is created (using the `daytona-medium` snapshot with OpenClaw preinstalled). It stays private unless you set `MAKE_PUBLIC`.
+2. The preview link for `LOCAL_PROXY_PORT` is resolved first, because its origin must be allowlisted in the gateway config (`gateway.controlUi.allowedOrigins`) before the gateway starts.
+3. OpenClaw is configured with your `openclaw.json`, `.env.sandbox` secrets, a generated gateway token, and that origin allowlist. The gateway binds loopback only.
+4. The OpenClaw gateway starts inside the sandbox, and the script waits until it responds.
+5. `src/local-pairing-proxy.cjs` is uploaded and started on `LOCAL_PROXY_PORT`. It strips Daytona's forwarding headers, so the gateway treats your browser as a clean local client and silently auto-approves its device pairing (token auth still applies first). The Control UI connects on the first attempt - no approval prompt.
+6. A Daytona preview link is shown pointing to the Control UI, with the gateway token appended as a `#token=` URL fragment (fragments are never sent to servers, so the token stays out of access logs). The Control UI consumes the token and strips it from the address bar. Because the sandbox is private, opening the link also requires Daytona authentication.
+7. When the script is terminated (Ctrl+C), the sandbox is deleted—unless `PERSIST_SANDBOX` is set to `true` (the default), in which case the sandbox is left running.
 
 ## Alternative: inject the key as a Daytona Secret
 
@@ -108,23 +111,23 @@ Inside the sandbox, `env` now shows `ANTHROPIC_API_KEY=dtn_secret_...`, yet Open
 Creating Daytona sandbox...
 Configuring OpenClaw...
 Starting OpenClaw...
-(Ctrl+C to shut down and delete the sandbox)
+(Ctrl+C to stop the script; the sandbox keeps running)
 
-🔗 Secret link to Control UI: https://18789-898f722f-76fc-4ec6-85ca-a82bb30f3d72.proxy.daytona.works?token=7e38c7347437c5642c57bc769f630e53fe118e001d7b6c6c
+🔗 Secret link to Control UI: https://18790-898f722f-76fc-4ec6-85ca-a82bb30f3d72.proxy.daytona.works#token=7e38c7347437c5642c57bc769f630e53fe118e001d7b6c6c
 
-OpenClaw logs:
+The sandbox is private - open the link while signed in to Daytona.
+
+OpenClaw is ready.
 --------------------------------
-(node:131) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
 │
 ◇  Doctor changes ────────────────────────╮
 │                                         │
-│  WhatsApp configured, not enabled yet.  │
+│  WhatsApp configured, enabled automatically.  │
 │                                         │
 ├─────────────────────────────────────────╯
 ```
 
-Open the provided URL in your browser to interact with the OpenClaw agent via the Control UI.
+Open the provided URL in your browser (while signed in to Daytona) to interact with the OpenClaw agent via the Control UI.
 
 ## Configuration
 
@@ -136,8 +139,9 @@ You will find several constants in `src/index.ts` which control the behavior of 
 |----------|---------|-------------|
 | `OPENCLAW_PORT` | 18789 | OpenClaw Gateway and Control UI port |
 | `SHOW_LOGS` | true | Stream OpenClaw stdout/stderr to the terminal. |
-| `MAKE_PUBLIC` | true | Expose the sandbox for public internet access. |
+| `MAKE_PUBLIC` | false | When false the sandbox stays private and the preview URL requires Daytona authentication. |
 | `PERSIST_SANDBOX` | true | When true, the sandbox is not deleted when the script exits. |
+| `LOCAL_PROXY_PORT` | 18790 | In-sandbox pairing proxy port; the preview link targets it. |
 | `DAYTONA_SNAPSHOT` | daytona-medium | Sandbox image with OpenClaw preinstalled. |
 
 ### OpenClaw Configuration
@@ -150,7 +154,7 @@ The default configuration is:
 {
   "agents": {
     "defaults": {
-      "model": { "primary": "anthropic/claude-sonnet-4-5" }
+      "model": { "primary": "anthropic/claude-sonnet-4-6" }
     }
   },
   "auth": {
