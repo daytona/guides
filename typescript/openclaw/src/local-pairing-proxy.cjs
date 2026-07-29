@@ -31,8 +31,10 @@ const net = require('net')
 const LISTEN_PORT = Number(process.argv[2])
 const GATEWAY_PORT = Number(process.argv[3])
 
-if (!Number.isInteger(LISTEN_PORT) || !Number.isInteger(GATEWAY_PORT)) {
-  console.error('usage: node local-pairing-proxy.cjs <listenPort> <gatewayPort>')
+const isValidPort = (value) => Number.isInteger(value) && value >= 1 && value <= 65535
+
+if (!isValidPort(LISTEN_PORT) || !isValidPort(GATEWAY_PORT)) {
+  console.error('usage: node local-pairing-proxy.cjs <listenPort> <gatewayPort> (1-65535)')
   process.exit(1)
 }
 

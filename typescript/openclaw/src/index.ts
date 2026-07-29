@@ -81,6 +81,7 @@ async function startGatewayUntilReady(sandbox: Sandbox, sessionId: string): Prom
       runAsync: true,
     })
     const deadline = Date.now() + GATEWAY_READY_TIMEOUT_MS
+    let exited = false
     while (Date.now() < deadline) {
       await sleep(3000)
       const probe = await sandbox.process.executeCommand(
@@ -92,10 +93,17 @@ async function startGatewayUntilReady(sandbox: Sandbox, sessionId: string): Prom
       const session = await sandbox.process.getSession(sessionId)
       const command = session.commands?.find((c) => c.id === cmdId)
       if (command?.exitCode != null) {
-        break // The command died; start a fresh attempt.
+        exited = true
+        break
       }
     }
-    console.log(`Gateway start attempt ${attempt} did not become ready, retrying...`)
+    // Only retry a command that actually exited. A gateway that is still
+    // running owns OPENCLAW_PORT, so starting a second one would fail with
+    // EADDRINUSE and leave us tracking the wrong command id.
+    if (!exited) {
+      throw new Error('OpenClaw gateway started but never became ready')
+    }
+    console.log(`Gateway start attempt ${attempt} exited before becoming ready, retrying...`)
   }
   throw new Error('OpenClaw gateway failed to start')
 }
