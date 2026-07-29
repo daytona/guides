@@ -34,10 +34,13 @@ let currentSandbox: Sandbox | null = null
 let sandboxDeleted = false
 
 // Shutdown the sandbox
-async function shutdown() {
+// `forceDelete` is used when startup failed: PERSIST_SANDBOX means "keep my
+// working assistant running", but a sandbox that never produced a link is
+// unusable, and auto-stop is disabled, so it would run until deleted by hand.
+async function shutdown(exitCode = 0, forceDelete = false) {
   if (sandboxDeleted) return
   sandboxDeleted = true
-  if (!PERSIST_SANDBOX) {
+  if (!PERSIST_SANDBOX || forceDelete) {
     console.log('\nShutting down sandbox...')
     try {
       await currentSandbox?.delete(30)
@@ -45,9 +48,11 @@ async function shutdown() {
       console.error(e)
     }
   } else {
-    console.log('\nSandbox left running.')
+    // Sandboxes are created with auto-stop disabled, so surface the id: a
+    // sandbox left behind here keeps running until it is deleted.
+    console.log(`\nSandbox left running${currentSandbox ? ` (${currentSandbox.id})` : ''}.`)
   }
-  process.exit(0)
+  process.exit(exitCode)
 }
 
 // OpenClaw config to run in a Daytona sandbox. The gateway binds loopback
@@ -248,7 +253,9 @@ async function main() {
   await shutdown()
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error(err)
-  process.exit(1)
+  // Startup never handed the user a working link, so delete the sandbox even
+  // when PERSIST_SANDBOX is set - otherwise it lingers with auto-stop off.
+  await shutdown(1, true)
 })
