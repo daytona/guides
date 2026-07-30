@@ -10,7 +10,7 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **Which guide?**
-The guide this affects, e.g. `python/ag2/bug-fixer-agent/openai` or
+The guide this affects, e.g. `python/ag2/bug-fixer-agent` or
 `typescript/openai/codex-sdk`.
 
 **To Reproduce**

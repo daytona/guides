@@ -6,12 +6,12 @@ import re
 from pathlib import Path
 
 # pylint: disable=import-error
-from openai import OpenAI
+from litellm import completion
 
 from daytona import CreateSandboxFromSnapshotParams, Daytona
 
-CODING_MODEL = "gpt-5.1"
-SUMMARY_MODEL = "gpt-4o"
+CODING_MODEL = "anthropic/claude-sonnet-4-0"
+SUMMARY_MODEL = "anthropic/claude-haiku-4-5"
 
 
 # Helper function to extract Python code from a given string
@@ -20,7 +20,7 @@ def extract_python(text: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-# Make sure you have the DAYTONA_API_KEY and OPENAI_API_KEY environment variables set
+# Make sure you have the DAYTONA_API_KEY environment variable set
 def main() -> None:
     daytona = Daytona()
     sandbox = None
@@ -55,24 +55,32 @@ def main() -> None:
 
         # Generate the Python code with the LLM
         print("Generating code...")
-        client = OpenAI()
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
 
-        completion = client.chat.completions.create(
+        # LiteLLM supports a variety of model providers
+        # Make sure to have the right environment variables set
+        llm_output = completion(
             model=CODING_MODEL,
             messages=messages,
         )
 
-        first_message = completion.choices[0].message
+        first_message = llm_output.choices[0].message
         messages.append({"role": first_message.role, "content": first_message.content})
 
         # Extract and execute Python code from the LLM's response
         print("Running code...")
         code = extract_python(first_message.content or "")
         exec_result = sandbox.process.code_run(code)
+
+        messages.append(
+            {
+                "role": "user",
+                "content": f"Code execution result:\n{exec_result.result}.",
+            },
+        )
 
         artifacts = getattr(exec_result, "artifacts", None)
         charts = getattr(artifacts, "charts", None) if artifacts is not None else None
@@ -84,15 +92,8 @@ def main() -> None:
                     Path(filename).write_bytes(base64.b64decode(png_data))
                     print(f"✓ Chart saved to {filename}")
 
-        messages.append(
-            {
-                "role": "user",
-                "content": f"Code execution result:\n{exec_result.result}.",
-            }
-        )
-
         # Generate the final response with the LLM
-        summary = client.chat.completions.create(
+        summary = completion(
             model=SUMMARY_MODEL,
             messages=messages,
         )
