@@ -305,9 +305,9 @@ Guidelines:
 - When you have completed the requested task, set the "TASK_COMPLETED" string in your output to signal that the app is finished.
 `,
     model: anthropic({
-      model: 'claude-opus-4-0',
+      model: 'claude-sonnet-4-6',
       defaultParameters: {
-        max_tokens: 1024,
+        max_tokens: 8192,
       },
     }),
     tools: [

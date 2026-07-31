@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "ts-node index.ts"
+    "start": "tsx index.ts"
   },
   "keywords": [],
   "author": "",
   "type": "commonjs",
   "devDependencies": {
-    "ts-node": "^10.9.2",
+    "tsx": "^4.20.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {

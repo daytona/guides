@@ -10,7 +10,7 @@ from litellm import completion
 
 from daytona import CreateSandboxFromSnapshotParams, Daytona
 
-CODING_MODEL = "anthropic/claude-sonnet-4-0"
+CODING_MODEL = "anthropic/claude-sonnet-4-6"
 SUMMARY_MODEL = "anthropic/claude-haiku-4-5"
 
 

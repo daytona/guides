@@ -35,7 +35,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 2. Install dependencies:
 
 ```bash
-pip install "ag2[daytona,openai]" python-dotenv
+pip install "ag2[openai]<1.0" daytona python-dotenv
 ```
 
 3. Set your API keys in `.env`:

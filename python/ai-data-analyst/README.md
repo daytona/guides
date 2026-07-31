@@ -90,7 +90,7 @@ The example uses `cafe_sales_data.csv`. To use your own dataset, replace this fi
 By default, the example uses the following models, as specified in `ai_data_analyst.py`:
 
 ```python
-CODING_MODEL = "anthropic/claude-sonnet-4-0"
+CODING_MODEL = "anthropic/claude-sonnet-4-6"
 SUMMARY_MODEL = "anthropic/claude-haiku-4-5"
 ```
 
