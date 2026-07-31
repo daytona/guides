@@ -33,6 +33,7 @@ To run this example, you need to set the following environment variables:
 
 - `ANTHROPIC_API_KEY`: Required if using Anthropic models (default)
 - `OPENAI_API_KEY`: Required if using OpenAI models
+- `FIREWORKS_AI_API_KEY`: Required if using Fireworks AI models
 - `MISTRAL_API_KEY`: Required if using Mistral AI models
 - `DEEPSEEK_API_KEY`: Required if using DeepSeek models
 - `OPENROUTER_API_KEY`: Required if using OpenRouter models
@@ -99,6 +100,7 @@ The coding model is used for high accuracy code generation, and the summary mode
 Other suggested models include:
 
 - `openai/gpt-5.1`
+- `fireworks_ai/accounts/fireworks/models/kimi-k2p6`
 - `mistral/mistral-large-latest`
 - `deepseek/deepseek-chat`
 - `openrouter/moonshotai/kimi-k2`

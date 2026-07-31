@@ -4,10 +4,11 @@
 """LangChain data analysis example using Daytona sandboxes."""
 
 import base64
+import os
 
 from dotenv import load_dotenv
 from langchain.agents import create_agent  # pylint: disable=import-error
-from langchain_anthropic import ChatAnthropic  # pylint: disable=import-error
+from langchain.chat_models import init_chat_model  # pylint: disable=import-error
 
 # pylint: disable=import-error
 from langchain_daytona_data_analysis import DaytonaDataAnalysisTool
@@ -16,7 +17,11 @@ from daytona import ExecutionArtifacts
 
 load_dotenv()
 
-model = ChatAnthropic(model_name="claude-sonnet-4-5-20250929", temperature=0, timeout=None, max_retries=2, stop=None)
+# "provider:model" string, e.g. "fireworks:accounts/fireworks/models/kimi-k2p6".
+# See the README for supported providers and their API keys.
+MODEL = os.environ.get("MODEL", "anthropic:claude-sonnet-4-5-20250929")
+
+model = init_chat_model(MODEL, temperature=0, max_retries=2)
 
 
 def process_data_analysis_result(result: ExecutionArtifacts):

@@ -27,7 +27,11 @@ In this example, the agent analyzes a vehicle valuations dataset to understand h
 To run this example, you need to set the following environment variables:
 
 - `DAYTONA_API_KEY`: Required for access to Daytona sandboxes. Get it from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
-- `ANTHROPIC_API_KEY`: Required for Claude AI model access. Get it from [Anthropic Console](https://console.anthropic.com/)
+- `MODEL` (optional): The model in `provider:model` format. Defaults to `anthropic:claude-sonnet-4-5-20250929`
+- The API key matching your chosen provider:
+  - `ANTHROPIC_API_KEY`: Required if using Anthropic models (default)
+  - `FIREWORKS_API_KEY`: Required if using Fireworks AI models
+  - `OPENAI_API_KEY`: Required if using OpenAI models
 
 See the `.env.example` file for the exact structure. Copy `.env.example` to `.env` and fill in your API keys before running.
 
@@ -69,6 +73,17 @@ Before proceeding, complete the following steps:
    ```
 
 ## Configuration
+
+- **LLM Provider:** The model is set via the `MODEL` environment variable in `provider:model` format and works with any [provider supported by LangChain](https://docs.langchain.com/oss/python/integrations/chat). Install the provider's integration package and set its API key. For example, to use [Fireworks AI](https://fireworks.ai/):
+
+  ```bash
+  pip install -U langchain-fireworks
+  ```
+
+  ```env
+  MODEL=fireworks:accounts/fireworks/models/kimi-k2p6
+  FIREWORKS_API_KEY=your-fireworks-api-key
+  ```
 
 - **Analysis Prompt:** The main prompt is configured in the `agent.invoke()` call inside `data_analysis.py`. You can modify this prompt to analyze different aspects of the data or try different visualization types.
 

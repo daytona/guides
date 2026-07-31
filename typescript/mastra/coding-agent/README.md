@@ -59,6 +59,7 @@ This template supports any AI model provider through Mastra's model router. You 
 - **OpenAI**: `openai/gpt-4o-mini`, `openai/gpt-4o`
 - **Anthropic**: `anthropic/claude-sonnet-4-5-20250929`, `anthropic/claude-haiku-4-5-20250929`
 - **Google**: `google/gemini-2.5-pro`, `google/gemini-2.0-flash-exp`
+- **Fireworks AI**: `fireworks-ai/accounts/fireworks/models/kimi-k2p6`, `fireworks-ai/accounts/fireworks/models/glm-5p2`
 - **Groq**: `groq/llama-3.3-70b-versatile`, `groq/llama-3.1-8b-instant`
 - **Cerebras**: `cerebras/llama-3.3-70b`
 - **Mistral**: `mistral/mistral-medium-2508`

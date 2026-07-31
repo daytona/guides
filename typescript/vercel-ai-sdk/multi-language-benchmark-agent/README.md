@@ -135,12 +135,19 @@ Worth noticing in the transcript:
 - **Step 5 batches parallel tool calls.** Both `downloadFile` calls go out in the same turn and the Vercel AI SDK runs them concurrently, so the chart and the report ship to local disk at the same time rather than back-to-back.
 - **Steps 1, 2, 3 all use `runCode`** to execute Python, TypeScript, and Python (matplotlib) in turn. No `runCommand` was needed for the TypeScript step because `runCode` handles `ts-node` invocation internally. The exact step count and tool mix will vary run to run; some runs may use `runCommand` if the agent decides to `pip install` an extra package or inspect the filesystem before plotting.
 
-## Switching to OpenAI
+## Switching providers
 
-Install [`@ai-sdk/openai`](https://www.npmjs.com/package/@ai-sdk/openai) and replace the provider import in `src/index.ts`:
+The default is Anthropic Claude Sonnet 4.6, but any AI SDK provider that supports tool calling works. Install the provider package and replace the provider import in `src/index.ts`.
+
+> [!NOTE]
+> The provider package major version must match this guide's `ai` v6: use `@ai-sdk/openai@3` / `@ai-sdk/fireworks@2`. If you upgrade `ai` to v7, install the latest provider versions instead.
+
+### OpenAI
+
+Install [`@ai-sdk/openai`](https://www.npmjs.com/package/@ai-sdk/openai):
 
 ```bash
-npm install @ai-sdk/openai
+npm install @ai-sdk/openai@3
 ```
 
 ```typescript
@@ -149,4 +156,20 @@ import { openai } from '@ai-sdk/openai'
 const MODEL = openai('gpt-4o')
 ```
 
-Set `OPENAI_API_KEY` in `.env` instead of `ANTHROPIC_API_KEY`. The default is Anthropic Claude Sonnet 4.6, but any AI SDK provider that supports tool calling works.
+Set `OPENAI_API_KEY` in `.env` instead of `ANTHROPIC_API_KEY`.
+
+### Fireworks AI
+
+Install [`@ai-sdk/fireworks`](https://www.npmjs.com/package/@ai-sdk/fireworks):
+
+```bash
+npm install @ai-sdk/fireworks@2
+```
+
+```typescript
+import { fireworks } from '@ai-sdk/fireworks'
+// ...
+const MODEL = fireworks('accounts/fireworks/models/kimi-k2p6')
+```
+
+Set `FIREWORKS_API_KEY` in `.env` instead of `ANTHROPIC_API_KEY`.
