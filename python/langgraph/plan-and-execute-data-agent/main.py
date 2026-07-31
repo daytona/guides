@@ -3,11 +3,13 @@
 
 """Plan-and-execute LangGraph agent that ETLs GitHub data into a Daytona-sandboxed SQLite."""
 
+import os
 import re
 from typing import TypedDict
 
 from dotenv import load_dotenv  # pylint: disable=import-error
-from langchain_anthropic import ChatAnthropic  # pylint: disable=import-error
+from langchain.chat_models import init_chat_model  # pylint: disable=import-error
+from langchain_core.language_models import BaseChatModel  # pylint: disable=import-error
 from langchain_core.messages import HumanMessage, SystemMessage  # pylint: disable=import-error
 from langgraph.graph import END, START, StateGraph  # pylint: disable=import-error
 from pydantic import BaseModel, Field  # pylint: disable=import-error
@@ -15,6 +17,10 @@ from pydantic import BaseModel, Field  # pylint: disable=import-error
 from daytona import Daytona, Sandbox
 
 load_dotenv()
+
+# "provider:model" string, e.g. "fireworks:accounts/fireworks/models/kimi-k2p6".
+# See the README for supported providers and their API keys.
+MODEL = os.environ.get("MODEL", "anthropic:claude-opus-4-6")
 
 USER_REQUEST = """Profile the maintenance health of the public GitHub repository `langchain-ai/langgraph`.
 
@@ -108,7 +114,7 @@ def extract_code(text: str) -> str:
     return match.group(1).strip() if match else text.strip()
 
 
-def build_graph(model: ChatAnthropic):
+def build_graph(model: BaseChatModel):
     """Wire the 6-node plan-and-execute state graph."""
     plan_llm = model.with_structured_output(Plan)
 
@@ -248,13 +254,7 @@ def build_graph(model: ChatAnthropic):
 
 
 def main() -> None:
-    model = ChatAnthropic(
-        model_name="claude-opus-4-6",
-        temperature=0,
-        timeout=120,
-        max_retries=2,
-        stop=None,
-    )
+    model = init_chat_model(MODEL, temperature=0, timeout=120, max_retries=2)
     app = build_graph(model)
 
     print("=" * 60)

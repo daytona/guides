@@ -25,7 +25,11 @@ In this example, the agent profiles the maintenance health of the public [`langc
 ## Environment Variables
 
 - `DAYTONA_API_KEY`: Required for access to Daytona sandboxes. Get it from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
-- `ANTHROPIC_API_KEY`: Required for Claude model access. Get it from [Anthropic Console](https://console.anthropic.com/)
+- `MODEL` (optional): The model in `provider:model` format. Defaults to `anthropic:claude-opus-4-6`
+- The API key matching your chosen provider:
+  - `ANTHROPIC_API_KEY`: Required if using Anthropic models (default)
+  - `FIREWORKS_API_KEY`: Required if using Fireworks AI models
+  - `OPENAI_API_KEY`: Required if using OpenAI models
 
 Copy `.env.example` to `.env` and fill in your API keys before running.
 
@@ -41,7 +45,7 @@ Copy `.env.example` to `.env` and fill in your API keys before running.
 2. Install dependencies:
 
    ```bash
-   pip install -U langgraph langchain-core langchain-anthropic daytona pydantic python-dotenv
+   pip install -U langgraph langchain langchain-anthropic daytona pydantic python-dotenv
    ```
 
 3. Set your API keys in `.env`:
@@ -49,6 +53,17 @@ Copy `.env.example` to `.env` and fill in your API keys before running.
    ```bash
    DAYTONA_API_KEY=your_daytona_api_key
    ANTHROPIC_API_KEY=your_anthropic_api_key
+   ```
+
+   The model is set via the `MODEL` environment variable in `provider:model` format and works with any [provider supported by LangChain](https://docs.langchain.com/oss/python/integrations/chat). Install the provider's integration package and set its API key. For example, to use [Fireworks AI](https://fireworks.ai/):
+
+   ```bash
+   pip install -U langchain-fireworks
+   ```
+
+   ```bash
+   MODEL=fireworks:accounts/fireworks/models/kimi-k2p6
+   FIREWORKS_API_KEY=your_fireworks_api_key
    ```
 
 4. Run the example:
