@@ -3,23 +3,23 @@
 # matching files. Multiple owners = OR semantics (any one can approve).
 
 # Security and compliance policies
-SECURITY.md                 @mislavivanda @aprojic
-CODE_OF_CONDUCT.md          @mislavivanda @aprojic
+SECURITY.md                 @daytona/security @mislavivanda
+CODE_OF_CONDUCT.md          @daytona/security @mislavivanda
 
 # Contributor License Agreement (legal)
-CLA.md                      @mislavivanda @aprojic
+CLA.md                      @daytona/security @mislavivanda
 
 # Licensing and copyright
-LICENSE                     @mislavivanda @aprojic
-COPYRIGHT                   @mislavivanda @aprojic
-NOTICE                      @mislavivanda @aprojic
+LICENSE                     @daytona/security @mislavivanda
+COPYRIGHT                   @daytona/security @mislavivanda
+NOTICE                      @daytona/security @mislavivanda
 
 # CI/CD workflows
-.github/workflows/          @mislavivanda
+.github/workflows/          @daytona/security @mislavivanda
 
 # CLA/DCO enforcement (compliance controls)
-.github/workflows/cla.yml   @mislavivanda @aprojic
-.github/workflows/dco.yml   @mislavivanda @aprojic
+.github/workflows/cla.yml   @daytona/security @mislavivanda
+.github/workflows/dco.yml   @daytona/security @mislavivanda
 
 # CODEOWNERS itself (must protect itself)
-.github/CODEOWNERS          @mislavivanda @aprojic
+.github/CODEOWNERS          @daytona/security @mislavivanda
