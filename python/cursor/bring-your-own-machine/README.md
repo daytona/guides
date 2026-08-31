@@ -109,7 +109,7 @@ build-cursor-byom-snapshot --sandbox-class windows --target us
 
 The targets above are examples. Class availability depends on the Daytona organization.
 
-The container build uses `cursor_byom/Dockerfile`. The VM builds create a temporary sandbox from the source snapshot, provision it inside the guest, stop it, capture a cold snapshot, and verify the result in a fresh sandbox.
+The container build uses `cursor_byom/Dockerfile`. A VM build creates a temporary sandbox from the source snapshot, provisions it inside the guest, stops it, and captures a cold snapshot. Every VM build or reuse then boots a fresh verifier. A failed verifier causes deletion of the uncertified snapshot.
 
 The command prints JSON:
 
@@ -201,6 +201,8 @@ Cursor requires the key in the worker process. Agent tools and repository code r
 Use a dedicated, least-privilege service account for each customer. Rotate the key after suspected exposure. Do not reuse sandboxes, service accounts, or Cursor keys across customers.
 
 Cursor sends short-lived GitHub credentials to the claimed worker. This guide stores no GitHub token. Cursor receives file chunks for inference and uploaded artifacts. Review [Cursor's security and network model](https://cursor.com/docs/cloud-agent/security-network).
+
+The clone hooks accept only credential-free HTTPS repository URLs. They reject URL user information, query strings, and fragments before Git can store them in repository metadata.
 
 ## Validation
 

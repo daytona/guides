@@ -148,6 +148,20 @@ def cursor_request(
     return json.loads(content)
 
 
+def cancel_cursor_run(api_key: str, agent_id: str, run_id: str) -> None:
+    try:
+        cursor_request(
+            api_key,
+            "POST",
+            f"/v1/agents/{urllib.parse.quote(agent_id)}/runs/"
+            f"{urllib.parse.quote(run_id)}/cancel",
+        )
+    except RuntimeError as error:
+        if "run_not_cancellable" in str(error):
+            return
+        raise
+
+
 def is_not_found(error: BaseException) -> bool:
     current: BaseException | None = error
     while current is not None:
@@ -815,11 +829,10 @@ def main(argv: list[str] | None = None) -> int:
             if agent_id is not None and run_id is not None:
                 cleanup_with_retries(
                     "Cursor run cancellation",
-                    lambda: cursor_request(
+                    lambda: cancel_cursor_run(
                         cursor_key,
-                        "POST",
-                        f"/v1/agents/{urllib.parse.quote(agent_id)}/runs/"
-                        f"{urllib.parse.quote(run_id)}/cancel",
+                        agent_id,
+                        run_id,
                     ),
                     cleanup_failures,
                     (daytona_key, cursor_key),
