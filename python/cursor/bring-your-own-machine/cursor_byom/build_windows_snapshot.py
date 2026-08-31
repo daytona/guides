@@ -120,7 +120,7 @@ def _find_reusable_snapshot(daytona: Any, name: str) -> object | None:
 def _powershell_encoded(script: str) -> str:
     encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
     return (
-        f'"{WINDOWS_POWERSHELL}" -NoLogo -NoProfile -NonInteractive '
+        f"{WINDOWS_POWERSHELL} -NoLogo -NoProfile -NonInteractive "
         f"-ExecutionPolicy Bypass -EncodedCommand {encoded}"
     )
 

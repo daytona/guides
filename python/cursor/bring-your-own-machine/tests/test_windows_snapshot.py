@@ -185,3 +185,13 @@ def test_active_windows_snapshot_is_reused_without_sandbox_creation() -> None:
     assert reused is True
     assert daytona.created == []
     assert daytona.deleted == []
+
+
+def test_windows_provisioner_command_uses_unquoted_daytona_executable() -> None:
+    module = importlib.import_module("cursor_byom.build_windows_snapshot")
+
+    command = module._powershell_encoded("Write-Output 'ready'")
+
+    assert command.startswith(
+        r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe "
+    )
