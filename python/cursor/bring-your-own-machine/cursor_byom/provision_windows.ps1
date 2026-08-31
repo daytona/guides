@@ -12,6 +12,10 @@ $ProgressPreference = 'SilentlyContinue'
 $CursorAgentVersion = '2026.08.25-3e8eec8'
 $CursorPackageUrl = 'https://downloads.cursor.com/lab/2026.08.25-3e8eec8/windows/x64/agent-cli-package.zip'
 $CursorPackageSha512 = 'd6a839cb3ac95ee37e042804afad4eae2465066a4d4d2e75c8ddab9aa8befcca9e41e99780e82757ad1ba6b29a993e00db03777e54a1949677aff3d52d3d7b45'
+$NodeVersion = '22.23.2'
+$NodeExecutableUrl = "https://nodejs.org/dist/v$NodeVersion/win-x64/node.exe"
+$NodeExecutableSha256 = '0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4'
+$ExpectedNodeModuleVersion = '127'
 $ExpectedGitVersionOutput = 'git version 2.55.0.windows.2'
 $GitInstallerUrl = 'https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.2/Git-2.55.0.2-64-bit.exe'
 $GitInstallerSha256 = '74300da8dfe0d844c5449ffb809662f8eeac47916f83730c879c4084890c6c0e'
@@ -19,6 +23,7 @@ $GitInstallerSha256 = '74300da8dfe0d844c5449ffb809662f8eeac47916f83730c879c40848
 $CursorVersionRoot = Join-Path 'C:\ProgramData\cursor-agent\versions' $CursorAgentVersion
 $CursorNode = Join-Path $CursorVersionRoot 'node.exe'
 $CursorIndex = Join-Path $CursorVersionRoot 'index.js'
+$CursorNativeModule = Join-Path $CursorVersionRoot 'node_modules\better-sqlite3'
 $GitRoot = 'C:\Program Files\Git'
 $GitExe = Join-Path $GitRoot 'cmd\git.exe'
 $ProgramRoot = 'C:\ProgramData\cursor-byom'
@@ -169,7 +174,18 @@ function Test-CursorInstallation {
 function Test-Provisioning {
     Assert-Administrator
 
+    Write-Host '[preflight] Checking pinned Node.js runtime'
+    $nodeVersionOutput = Invoke-CheckedCommand -Executable $CursorNode -Arguments @('--version') -Description 'node --version'
+    if (($nodeVersionOutput -join ' ') -cne "v$NodeVersion") {
+        throw "node --version returned unexpected output: $($nodeVersionOutput -join [Environment]::NewLine)"
+    }
+    $nodeModuleVersionOutput = Invoke-CheckedCommand -Executable $CursorNode -Arguments @('-p', 'process.versions.modules') -Description 'Node.js module ABI'
+    if (($nodeModuleVersionOutput -join ' ') -cne $ExpectedNodeModuleVersion) {
+        throw "Node.js module ABI returned unexpected output: $($nodeModuleVersionOutput -join [Environment]::NewLine)"
+    }
+    Invoke-CheckedCommand -Executable $CursorNode -Arguments @('-e', 'require(process.argv[1])', $CursorNativeModule) -Description 'Cursor Agent native module probe' | Out-Null
     Write-Host '[preflight] Checking Cursor Agent version'
+
     $versionOutput = Invoke-CheckedCommand -Executable $CursorNode -Arguments @($CursorIndex, '--version') -Description 'Cursor Agent --version'
     if (($versionOutput -join ' ') -notmatch [Regex]::Escape($CursorAgentVersion)) {
         throw "Cursor Agent --version did not report $CursorAgentVersion. Output: $($versionOutput -join [Environment]::NewLine)"
@@ -307,6 +323,24 @@ try {
     else {
         Write-Host "[provision] Cursor Agent $CursorAgentVersion is already installed"
     }
+    $installedNodeHash = $null
+    if (Test-Path -LiteralPath $CursorNode -PathType Leaf) {
+        $installedNodeHash = (Get-FileHash -LiteralPath $CursorNode -Algorithm SHA256).Hash
+    }
+    if (
+        [String]::IsNullOrWhiteSpace($installedNodeHash) -or
+        -not $installedNodeHash.Equals($NodeExecutableSha256, [StringComparison]::OrdinalIgnoreCase)
+    ) {
+        Write-Host "[provision] Installing Node.js $NodeVersion for Cursor native modules"
+        $nodeExecutable = Join-Path $tempRoot 'node.exe'
+        Download-File -Uri $NodeExecutableUrl -Destination $nodeExecutable
+        Assert-Sha256 -Path $nodeExecutable -Expected $NodeExecutableSha256
+        Copy-Item -LiteralPath $nodeExecutable -Destination $CursorNode -Force
+    }
+    else {
+        Write-Host "[provision] Pinned Node.js $NodeVersion is already installed"
+    }
+
 
     New-Item -ItemType Directory -Path $ProgramRoot -Force | Out-Null
     foreach ($sourceFile in @($CloneHookSource, $CloneWrapperSource, $BootstrapSource)) {

@@ -217,7 +217,7 @@ def _unique_sandbox_name(purpose: str) -> str:
 
 def _upload_snapshot_inputs(sandbox: Any, *, timeout: int) -> None:
     for source, destination in WINDOWS_SNAPSHOT_UPLOADS:
-        sandbox.fs.upload_file(str(source), destination, timeout=timeout)
+        sandbox.fs.upload_file(source.read_bytes(), destination, timeout=timeout)
 
 
 def _raise_cleanup_failure(

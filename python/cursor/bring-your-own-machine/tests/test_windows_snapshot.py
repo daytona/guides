@@ -162,6 +162,8 @@ def test_windows_snapshot_build_provisions_captures_verifies_and_cleans_up(
     assert {destination for _, destination, _ in verifier.fs.uploads} == (
         expected_destinations
     )
+    assert all(isinstance(source, bytes) for source, _, _ in builder.fs.uploads)
+    assert all(isinstance(source, bytes) for source, _, _ in verifier.fs.uploads)
 
 
 def test_active_windows_snapshot_is_reused_without_sandbox_creation() -> None:
@@ -195,3 +197,20 @@ def test_windows_provisioner_command_uses_unquoted_daytona_executable() -> None:
     assert command.startswith(
         r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe "
     )
+
+
+def test_windows_provisioner_pins_node_22_and_probes_native_module() -> None:
+    provisioner = (
+        Path(__file__).parents[1]
+        / "cursor_byom"
+        / "provision_windows.ps1"
+    ).read_text()
+
+    assert "$NodeVersion = '22.23.2'" in provisioner
+    assert (
+        "$NodeExecutableSha256 = "
+        "'0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4'"
+        in provisioner
+    )
+    assert "require(process.argv[1])" in provisioner
+    assert "node_modules\\better-sqlite3" in provisioner
