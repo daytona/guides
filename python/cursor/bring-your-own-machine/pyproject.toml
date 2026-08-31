@@ -25,7 +25,7 @@ build-cursor-byom-snapshot = "cursor_byom.build_snapshot:main"
 packages = ["cursor_byom"]
 
 [tool.setuptools.package-data]
-cursor_byom = ["Dockerfile", "Dockerfile.linux-vm"]
+cursor_byom = ["Dockerfile", "Dockerfile.linux-vm", "*.ps1", "*.cmd", "*.sh"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

@@ -23,6 +23,13 @@ from daytona import (
 )
 from dotenv import load_dotenv
 
+from .build_windows_snapshot import (
+    WINDOWS_SNAPSHOT_INPUTS,
+    WINDOWS_SOURCE_SNAPSHOT,
+    build_windows_snapshot,
+    windows_snapshot_name_for,
+)
+
 CONTAINER_DOCKERFILE = resources.files("cursor_byom").joinpath("Dockerfile")
 LINUX_VM_DOCKERFILE = resources.files("cursor_byom").joinpath(
     "Dockerfile.linux-vm"
@@ -38,6 +45,13 @@ EXIT_COLLISION = 4
 
 class SnapshotCollisionError(RuntimeError):
     """A snapshot has the requested name but cannot be reused."""
+
+
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
 
 
 
@@ -157,13 +171,21 @@ def main(argv: list[str] | None = None) -> int:
             "  build-cursor-byom-snapshot\n"
             "  build-cursor-byom-snapshot --sandbox-class container --target us\n"
             "  build-cursor-byom-snapshot --sandbox-class linux-vm "
-            "--target eu-central-1"
+            "--target eu-central-1\n"
+            "  build-cursor-byom-snapshot --sandbox-class windows --target us"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--sandbox-class",
-        choices=(SandboxClass.CONTAINER.value, SandboxClass.LINUX_VM.value),
+        choices=tuple(
+            item.value
+            for item in (
+                SandboxClass.CONTAINER,
+                SandboxClass.LINUX_VM,
+                SandboxClass.WINDOWS,
+            )
+        ),
         default=SandboxClass.CONTAINER.value,
         help="Daytona sandbox class to build (default: container)",
     )
@@ -175,6 +197,22 @@ def main(argv: list[str] | None = None) -> int:
         "--name",
         help="snapshot name (default: SNAPSHOT_NAME or content-derived name)",
     )
+    parser.add_argument(
+        "--source-snapshot",
+        help="source VM snapshot (used only for linux-vm and windows)",
+    )
+    parser.add_argument(
+        "--build-timeout",
+        type=_positive_int,
+        default=1800,
+        help="seconds allowed for VM provisioning and snapshot capture (default: 1800)",
+    )
+    parser.add_argument(
+        "--sandbox-timeout",
+        type=_positive_int,
+        default=300,
+        help="seconds allowed for VM create, verify, and cleanup (default: 300)",
+    )
     args = parser.parse_args(argv)
     load_dotenv(Path(".env"), override=False)
     sandbox_class = SandboxClass(args.sandbox_class)
@@ -183,9 +221,32 @@ def main(argv: list[str] | None = None) -> int:
     name: str | None = None
 
     try:
+        daytona = Daytona(DaytonaConfig(target=target))
+        if sandbox_class == SandboxClass.WINDOWS:
+            source_snapshot = args.source_snapshot or WINDOWS_SOURCE_SNAPSHOT
+            name = windows_snapshot_name_for(
+                WINDOWS_SNAPSHOT_INPUTS,
+                source_snapshot=source_snapshot,
+                override=name_override,
+            )
+            snapshot, reused = build_windows_snapshot(
+                daytona,
+                name=name,
+                source_snapshot=source_snapshot,
+                build_timeout=args.build_timeout,
+                sandbox_timeout=args.sandbox_timeout,
+            )
+            _write_result(
+                snapshot,
+                name,
+                reused=reused,
+                sandbox_class=sandbox_class,
+                target=target,
+            )
+            return 0
+
         snapshot_inputs = snapshot_inputs_for(sandbox_class)
         name = snapshot_name_for(snapshot_inputs, sandbox_class, name_override)
-        daytona = Daytona(DaytonaConfig(target=target))
         existing = find_reusable_snapshot(daytona, name, sandbox_class)
         if existing is not None:
             _write_result(

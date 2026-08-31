@@ -11,7 +11,12 @@ from collections.abc import Iterator
 from importlib.resources.abc import Traversable
 from typing import Any
 
-from daytona import CreateSandboxFromSnapshotParams, DaytonaError, ExecuteResponse, SandboxClass
+from daytona import (
+    CreateSandboxFromSnapshotParams,
+    DaytonaError,
+    ExecuteResponse,
+    SandboxClass,
+)
 
 WINDOWS_PROVISIONER = resources.files("cursor_byom").joinpath("provision_windows.ps1")
 WINDOWS_CLONE_HOOK = resources.files("cursor_byom").joinpath("clone_repos_windows.ps1")
@@ -127,6 +132,8 @@ def _is_not_found(error: BaseException) -> bool:
         getattr(error, "status_code", None),
         getattr(getattr(error, "response", None), "status_code", None),
     ):
+        if status_code is None:
+            continue
         try:
             if int(status_code) == 404:
                 return True
@@ -214,9 +221,9 @@ def _upload_snapshot_inputs(sandbox: Any, *, timeout: int) -> None:
 
 
 def _raise_cleanup_failure(
-    sandbox: object,
+    sandbox: Any,
     purpose: str,
-    cleanup_error: BaseException,
+    cleanup_error: Exception,
 ) -> None:
     name = getattr(sandbox, "name", "unknown")
     raise WindowsSnapshotCleanupError(
@@ -226,15 +233,15 @@ def _raise_cleanup_failure(
 
 def _delete_sandbox(
     daytona: Any,
-    sandbox: object,
+    sandbox: Any,
     *,
     timeout: int,
     purpose: str,
-    primary_error: BaseException | None,
+    primary_error: Exception | None,
 ) -> None:
     try:
         daytona.delete(sandbox, timeout=timeout)
-    except BaseException as cleanup_error:
+    except Exception as cleanup_error:
         name = getattr(sandbox, "name", "unknown")
         if primary_error is not None:
             primary_error.add_note(
@@ -258,9 +265,9 @@ def build_windows_snapshot(
     if reusable is not None:
         return reusable, True
 
-    builder: object | None = None
-    builder_error: BaseException | None = None
-    snapshot: object
+    builder: Any | None = None
+    builder_error: Exception | None = None
+    snapshot: Any
     try:
         builder = daytona.create(
             CreateSandboxFromSnapshotParams(
@@ -269,6 +276,7 @@ def build_windows_snapshot(
             ),
             timeout=sandbox_timeout,
         )
+        assert builder is not None
         _upload_snapshot_inputs(builder, timeout=sandbox_timeout)
         provision = run_windows_provisioner(
             builder,
@@ -285,7 +293,7 @@ def build_windows_snapshot(
         builder._experimental_create_snapshot(name, timeout=build_timeout)
         snapshot = daytona.snapshot.get(name)
         _validate_windows_snapshot(snapshot, name)
-    except BaseException as error:
+    except Exception as error:
         builder_error = error
         raise
     finally:
@@ -298,8 +306,8 @@ def build_windows_snapshot(
                 primary_error=builder_error,
             )
 
-    verifier: object | None = None
-    verifier_error: BaseException | None = None
+    verifier: Any | None = None
+    verifier_error: Exception | None = None
     try:
         verifier = daytona.create(
             CreateSandboxFromSnapshotParams(
@@ -319,7 +327,7 @@ def build_windows_snapshot(
                 f"Windows snapshot verification failed with exit code "
                 f"{verification.exit_code}: {verification.result}"
             )
-    except BaseException as error:
+    except Exception as error:
         verifier_error = error
         raise
     finally:
