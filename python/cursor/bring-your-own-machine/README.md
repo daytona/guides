@@ -30,11 +30,23 @@ The `linux-vm` and `windows` builders also need their source snapshots in the se
 
 ## Install
 
-Install the Cursor CLI on the computer that runs the controller:
+Install the lab channel of the Cursor CLI on the computer that runs the controller. The stable channel does not include `agent worker controller`.
 
 ```bash
-curl https://cursor.com/install -fsS | bash
+curl 'https://cursor.com/install?channel=lab' -fsS | bash
 export PATH="$HOME/.local/bin:$PATH"
+```
+
+If the Cursor CLI is already installed, select the lab channel and install its current release:
+
+```bash
+agent set-channel lab
+agent update
+```
+
+Verify the installed release and the controller command:
+
+```bash
 agent --version
 agent worker controller --help
 ```
@@ -241,7 +253,7 @@ Run the live command once for each class and its matching target.
 
 ## Troubleshooting
 
-- **`agent` is not found or has the wrong version.** Export `PATH` again. Use `2026.08.25-3e8eec8` on the controller and in every snapshot.
+- **`agent` is not found or has the wrong version.** Export `PATH` again. Select the lab channel and run `agent update`. Use `2026.08.25-3e8eec8` on the controller and in every snapshot.
 - **The controller rejects the Cursor key.** Confirm `CURSOR_API_KEY` is an Enterprise service-account key. Load `.env` again.
 - **The spawn command reports missing claim values.** Start it through `agent worker controller`. Do not set claim values by hand.
 - **The request stays queued.** Confirm the controller and request use the same pool. Confirm **Allow Self-Hosted Agents** is enabled.
