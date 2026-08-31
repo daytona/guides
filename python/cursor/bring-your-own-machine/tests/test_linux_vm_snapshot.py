@@ -232,3 +232,45 @@ def test_failed_linux_vm_verification_deletes_uncertified_snapshot(
         )
 
     assert daytona.snapshot.deleted_snapshots == [daytona.snapshot.created]
+
+
+def test_linux_vm_verification_runs_after_builder_cleanup_failure(
+    monkeypatch: Any,
+) -> None:
+    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    daytona = FakeDaytona()
+    provision_calls: list[bool] = []
+    delete_sandbox = daytona.delete
+
+    def run_provisioner(
+        sandbox: FakeSandbox,
+        *,
+        verify_only: bool,
+        timeout: int,
+    ) -> object:
+        provision_calls.append(verify_only)
+        return SimpleNamespace(exit_code=0, result="verified")
+
+    def fail_builder_cleanup(
+        sandbox: FakeSandbox,
+        *,
+        timeout: int,
+    ) -> None:
+        if "builder" in sandbox.name:
+            raise RuntimeError("builder cleanup failed")
+        delete_sandbox(sandbox, timeout=timeout)
+
+    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
+    monkeypatch.setattr(daytona, "delete", fail_builder_cleanup)
+
+    with pytest.raises(RuntimeError, match="temporary sandbox"):
+        module.build_linux_vm_snapshot(
+            daytona,
+            name="cursor-byom-linux-vm-cleanup-failure",
+            source_snapshot="daytona-vm-medium",
+            build_timeout=1800,
+            sandbox_timeout=300,
+        )
+
+    assert provision_calls == [False, True]
+    assert daytona.snapshot.deleted_snapshots == []

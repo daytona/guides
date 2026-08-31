@@ -321,6 +321,7 @@ def build_windows_snapshot(
 
     builder: Any | None = None
     builder_error: Exception | None = None
+    builder_cleanup_error: Exception | None = None
     snapshot: Any
     try:
         builder = daytona.create(
@@ -352,18 +353,28 @@ def build_windows_snapshot(
         raise
     finally:
         if builder is not None:
-            _delete_sandbox(
-                daytona,
-                builder,
-                timeout=sandbox_timeout,
-                purpose="builder",
-                primary_error=builder_error,
-            )
+            try:
+                _delete_sandbox(
+                    daytona,
+                    builder,
+                    timeout=sandbox_timeout,
+                    purpose="builder",
+                    primary_error=builder_error,
+                )
+            except Exception as error:
+                builder_cleanup_error = error
 
-    _verify_or_delete_snapshot(
-        daytona,
-        snapshot,
-        sandbox_timeout=sandbox_timeout,
-    )
+    try:
+        _verify_or_delete_snapshot(
+            daytona,
+            snapshot,
+            sandbox_timeout=sandbox_timeout,
+        )
+    except Exception as error:
+        if builder_cleanup_error is not None:
+            error.add_note(str(builder_cleanup_error))
+        raise
+    if builder_cleanup_error is not None:
+        raise builder_cleanup_error
 
     return snapshot, False

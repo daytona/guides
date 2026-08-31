@@ -280,3 +280,48 @@ def test_failed_windows_verification_deletes_uncertified_snapshot(
         )
 
     assert daytona.snapshot.deleted_snapshots == [daytona.snapshot.created]
+
+
+def test_windows_verification_runs_after_builder_cleanup_failure(
+    monkeypatch: Any,
+) -> None:
+    module = importlib.import_module("cursor_byom.build_windows_snapshot")
+    daytona = FakeDaytona()
+    provision_calls: list[bool] = []
+    delete_sandbox = daytona.delete
+
+    def run_provisioner(
+        sandbox: FakeSandbox,
+        *,
+        verify_only: bool,
+        timeout: int,
+    ) -> object:
+        provision_calls.append(verify_only)
+        return SimpleNamespace(exit_code=0, result="verified")
+
+    def fail_builder_cleanup(
+        sandbox: FakeSandbox,
+        *,
+        timeout: int,
+    ) -> None:
+        if "builder" in sandbox.name:
+            raise RuntimeError("builder cleanup failed")
+        delete_sandbox(sandbox, timeout=timeout)
+
+    monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
+    monkeypatch.setattr(daytona, "delete", fail_builder_cleanup)
+
+    with pytest.raises(
+        module.WindowsSnapshotCleanupError,
+        match="builder",
+    ):
+        module.build_windows_snapshot(
+            daytona,
+            name="cursor-byom-windows-cleanup-failure",
+            source_snapshot="windows-medium",
+            build_timeout=1800,
+            sandbox_timeout=300,
+        )
+
+    assert provision_calls == [False, True]
+    assert daytona.snapshot.deleted_snapshots == []

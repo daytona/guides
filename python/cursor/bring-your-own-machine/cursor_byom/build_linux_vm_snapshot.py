@@ -197,7 +197,7 @@ def _capture_snapshot(
     source_snapshot: str,
     build_timeout: int,
     sandbox_timeout: int,
-) -> object:
+) -> tuple[object, Exception | None]:
     builder = daytona.create(
         _sandbox_params(
             _sandbox_name_for(name, source_snapshot, "builder"),
@@ -224,14 +224,17 @@ def _capture_snapshot(
             primary_error=primary_error,
         )
         raise
-    else:
+    cleanup_error: Exception | None = None
+    try:
         _delete_sandbox(
             daytona,
             builder,
             timeout=sandbox_timeout,
             primary_error=None,
         )
-    return snapshot
+    except Exception as error:
+        cleanup_error = error
+    return snapshot, cleanup_error
 
 
 def _verify_snapshot(
@@ -319,17 +322,24 @@ def build_linux_vm_snapshot(
         )
         return reusable, True
 
-    snapshot = _capture_snapshot(
+    snapshot, builder_cleanup_error = _capture_snapshot(
         daytona,
         name=name,
         source_snapshot=source_snapshot,
         build_timeout=build_timeout,
         sandbox_timeout=sandbox_timeout,
     )
-    _verify_or_delete_snapshot(
-        daytona,
-        snapshot,
-        source_snapshot=source_snapshot,
-        sandbox_timeout=sandbox_timeout,
-    )
+    try:
+        _verify_or_delete_snapshot(
+            daytona,
+            snapshot,
+            source_snapshot=source_snapshot,
+            sandbox_timeout=sandbox_timeout,
+        )
+    except Exception as error:
+        if builder_cleanup_error is not None:
+            error.add_note(str(builder_cleanup_error))
+        raise
+    if builder_cleanup_error is not None:
+        raise builder_cleanup_error
     return snapshot, False
