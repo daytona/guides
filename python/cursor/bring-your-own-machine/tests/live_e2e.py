@@ -17,6 +17,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +35,7 @@ from cursor_byom.worker_windows import (
     WINDOWS_LAUNCH_CONFIG_PATH,
     WINDOWS_WORKER_PID_PATH,
     WINDOWS_WORKER_STDERR_PATH,
+    WINDOWS_WORKER_STDOUT_PATH,
     WINDOWS_WORKSPACE_PATH,
     _bootstrap_launcher,
     powershell_encoded,
@@ -160,7 +162,7 @@ def is_not_found(error: BaseException) -> bool:
                     return True
             except (TypeError, ValueError):
                 pass
-        if "404 Not Found" in str(current):
+        if "404 Not Found" in str(current) or "HTTP 404" in str(current):
             return True
         current = current.__cause__ or current.__context__
     return False
@@ -269,6 +271,44 @@ def terminate_process(process: subprocess.Popen[str] | None) -> None:
         process.wait(timeout=15)
 
 
+def cleanup_with_retries(
+    description: str,
+    action: Callable[[], object],
+    failures: list[str],
+    secrets_to_redact: tuple[str, ...],
+) -> None:
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            action()
+            return
+        except Exception as error:
+            if is_not_found(error):
+                return
+            last_error = error
+            if attempt < 2:
+                time.sleep(POLL_SECONDS)
+    message = f"{description}: {last_error}"
+    for secret_value in secrets_to_redact:
+        message = message.replace(secret_value, "<redacted>")
+    failures.append(message)
+
+
+def delete_sandbox_and_wait(daytona: Daytona, sandbox: Any) -> None:
+    sandbox_id = str(sandbox.id)
+    try:
+        daytona.delete(sandbox, timeout=300)
+    except Exception as error:
+        if is_not_found(error):
+            return
+        raise
+    wait_for_deletion(
+        daytona,
+        sandbox_id,
+        time.monotonic() + 60,
+    )
+
+
 def machine_worker_command(
     config: Config,
     route_name: str,
@@ -321,16 +361,23 @@ def worker_diagnostics(
     sandbox_class: str,
     secrets_to_redact: tuple[str, ...],
 ) -> str:
-    path = (
-        WINDOWS_WORKER_STDERR_PATH
+    paths = (
+        (WINDOWS_WORKER_STDERR_PATH, WINDOWS_WORKER_STDOUT_PATH)
         if sandbox_class == "windows"
-        else LINUX_WORKER_LOG_PATH
+        else (LINUX_WORKER_LOG_PATH,)
     )
-    if sandbox_class == "windows":
-        path = path.replace("\\", "/")
-    try:
-        output = decode_text(sandbox.fs.download_file(path))
-    except Exception:
+    output = ""
+    for path in paths:
+        if sandbox_class == "windows":
+            path = path.replace("\\", "/")
+        try:
+            candidate = decode_text(sandbox.fs.download_file(path))
+        except Exception:
+            continue
+        if candidate.strip():
+            output = candidate
+            break
+    if not output:
         output = "worker produced no readable log"
     for secret_value in secrets_to_redact:
         output = output.replace(secret_value, "<redacted>")
@@ -392,11 +439,14 @@ def start_machine_worker_process(
             json.dumps(launch_config, sort_keys=True).encode("utf-8"),
             WINDOWS_LAUNCH_CONFIG_PATH,
         )
-        response = sandbox.process.exec(
-            _bootstrap_launcher(),
-            timeout=config.sandbox_launch_timeout_seconds,
-        )
-        if getattr(response, "exit_code", 1) != 0:
+        try:
+            response = sandbox.process.exec(
+                _bootstrap_launcher(),
+                timeout=config.sandbox_launch_timeout_seconds,
+            )
+        except Exception:
+            response = None
+        if response is not None and getattr(response, "exit_code", 1) != 0:
             raise RuntimeError("Windows machine worker bootstrap failed")
         pid: str | None = None
     else:
@@ -418,8 +468,12 @@ def start_machine_worker_process(
             except Exception as error:
                 if not (is_not_found(error) or isinstance(error, FileNotFoundError)):
                     raise
-        if pid is not None and worker_is_live(sandbox, sandbox_class, pid):
-            return pid
+        if pid is not None:
+            try:
+                if worker_is_live(sandbox, sandbox_class, pid):
+                    return pid
+            except Exception:
+                pass
         time.sleep(1)
     diagnostics = worker_diagnostics(
         sandbox,
@@ -438,7 +492,7 @@ def start_direct_worker(
     sandbox_class: str,
     snapshot: str,
     target: str,
-) -> Any:
+) -> tuple[Any, Config]:
     config = Config(
         daytona_api_key=daytona_key,
         daytona_target=target,
@@ -471,19 +525,36 @@ def start_direct_worker(
         ),
         timeout=300,
     )
+    stage = "machine workspace preparation"
     try:
         prepare_machine_workspace(sandbox, sandbox_class)
-        pid = start_machine_worker_process(
+        stage = "machine worker launch"
+        start_machine_worker_process(
             sandbox,
             config,
             route_name,
             sandbox_class,
         )
-        start_monitor(config, str(sandbox.id), pid, sandbox_class)
-    except Exception:
-        daytona.delete(sandbox, timeout=300)
-        raise
-    return sandbox
+    except Exception as error:
+        diagnostics = worker_diagnostics(
+            sandbox,
+            sandbox_class,
+            (daytona_key, cursor_key),
+        )
+        cleanup_failures: list[str] = []
+        cleanup_with_retries(
+            "Daytona sandbox cleanup",
+            lambda: delete_sandbox_and_wait(daytona, sandbox),
+            cleanup_failures,
+            (daytona_key, cursor_key),
+        )
+        cleanup_detail = (
+            f"; {'; '.join(cleanup_failures)}" if cleanup_failures else ""
+        )
+        raise RuntimeError(
+            f"{stage} failed: {error}; {diagnostics}{cleanup_detail}"
+        ) from error
+    return sandbox, config
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -501,8 +572,12 @@ def main(argv: list[str] | None = None) -> int:
     agent_id: str | None = None
     run_id: str | None = None
     sandbox: Any | None = None
+    machine_config: Config | None = None
     controller: subprocess.Popen[str] | None = None
     run_payload: dict[str, Any] | None = None
+    cleanup_failures: list[str] = []
+    result_payload: dict[str, object] | None = None
+    exit_status = 1
     deadline = time.monotonic() + args.timeout
 
     with tempfile.TemporaryDirectory(prefix="cursor-byom-live-") as temp_dir:
@@ -515,7 +590,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         try:
             if args.cursor_mode == "machine":
-                sandbox = start_direct_worker(
+                sandbox, machine_config = start_direct_worker(
                     daytona,
                     daytona_key=daytona_key,
                     cursor_key=cursor_key,
@@ -666,8 +741,23 @@ def main(argv: list[str] | None = None) -> int:
                 raise RuntimeError("Cursor run did not write the exact marker token")
 
             pid = read_pid(sandbox, args.sandbox_class)
-            if not worker_is_live(sandbox, args.sandbox_class, pid):
+            worker_check_deadline = min(deadline, time.monotonic() + 30)
+            while time.monotonic() < worker_check_deadline:
+                try:
+                    if worker_is_live(sandbox, args.sandbox_class, pid):
+                        break
+                except Exception:
+                    pass
+                time.sleep(1)
+            else:
                 raise RuntimeError(f"Worker PID {pid} is not live after the run")
+            if machine_config is not None:
+                start_monitor(
+                    machine_config,
+                    str(sandbox.id),
+                    pid,
+                    args.sandbox_class,
+                )
             sandbox_id = str(sandbox.id)
             stop_worker(sandbox, args.sandbox_class, pid)
             wait_for_deletion(
@@ -677,7 +767,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             sandbox = None
 
-            result = {
+            result_payload = {
                 "agent_id": agent_id,
                 "cursor_mode": args.cursor_mode,
                 "route_name": route_name,
@@ -688,8 +778,7 @@ def main(argv: list[str] | None = None) -> int:
                 "target": args.target,
                 "worker_cleanup": "deleted",
             }
-            print(json.dumps(result, sort_keys=True))
-            return 0
+            exit_status = 0
         except Exception as error:
             stdout_file.flush()
             stderr_file.flush()
@@ -705,47 +794,70 @@ def main(argv: list[str] | None = None) -> int:
             print(f"live E2E failed: {error}", file=sys.stderr)
             if controller_logs.strip():
                 print(controller_logs[-8000:], file=sys.stderr)
-            return 1
+            if sandbox is not None:
+                diagnostics = worker_diagnostics(
+                    sandbox,
+                    args.sandbox_class,
+                    (daytona_key, cursor_key),
+                )
+                if diagnostics.strip():
+                    print(diagnostics, file=sys.stderr)
+            exit_status = 1
         finally:
             terminate_process(controller)
             if sandbox is not None:
-                try:
-                    daytona.delete(sandbox, timeout=300)
-                except Exception:
-                    pass
+                cleanup_with_retries(
+                    "Daytona sandbox cleanup",
+                    lambda: delete_sandbox_and_wait(daytona, sandbox),
+                    cleanup_failures,
+                    (daytona_key, cursor_key),
+                )
             if agent_id is not None and run_id is not None:
-                try:
-                    cursor_request(
+                cleanup_with_retries(
+                    "Cursor run cancellation",
+                    lambda: cursor_request(
                         cursor_key,
                         "POST",
                         f"/v1/agents/{urllib.parse.quote(agent_id)}/runs/"
                         f"{urllib.parse.quote(run_id)}/cancel",
-                    )
-                except Exception:
-                    pass
+                    ),
+                    cleanup_failures,
+                    (daytona_key, cursor_key),
+                )
             if agent_id is not None:
-                try:
-                    cursor_request(
+                cleanup_with_retries(
+                    "Cursor agent deletion",
+                    lambda: cursor_request(
                         cursor_key,
                         "DELETE",
                         f"/v1/agents/{urllib.parse.quote(agent_id)}",
-                    )
-                except Exception:
-                    pass
+                    ),
+                    cleanup_failures,
+                    (daytona_key, cursor_key),
+                )
             if args.cursor_mode == "team-pool":
-                try:
-                    query = urllib.parse.urlencode(
-                        {"scope": "team", "pool_name": route_name}
-                    )
-                    cursor_request(
+                query = urllib.parse.urlencode(
+                    {"scope": "team", "pool_name": route_name}
+                )
+                cleanup_with_retries(
+                    "Cursor pool deletion",
+                    lambda: cursor_request(
                         cursor_key,
                         "DELETE",
                         f"/v0/private-workers/pools?{query}",
-                    )
-                except Exception:
-                    pass
+                    ),
+                    cleanup_failures,
+                    (daytona_key, cursor_key),
+                )
             stdout_file.close()
             stderr_file.close()
+        if cleanup_failures:
+            exit_status = 1
+            for cleanup_failure in cleanup_failures:
+                print(f"cleanup failed: {cleanup_failure}", file=sys.stderr)
+        if result_payload is not None and exit_status == 0:
+            print(json.dumps(result_payload, sort_keys=True))
+        return exit_status
 
 
 if __name__ == "__main__":
