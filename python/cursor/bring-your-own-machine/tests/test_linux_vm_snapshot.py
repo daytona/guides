@@ -1,0 +1,181 @@
+from __future__ import annotations
+
+import hashlib
+import importlib
+from dataclasses import dataclass
+from types import SimpleNamespace
+from typing import Any
+
+
+@dataclass(frozen=True)
+class FakeState:
+    value: str
+
+
+@dataclass(frozen=True)
+class FakeSnapshot:
+    name: str
+    state: FakeState
+    sandbox_class: object
+
+
+class FakeSnapshotClient:
+    def __init__(self, existing: list[FakeSnapshot] | None = None) -> None:
+        self.existing = existing or []
+        self.created: FakeSnapshot | None = None
+
+    def list(self, *, page: int, limit: int) -> object:
+        return SimpleNamespace(items=self.existing, total_pages=1)
+
+    def get(self, name: str) -> FakeSnapshot:
+        if self.created is None or self.created.name != name:
+            raise AssertionError(f"snapshot {name!r} was not captured")
+        return self.created
+
+
+class FakeFs:
+    def __init__(self) -> None:
+        self.uploads: list[tuple[object, str, int | None]] = []
+
+    def upload_file(
+        self,
+        source: object,
+        destination: str,
+        timeout: int | None = None,
+    ) -> None:
+        self.uploads.append((source, destination, timeout))
+
+
+class FakeSandbox:
+    def __init__(self, name: str, snapshots: FakeSnapshotClient) -> None:
+        self.name = name
+        self.fs = FakeFs()
+        self.stop_calls: list[int] = []
+        self.snapshot_calls: list[tuple[str, int]] = []
+        self._snapshots = snapshots
+
+    def stop(self, *, timeout: int) -> None:
+        self.stop_calls.append(timeout)
+
+    def _experimental_create_snapshot(self, name: str, *, timeout: int) -> None:
+        self.snapshot_calls.append((name, timeout))
+        self._snapshots.created = FakeSnapshot(
+            name=name,
+            state=FakeState("active"),
+            sandbox_class=SimpleNamespace(value="linux-vm"),
+        )
+
+
+class FakeDaytona:
+    def __init__(self, existing: list[FakeSnapshot] | None = None) -> None:
+        self.snapshot = FakeSnapshotClient(existing)
+        self.create_calls: list[tuple[object, int]] = []
+        self.created: list[FakeSandbox] = []
+        self.deleted: list[tuple[FakeSandbox, int]] = []
+
+    def create(self, params: object, *, timeout: int) -> FakeSandbox:
+        self.create_calls.append((params, timeout))
+        sandbox = FakeSandbox(str(getattr(params, "name")), self.snapshot)
+        self.created.append(sandbox)
+        return sandbox
+
+    def delete(self, sandbox: FakeSandbox, *, timeout: int) -> None:
+        self.deleted.append((sandbox, timeout))
+
+
+def test_linux_vm_snapshot_name_covers_recipe_and_source_snapshot(
+    tmp_path: Any,
+) -> None:
+    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    provisioner = tmp_path / "provision_linux_vm.sh"
+    clone_hook = tmp_path / "clone_repos.py"
+    provisioner.write_bytes(b"install cursor\n")
+    clone_hook.write_bytes(b"clone repo\n")
+    inputs = (provisioner, clone_hook)
+
+    name = module.linux_vm_snapshot_name_for(
+        inputs,
+        source_snapshot="daytona-vm-medium",
+    )
+
+    digest = hashlib.sha256()
+    for item in inputs:
+        digest.update(item.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(item.read_bytes())
+        digest.update(b"\0")
+    digest.update(b"daytona-vm-medium")
+    assert name == f"cursor-byom-linux-vm-{digest.hexdigest()[:8]}"
+
+
+def test_linux_vm_snapshot_provisions_captures_verifies_and_cleans_up(
+    monkeypatch: Any,
+) -> None:
+    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    daytona = FakeDaytona()
+    provision_calls: list[tuple[FakeSandbox, bool, int]] = []
+
+    def run_provisioner(
+        sandbox: FakeSandbox,
+        *,
+        verify_only: bool,
+        timeout: int,
+    ) -> object:
+        provision_calls.append((sandbox, verify_only, timeout))
+        return SimpleNamespace(exit_code=0, result="verified")
+
+    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
+
+    snapshot, reused = module.build_linux_vm_snapshot(
+        daytona,
+        name="cursor-byom-linux-vm-test",
+        source_snapshot="daytona-vm-medium",
+        build_timeout=1800,
+        sandbox_timeout=300,
+    )
+
+    assert reused is False
+    assert snapshot.name == "cursor-byom-linux-vm-test"
+    assert len(daytona.created) == 2
+    builder, verifier = daytona.created
+    assert getattr(daytona.create_calls[0][0], "snapshot") == "daytona-vm-medium"
+    assert getattr(daytona.create_calls[1][0], "snapshot") == snapshot.name
+    assert builder.stop_calls == [300]
+    assert builder.snapshot_calls == [(snapshot.name, 1800)]
+    assert provision_calls == [
+        (builder, False, 1800),
+        (verifier, True, 300),
+    ]
+    assert daytona.deleted == [(builder, 300), (verifier, 300)]
+    expected_destinations = {
+        remote for _, remote in module.LINUX_VM_SNAPSHOT_UPLOADS
+    }
+    assert {destination for _, destination, _ in builder.fs.uploads} == (
+        expected_destinations
+    )
+    assert {destination for _, destination, _ in verifier.fs.uploads} == (
+        expected_destinations
+    )
+
+
+def test_active_linux_vm_snapshot_is_reused_without_sandbox_creation() -> None:
+    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    existing = FakeSnapshot(
+        name="cursor-byom-linux-vm-test",
+        state=FakeState("active"),
+        sandbox_class=SimpleNamespace(value="linux-vm"),
+    )
+    daytona = FakeDaytona([existing])
+
+    snapshot, reused = module.build_linux_vm_snapshot(
+        daytona,
+        name=existing.name,
+        source_snapshot="daytona-vm-medium",
+        build_timeout=1800,
+        sandbox_timeout=300,
+    )
+
+    assert snapshot is existing
+    assert reused is True
+    assert daytona.created == []
+    assert daytona.deleted == []
