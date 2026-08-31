@@ -92,6 +92,18 @@ def test_environment_values_are_trimmed_without_mutating_the_input() -> None:
     assert env == original
 
 
+def test_daytona_target_is_trimmed_and_optional(
+    valid_env: dict[str, str],
+) -> None:
+    targeted = config_from_env(
+        {**valid_env, "DAYTONA_TARGET": "  eu-central-1  "}
+    )
+    defaulted = config_from_env(valid_env)
+
+    assert targeted.daytona_target == "eu-central-1"
+    assert defaulted.daytona_target is None
+
+
 @pytest.mark.parametrize(
     "value",
     [

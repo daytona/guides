@@ -18,6 +18,19 @@ class FakeMonitorConfig:
     poll_seconds: float = 0.25
 
 
+
+def test_monitor_config_keeps_snapshot_sandbox_class() -> None:
+    config = monitor_module.MonitorConfig.from_env(
+        {
+            "DAYTONA_API_KEY": "daytona-key-test",
+            "SANDBOX_ID": "sandbox-123",
+            "WORKER_PID": "4242",
+            "SANDBOX_CLASS": "windows",
+        }
+    )
+
+    assert config.sandbox_class == "windows"
+
 class NotFoundError(Exception):
     status_code = 404
 

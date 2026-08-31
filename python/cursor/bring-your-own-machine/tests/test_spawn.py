@@ -107,13 +107,29 @@ class FakeSandbox:
             raise self.delete_error
 
 
+class FakeSnapshotClient:
+    def __init__(self, sandbox_class: str) -> None:
+        self.sandbox_class = sandbox_class
+        self.get_calls: list[str] = []
+
+    def get(self, name: str) -> object:
+        self.get_calls.append(name)
+        return SimpleNamespace(
+            name=name,
+            sandbox_class=SimpleNamespace(value=self.sandbox_class),
+        )
+
+
 class FakeDaytona:
     def __init__(
         self,
         create_error: Exception | None = None,
         get_outcomes: list[FakeSandbox | Exception] | None = None,
+        *,
+        snapshot_class: str = "container",
     ) -> None:
         self.sandboxes: dict[str, FakeSandbox] = {}
+        self.snapshot = FakeSnapshotClient(snapshot_class)
         self.create_error = create_error
         self.get_outcomes: list[FakeSandbox | Exception] | None = (
             list(get_outcomes) if get_outcomes is not None else None
@@ -236,13 +252,19 @@ class SpawnWorkerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config: Any = cast(Any, FakeConfig())
         self.released_claims: list[str] = []
-        self.monitors: list[tuple[FakeConfig, str, str]] = []
+        self.monitors: list[tuple[Any, ...]] = []
 
     def release_claim(self, request_id: str) -> None:
         self.released_claims.append(request_id)
 
-    def start_monitor(self, config: FakeConfig, sandbox_id: str, worker_pid: str) -> None:
-        self.monitors.append((config, sandbox_id, worker_pid))
+    def start_monitor(
+        self,
+        config: FakeConfig,
+        sandbox_id: str,
+        worker_pid: str,
+        *extra: str,
+    ) -> None:
+        self.monitors.append((config, sandbox_id, worker_pid, *extra))
 
     def spawn(self, daytona: FakeDaytona) -> Any:
         spawn_worker = spawn_module.spawn_worker
@@ -375,6 +397,22 @@ class SpawnWorkerTests(unittest.TestCase):
         )
         self.assertEqual(parameter(params, "auto_delete_interval"), 0)
         self.assertEqual(timeout, 120)
+
+    def test_snapshot_class_drives_labels_result_and_monitor(self) -> None:
+        daytona = FakeDaytona(snapshot_class="linux-vm")
+
+        result = self.spawn(daytona)
+
+        params, _ = daytona.create_calls[0]
+        self.assertEqual(
+            parameter(params, "labels")["cursor.sandbox_class"],
+            "linux-vm",
+        )
+        self.assertEqual(result.sandbox_class, "linux-vm")
+        self.assertEqual(
+            self.monitors,
+            [(self.config, "sandbox-123", "4242", "linux-vm")],
+        )
 
     def test_worker_shell_commands_use_non_login_sh(self) -> None:
         launch_command = spawn_module._worker_launch_command

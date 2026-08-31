@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -25,6 +28,7 @@ class FakeSnapshotState:
 class FakeSnapshot:
     name: str
     state: FakeSnapshotState
+    sandbox_class: object | None = None
 
 
 @dataclass(frozen=True)
@@ -34,9 +38,15 @@ class FakeSnapshotPage:
 
 
 class FakeSnapshotClient:
-    def __init__(self, pages: list[list[FakeSnapshot]]) -> None:
+    def __init__(
+        self,
+        pages: list[list[FakeSnapshot]],
+        create_result: FakeSnapshot | None = None,
+    ) -> None:
         self._pages = pages
+        self._create_result = create_result
         self.list_calls: list[int] = []
+        self.create_calls: list[tuple[Any, Any, int]] = []
 
     def list(self, *, page: int, limit: int) -> FakeSnapshotPage:
         self.list_calls.append(page)
@@ -45,10 +55,26 @@ class FakeSnapshotClient:
             total_pages=len(self._pages),
         )
 
+    def create(
+        self,
+        params: Any,
+        *,
+        on_logs: Any,
+        timeout: int,
+    ) -> FakeSnapshot:
+        self.create_calls.append((params, on_logs, timeout))
+        if self._create_result is None:
+            raise AssertionError("test did not configure snapshot creation")
+        return self._create_result
+
 
 class FakeDaytona:
-    def __init__(self, pages: list[list[FakeSnapshot]]) -> None:
-        self.snapshot = FakeSnapshotClient(pages)
+    def __init__(
+        self,
+        pages: list[list[FakeSnapshot]],
+        create_result: FakeSnapshot | None = None,
+    ) -> None:
+        self.snapshot = FakeSnapshotClient(pages, create_result)
 
 
 def test_default_snapshot_name_contains_exact_snapshot_inputs_sha256_prefix(
@@ -176,6 +202,62 @@ def test_non_active_snapshot_with_matching_name_raises_collision_error() -> None
         "Snapshot name collision: cursor-byom-default-ba7816bf "
         "state=building; expected active"
     )
+
+
+@pytest.mark.parametrize(
+    ("sandbox_class", "target"),
+    [
+        ("container", "us"),
+        ("linux-vm", "eu-central-1"),
+    ],
+)
+def test_builder_creates_explicit_linux_sandbox_class_in_requested_target(
+    sandbox_class: str,
+    target: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    name = f"cursor-byom-{sandbox_class}-test"
+    created = FakeSnapshot(
+        name=name,
+        state=FakeSnapshotState("active"),
+        sandbox_class=SimpleNamespace(value=sandbox_class),
+    )
+    daytona = FakeDaytona([[]], created)
+    constructed_with: list[object] = []
+
+    def make_daytona(config: object) -> FakeDaytona:
+        constructed_with.append(config)
+        return daytona
+
+    monkeypatch.setattr(snapshot_module, "Daytona", make_daytona)
+
+    status = snapshot_module.main(
+        [
+            "--sandbox-class",
+            sandbox_class,
+            "--target",
+            target,
+            "--name",
+            name,
+        ]
+    )
+
+    assert status == 0
+    assert len(constructed_with) == 1
+    assert len(daytona.snapshot.create_calls) == 1
+    params, _, timeout = daytona.snapshot.create_calls[0]
+    actual_class = getattr(params.sandbox_class, "value", params.sandbox_class)
+    assert actual_class == sandbox_class
+    assert params.region_id == target
+    assert timeout == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "reused": False,
+        "sandbox_class": sandbox_class,
+        "snapshot_name": name,
+        "state": "active",
+        "target": target,
+    }
 
 
 def test_dockerfile_installs_executable_clone_hook_without_unsupported_flag() -> None:
