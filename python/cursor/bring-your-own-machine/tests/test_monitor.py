@@ -145,6 +145,18 @@ class MonitorWorkerTests(unittest.TestCase):
         self.assertTrue(command.startswith("sh -c "))
         self.assertNotIn("sh -lc", command)
 
+    def test_windows_inspection_uses_windows_process_check(self) -> None:
+        with patch.object(
+            monitor_module,
+            "windows_inspection_command",
+            return_value="windows-check",
+            create=True,
+        ) as windows_check:
+            command = monitor_module._inspection_command("4242", "windows")
+
+        self.assertEqual(command, "windows-check")
+        windows_check.assert_called_once_with("4242")
+
 
     def test_inspection_fails_closed_when_live_process_stat_is_missing(self) -> None:
         inspection_command = monitor_module._inspection_command

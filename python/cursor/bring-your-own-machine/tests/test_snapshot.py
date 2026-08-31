@@ -321,6 +321,70 @@ def test_builder_creates_explicit_linux_sandbox_class_in_requested_target(
     }
 
 
+def test_builder_dispatches_windows_snapshot_provisioning(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    created = FakeSnapshot(
+        name="cursor-byom-windows-test",
+        state=FakeSnapshotState("active"),
+        sandbox_class=SimpleNamespace(value="windows"),
+    )
+    daytona = FakeDaytona([[]])
+    calls: list[dict[str, object]] = []
+
+    def make_daytona(config: object) -> FakeDaytona:
+        calls.append({"config": config})
+        return daytona
+
+    def build_windows(daytona_arg: object, **kwargs: object) -> tuple[object, bool]:
+        calls.append({"daytona": daytona_arg, **kwargs})
+        return created, False
+
+    monkeypatch.setattr(snapshot_module, "Daytona", make_daytona)
+    monkeypatch.setattr(
+        snapshot_module,
+        "build_windows_snapshot",
+        build_windows,
+        raising=False,
+    )
+
+    status = snapshot_module.main(
+        [
+            "--sandbox-class",
+            "windows",
+            "--target",
+            "us",
+            "--name",
+            created.name,
+            "--source-snapshot",
+            "windows-medium",
+            "--build-timeout",
+            "1800",
+            "--sandbox-timeout",
+            "300",
+        ]
+    )
+
+    assert status == 0
+    assert calls[1] == {
+        "daytona": daytona,
+        "name": created.name,
+        "source_snapshot": "windows-medium",
+        "build_timeout": 1800,
+        "sandbox_timeout": 300,
+    }
+    assert json.loads(capsys.readouterr().out) == {
+        "reused": False,
+        "sandbox_class": "windows",
+        "snapshot_name": created.name,
+        "state": "active",
+        "target": "us",
+    }
+
+
+
+
 def test_dockerfile_installs_executable_clone_hook_without_unsupported_flag() -> None:
     snapshot_file = snapshot_module.__file__
     assert snapshot_file is not None

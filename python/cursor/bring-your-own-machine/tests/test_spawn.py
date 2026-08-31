@@ -425,6 +425,26 @@ class SpawnWorkerTests(unittest.TestCase):
             [(self.config, "sandbox-123", "4242", "linux-vm")],
         )
 
+    def test_windows_snapshot_uses_windows_worker_launcher(self) -> None:
+        daytona = FakeDaytona(snapshot_class="windows")
+
+        with patch.object(
+            spawn_module,
+            "start_windows_worker_process",
+            return_value="4242",
+            create=True,
+        ) as launcher:
+            result = self.spawn(daytona)
+
+        sandbox = daytona.sandboxes["cursor-worker-01"]
+        launcher.assert_called_once_with(sandbox, self.config)
+        self.assertEqual(sandbox.process.calls, [])
+        self.assertEqual(result.sandbox_class, "windows")
+        self.assertEqual(
+            self.monitors,
+            [(self.config, "sandbox-123", "4242", "windows")],
+        )
+
     def test_worker_shell_commands_use_non_login_sh(self) -> None:
         launch_command = spawn_module._worker_launch_command
 
