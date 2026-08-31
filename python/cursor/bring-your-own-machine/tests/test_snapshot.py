@@ -13,9 +13,9 @@ import pytest
 
 from cursor_byom import build_snapshot as snapshot_module
 from cursor_byom.build_snapshot import (
-    SNAPSHOT_INPUTS,
     SnapshotCollisionError,
     find_reusable_snapshot,
+    snapshot_inputs_for,
     snapshot_name_for,
 )
 
@@ -175,8 +175,12 @@ def test_snapshot_inputs_are_exact_packaged_image_inputs() -> None:
     assert snapshot_file is not None
     package_dir = Path(snapshot_file).parent
 
-    assert tuple(SNAPSHOT_INPUTS) == (
+    assert tuple(snapshot_inputs_for(SandboxClass.CONTAINER)) == (
         package_dir / "Dockerfile",
+        package_dir / "clone_repos.py",
+    )
+    assert tuple(snapshot_inputs_for(SandboxClass.LINUX_VM)) == (
+        package_dir / "Dockerfile.linux-vm",
         package_dir / "clone_repos.py",
     )
 
@@ -319,6 +323,45 @@ def test_builder_creates_explicit_linux_sandbox_class_in_requested_target(
         "state": "active",
         "target": target,
     }
+
+
+def test_linux_vm_builder_uses_its_public_base_recipe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created = FakeSnapshot(
+        name="cursor-byom-linux-vm-test",
+        state=FakeSnapshotState("active"),
+        sandbox_class=SimpleNamespace(value="linux-vm"),
+    )
+    daytona = FakeDaytona([[]], created)
+
+    image_type = snapshot_module.Image
+    recorded_paths: list[Path] = []
+
+    class RecordingImage:
+        @staticmethod
+        def from_dockerfile(path: Path) -> Any:
+            recorded_paths.append(path)
+            return image_type.from_dockerfile(path)
+
+    monkeypatch.setattr(snapshot_module, "Image", RecordingImage)
+    monkeypatch.setattr(snapshot_module, "Daytona", lambda config: daytona)
+
+    status = snapshot_module.main(
+        [
+            "--sandbox-class",
+            "linux-vm",
+            "--target",
+            "eu-central-1",
+            "--name",
+            created.name,
+        ]
+    )
+
+    assert status == 0
+    assert recorded_paths == [
+        Path(snapshot_module.__file__).with_name("Dockerfile.linux-vm")
+    ]
 
 
 def test_builder_dispatches_windows_snapshot_provisioning(

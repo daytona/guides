@@ -23,9 +23,11 @@ from daytona import (
 )
 from dotenv import load_dotenv
 
-DOCKERFILE = resources.files("cursor_byom").joinpath("Dockerfile")
+CONTAINER_DOCKERFILE = resources.files("cursor_byom").joinpath("Dockerfile")
+LINUX_VM_DOCKERFILE = resources.files("cursor_byom").joinpath(
+    "Dockerfile.linux-vm"
+)
 CLONE_HOOK = resources.files("cursor_byom").joinpath("clone_repos.py")
-SNAPSHOT_INPUTS = (DOCKERFILE, CLONE_HOOK)
 DEFAULT_CPU = 2
 DEFAULT_MEMORY_GB = 8
 DEFAULT_DISK_GB = 10
@@ -37,6 +39,20 @@ EXIT_COLLISION = 4
 class SnapshotCollisionError(RuntimeError):
     """A snapshot has the requested name but cannot be reused."""
 
+
+
+def snapshot_inputs_for(
+    sandbox_class: SandboxClass,
+) -> tuple[Traversable, ...]:
+    """Return the exact recipe files for one Linux sandbox class."""
+
+    if sandbox_class == SandboxClass.CONTAINER:
+        return (CONTAINER_DOCKERFILE, CLONE_HOOK)
+    if sandbox_class == SandboxClass.LINUX_VM:
+        return (LINUX_VM_DOCKERFILE, CLONE_HOOK)
+    raise ValueError(
+        f"{sandbox_class.value} snapshots need a platform-specific builder"
+    )
 
 def snapshot_name_for(
     inputs: tuple[Traversable, ...],
@@ -167,7 +183,8 @@ def main(argv: list[str] | None = None) -> int:
     name: str | None = None
 
     try:
-        name = snapshot_name_for(SNAPSHOT_INPUTS, sandbox_class, name_override)
+        snapshot_inputs = snapshot_inputs_for(sandbox_class)
+        name = snapshot_name_for(snapshot_inputs, sandbox_class, name_override)
         daytona = Daytona(DaytonaConfig(target=target))
         existing = find_reusable_snapshot(daytona, name, sandbox_class)
         if existing is not None:
@@ -180,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
 
-        with resources.as_file(DOCKERFILE) as dockerfile:
+        with resources.as_file(snapshot_inputs[0]) as dockerfile:
             snapshot = daytona.snapshot.create(
                 CreateSnapshotParams(
                     name=name,
