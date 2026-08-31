@@ -17,9 +17,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaConfig
-
-
+from daytona import (
+    CreateSandboxFromSnapshotParams,
+    Daytona,
+    DaytonaConfig,
+    SandboxClass,
+)
 from .config import (
     Config,
     redact,
@@ -29,6 +32,7 @@ from .config import (
     worker_environment,
 )
 from .sandbox_class import snapshot_sandbox_class
+from .worker_windows import start_windows_worker_process
 
 _CURSOR_API_BASE = "https://api.cursor.com"
 _PROC_ROOT = "/proc"
@@ -203,15 +207,18 @@ def spawn_worker(
         )
         sandbox_to_cleanup = sandbox
 
-        response = sandbox.process.exec(
-            _worker_launch_command(config),
-            cwd="/home/daytona/workspace",
-            env=worker_environment(config),
-            timeout=config.sandbox_launch_timeout_seconds,
-        )
-        if getattr(response, "exit_code", 1) != 0:
-            raise RuntimeError("Cursor worker process failed to launch")
-        worker_pid = _parse_worker_pid(getattr(response, "result", ""))
+        if sandbox_class == SandboxClass.WINDOWS:
+            worker_pid = start_windows_worker_process(sandbox, config)
+        else:
+            response = sandbox.process.exec(
+                _worker_launch_command(config),
+                cwd="/home/daytona/workspace",
+                env=worker_environment(config),
+                timeout=config.sandbox_launch_timeout_seconds,
+            )
+            if getattr(response, "exit_code", 1) != 0:
+                raise RuntimeError("Cursor worker process failed to launch")
+            worker_pid = _parse_worker_pid(getattr(response, "result", ""))
         start_monitor(config, str(sandbox.id), worker_pid, sandbox_class_name)
     except Exception:
         try:

@@ -16,6 +16,7 @@ class FakeMonitorConfig:
     sandbox_id: str = "sandbox-123"
     worker_pid: str = "4242"
     poll_seconds: float = 0.25
+    sandbox_class: str = "container"
 
 
 
@@ -140,7 +141,7 @@ class MonitorWorkerTests(unittest.TestCase):
     def test_inspection_command_uses_non_login_shell(self) -> None:
         inspection_command = monitor_module._inspection_command
 
-        command = inspection_command("4242")
+        command = inspection_command("4242", "container")
 
         self.assertTrue(command.startswith("sh -c "))
         self.assertNotIn("sh -lc", command)
@@ -167,7 +168,7 @@ class MonitorWorkerTests(unittest.TestCase):
             patch.object(monitor_module, "_PROC_ROOT", proc_root),
         ):
             completed = subprocess.run(
-                inspection_command(str(process.pid)),
+                inspection_command(str(process.pid), "container"),
                 shell=True,
                 check=False,
                 capture_output=True,
@@ -192,7 +193,7 @@ class MonitorWorkerTests(unittest.TestCase):
             )
             with patch.object(monitor_module, "_PROC_ROOT", proc_root):
                 completed = subprocess.run(
-                    inspection_command(str(process.pid)),
+                    inspection_command(str(process.pid), "container"),
                     shell=True,
                     check=False,
                     capture_output=True,

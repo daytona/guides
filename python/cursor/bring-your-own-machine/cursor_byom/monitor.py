@@ -17,6 +17,7 @@ from daytona import Daytona, DaytonaConfig
 
 from .config import ConfigError, redact
 from .sandbox_class import parse_sandbox_class
+from .worker_windows import windows_inspection_command
 
 _PROC_ROOT = "/proc"
 _DEFAULT_POLL_SECONDS = 5.0
@@ -109,7 +110,10 @@ def _is_not_found(error: BaseException) -> bool:
         return False
 
 
-def _inspection_command(worker_pid: str) -> str:
+def _inspection_command(worker_pid: str, sandbox_class: str) -> str:
+    if parse_sandbox_class(sandbox_class).value == "windows":
+        return windows_inspection_command(worker_pid)
+
     stat_path = shlex.quote(f"{_PROC_ROOT}/{worker_pid}/stat")
     inner = " && ".join(
         (
@@ -139,7 +143,7 @@ def monitor_worker(
         return 0 if _is_not_found(error) else 1
 
     inspection_errors = 0
-    command = _inspection_command(config.worker_pid)
+    command = _inspection_command(config.worker_pid, config.sandbox_class)
     while True:
         try:
             response = sandbox.process.exec(command, timeout=30)
