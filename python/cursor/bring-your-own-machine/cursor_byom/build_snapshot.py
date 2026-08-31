@@ -23,17 +23,23 @@ from daytona import (
 )
 from dotenv import load_dotenv
 
+from .build_linux_vm_snapshot import (
+    LINUX_VM_SNAPSHOT_INPUTS,
+    LINUX_VM_SOURCE_SNAPSHOT,
+    LinuxVmSnapshotCollisionError,
+    build_linux_vm_snapshot,
+    linux_vm_snapshot_name_for,
+)
+
 from .build_windows_snapshot import (
     WINDOWS_SNAPSHOT_INPUTS,
     WINDOWS_SOURCE_SNAPSHOT,
+    WindowsSnapshotCollisionError,
     build_windows_snapshot,
     windows_snapshot_name_for,
 )
 
 CONTAINER_DOCKERFILE = resources.files("cursor_byom").joinpath("Dockerfile")
-LINUX_VM_DOCKERFILE = resources.files("cursor_byom").joinpath(
-    "Dockerfile.linux-vm"
-)
 CLONE_HOOK = resources.files("cursor_byom").joinpath("clone_repos.py")
 DEFAULT_CPU = 2
 DEFAULT_MEMORY_GB = 8
@@ -58,12 +64,10 @@ def _positive_int(value: str) -> int:
 def snapshot_inputs_for(
     sandbox_class: SandboxClass,
 ) -> tuple[Traversable, ...]:
-    """Return the exact recipe files for one Linux sandbox class."""
+    """Return the exact recipe files for a container snapshot."""
 
     if sandbox_class == SandboxClass.CONTAINER:
         return (CONTAINER_DOCKERFILE, CLONE_HOOK)
-    if sandbox_class == SandboxClass.LINUX_VM:
-        return (LINUX_VM_DOCKERFILE, CLONE_HOOK)
     raise ValueError(
         f"{sandbox_class.value} snapshots need a platform-specific builder"
     )
@@ -222,6 +226,29 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         daytona = Daytona(DaytonaConfig(target=target))
+        if sandbox_class == SandboxClass.LINUX_VM:
+            source_snapshot = args.source_snapshot or LINUX_VM_SOURCE_SNAPSHOT
+            name = linux_vm_snapshot_name_for(
+                LINUX_VM_SNAPSHOT_INPUTS,
+                source_snapshot=source_snapshot,
+                override=name_override,
+            )
+            snapshot, reused = build_linux_vm_snapshot(
+                daytona,
+                name=name,
+                source_snapshot=source_snapshot,
+                build_timeout=args.build_timeout,
+                sandbox_timeout=args.sandbox_timeout,
+            )
+            _write_result(
+                snapshot,
+                name,
+                reused=reused,
+                sandbox_class=sandbox_class,
+                target=target,
+            )
+            return 0
+
         if sandbox_class == SandboxClass.WINDOWS:
             source_snapshot = args.source_snapshot or WINDOWS_SOURCE_SNAPSHOT
             name = windows_snapshot_name_for(
@@ -282,7 +309,11 @@ def main(argv: list[str] | None = None) -> int:
             target=target,
         )
         return 0
-    except SnapshotCollisionError as error:
+    except (
+        SnapshotCollisionError,
+        LinuxVmSnapshotCollisionError,
+        WindowsSnapshotCollisionError,
+    ) as error:
         print(
             f"{error}. Choose another snapshot name or wait for it to become active.",
             file=sys.stderr,

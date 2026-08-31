@@ -11,7 +11,6 @@ from typing import Any
 
 from daytona import CreateSandboxFromSnapshotParams, SandboxClass
 
-from .build_snapshot import SnapshotCollisionError
 
 _LINUX_VM_PROVISIONER = resources.files("cursor_byom").joinpath(
     "provision_linux_vm.sh"
@@ -29,6 +28,11 @@ LINUX_VM_SNAPSHOT_UPLOADS: tuple[tuple[Traversable, str], ...] = (
     (_LINUX_VM_PROVISIONER, _PROVISIONER_REMOTE_PATH),
     (_CLONE_HOOK, _CLONE_HOOK_REMOTE_PATH),
 )
+LINUX_VM_SOURCE_SNAPSHOT = "daytona-vm-medium"
+
+
+class LinuxVmSnapshotCollisionError(RuntimeError):
+    """A Linux VM snapshot name belongs to an unusable snapshot."""
 
 
 def linux_vm_snapshot_name_for(
@@ -101,7 +105,7 @@ def _find_reusable_snapshot(daytona: Any, name: str) -> object | None:
 
         actual_class = _enum_value(getattr(snapshot, "sandbox_class", None))
         if actual_class != SandboxClass.LINUX_VM.value:
-            raise SnapshotCollisionError(
+            raise LinuxVmSnapshotCollisionError(
                 f"Snapshot name collision: {name} sandbox_class={actual_class}; "
                 f"expected {SandboxClass.LINUX_VM.value}"
             )
@@ -109,7 +113,7 @@ def _find_reusable_snapshot(daytona: Any, name: str) -> object | None:
         actual_state = _enum_value(getattr(snapshot, "state", None))
         if actual_state == "active":
             return snapshot
-        raise SnapshotCollisionError(
+        raise LinuxVmSnapshotCollisionError(
             f"Snapshot name collision: {name} state={actual_state}; expected active"
         )
     return None
@@ -170,11 +174,11 @@ def _delete_sandbox(
     sandbox: Any,
     *,
     timeout: int,
-    primary_error: BaseException | None,
+    primary_error: Exception | None,
 ) -> None:
     try:
         daytona.delete(sandbox, timeout=timeout)
-    except BaseException as cleanup_error:
+    except Exception as cleanup_error:
         sandbox_name = getattr(sandbox, "name", "unknown")
         message = (
             f"Cleanup also failed for temporary sandbox {sandbox_name!r}: "
@@ -212,7 +216,7 @@ def _capture_snapshot(
         builder._experimental_create_snapshot(name, timeout=build_timeout)
         snapshot = daytona.snapshot.get(name)
         _validate_linux_vm_snapshot(snapshot, name)
-    except BaseException as primary_error:
+    except Exception as primary_error:
         _delete_sandbox(
             daytona,
             builder,
@@ -252,7 +256,7 @@ def _verify_snapshot(
             verify_only=True,
             timeout=sandbox_timeout,
         )
-    except BaseException as primary_error:
+    except Exception as primary_error:
         _delete_sandbox(
             daytona,
             verifier,

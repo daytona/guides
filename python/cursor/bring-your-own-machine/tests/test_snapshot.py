@@ -179,10 +179,6 @@ def test_snapshot_inputs_are_exact_packaged_image_inputs() -> None:
         package_dir / "Dockerfile",
         package_dir / "clone_repos.py",
     )
-    assert tuple(snapshot_inputs_for(SandboxClass.LINUX_VM)) == (
-        package_dir / "Dockerfile.linux-vm",
-        package_dir / "clone_repos.py",
-    )
 
 
 def test_active_snapshot_with_matching_name_is_reused() -> None:
@@ -269,20 +265,13 @@ def test_active_snapshot_with_wrong_class_is_rejected() -> None:
         "sandbox_class=container; expected linux-vm"
     )
 
-@pytest.mark.parametrize(
-    ("sandbox_class", "target"),
-    [
-        ("container", "us"),
-        ("linux-vm", "eu-central-1"),
-    ],
-)
-def test_builder_creates_explicit_linux_sandbox_class_in_requested_target(
-    sandbox_class: str,
-    target: str,
+def test_builder_creates_explicit_container_snapshot_in_requested_target(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    name = f"cursor-byom-{sandbox_class}-test"
+    sandbox_class = "container"
+    target = "us"
+    name = "cursor-byom-container-test"
     created = FakeSnapshot(
         name=name,
         state=FakeSnapshotState("active"),
@@ -325,27 +314,36 @@ def test_builder_creates_explicit_linux_sandbox_class_in_requested_target(
     }
 
 
-def test_linux_vm_builder_uses_its_public_base_recipe(
+def test_builder_dispatches_linux_vm_snapshot_provisioning(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     created = FakeSnapshot(
         name="cursor-byom-linux-vm-test",
         state=FakeSnapshotState("active"),
         sandbox_class=SimpleNamespace(value="linux-vm"),
     )
-    daytona = FakeDaytona([[]], created)
+    daytona = FakeDaytona([[]])
+    calls: list[dict[str, object]] = []
 
-    image_type = snapshot_module.Image
-    recorded_paths: list[Path] = []
+    def make_daytona(config: object) -> FakeDaytona:
+        calls.append({"config": config})
+        return daytona
 
-    class RecordingImage:
-        @staticmethod
-        def from_dockerfile(path: Path) -> Any:
-            recorded_paths.append(path)
-            return image_type.from_dockerfile(path)
+    def build_linux_vm(
+        daytona_arg: object,
+        **kwargs: object,
+    ) -> tuple[object, bool]:
+        calls.append({"daytona": daytona_arg, **kwargs})
+        return created, False
 
-    monkeypatch.setattr(snapshot_module, "Image", RecordingImage)
-    monkeypatch.setattr(snapshot_module, "Daytona", lambda config: daytona)
+    monkeypatch.setattr(snapshot_module, "Daytona", make_daytona)
+    monkeypatch.setattr(
+        snapshot_module,
+        "build_linux_vm_snapshot",
+        build_linux_vm,
+        raising=False,
+    )
 
     status = snapshot_module.main(
         [
@@ -355,13 +353,30 @@ def test_linux_vm_builder_uses_its_public_base_recipe(
             "eu-central-1",
             "--name",
             created.name,
+            "--source-snapshot",
+            "daytona-vm-medium",
+            "--build-timeout",
+            "1800",
+            "--sandbox-timeout",
+            "300",
         ]
     )
 
     assert status == 0
-    assert recorded_paths == [
-        Path(snapshot_module.__file__).with_name("Dockerfile.linux-vm")
-    ]
+    assert calls[1] == {
+        "daytona": daytona,
+        "name": created.name,
+        "source_snapshot": "daytona-vm-medium",
+        "build_timeout": 1800,
+        "sandbox_timeout": 300,
+    }
+    assert json.loads(capsys.readouterr().out) == {
+        "reused": False,
+        "sandbox_class": "linux-vm",
+        "snapshot_name": created.name,
+        "state": "active",
+        "target": "eu-central-1",
+    }
 
 
 def test_builder_dispatches_windows_snapshot_provisioning(
