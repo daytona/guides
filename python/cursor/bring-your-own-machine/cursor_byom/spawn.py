@@ -19,6 +19,7 @@ from typing import Any
 
 from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaConfig
 
+
 from .config import (
     Config,
     redact,
@@ -27,6 +28,7 @@ from .config import (
     worker_command,
     worker_environment,
 )
+from .sandbox_class import snapshot_sandbox_class
 
 _CURSOR_API_BASE = "https://api.cursor.com"
 _PROC_ROOT = "/proc"
@@ -44,6 +46,7 @@ class SpawnResult:
     sandbox_name: str
     worker_id: str
     request_id: str
+    sandbox_class: str
 
 
 def _is_not_found(error: BaseException) -> bool:
@@ -119,15 +122,23 @@ def release_claim(config: Config, request_id: str) -> None:
         pass
 
 
-def start_monitor(config: Config, sandbox_id: str, worker_pid: str) -> None:
+def start_monitor(
+    config: Config,
+    sandbox_id: str,
+    worker_pid: str,
+    sandbox_class: str,
+) -> None:
     """Start the host cleanup monitor without forwarding Cursor credentials."""
 
     monitor_environment = {
         "DAYTONA_API_KEY": config.daytona_api_key,
         "SANDBOX_ID": sandbox_id,
         "WORKER_PID": worker_pid,
+        "SANDBOX_CLASS": sandbox_class,
         "MONITOR_POLL_SECONDS": str(config.monitor_poll_seconds),
     }
+    if config.daytona_target is not None:
+        monitor_environment["DAYTONA_TARGET"] = config.daytona_target
     subprocess.Popen(
         [sys.executable, "-m", "cursor_byom.monitor"],
         env=monitor_environment,
@@ -144,10 +155,13 @@ def spawn_worker(
     daytona: Any,
     *,
     release_claim: Callable[[str], None],
-    start_monitor: Callable[[Config, str, str], None],
+    start_monitor: Callable[[Config, str, str, str], None],
 ) -> SpawnResult:
     """Replace the deterministic sandbox, then launch its Cursor worker."""
 
+    snapshot = daytona.snapshot.get(config.snapshot_name)
+    sandbox_class = snapshot_sandbox_class(snapshot)
+    sandbox_class_name = sandbox_class.value
     sandbox_name = sandbox_name_for(config.cursor_agent_worker_id)
     sandbox_to_cleanup: Any | None = None
 
@@ -181,7 +195,7 @@ def spawn_worker(
             CreateSandboxFromSnapshotParams(
                 name=sandbox_name,
                 snapshot=config.snapshot_name,
-                labels=sandbox_labels(config),
+                labels=sandbox_labels(config, sandbox_class_name),
                 auto_stop_interval=auto_stop_minutes,
                 auto_delete_interval=0,
             ),
@@ -198,7 +212,7 @@ def spawn_worker(
         if getattr(response, "exit_code", 1) != 0:
             raise RuntimeError("Cursor worker process failed to launch")
         worker_pid = _parse_worker_pid(getattr(response, "result", ""))
-        start_monitor(config, str(sandbox.id), worker_pid)
+        start_monitor(config, str(sandbox.id), worker_pid, sandbox_class_name)
     except Exception:
         try:
             release_claim(config.cursor_request_id)
@@ -226,6 +240,7 @@ def spawn_worker(
         sandbox_name=sandbox_name,
         worker_id=config.cursor_agent_worker_id,
         request_id=config.cursor_request_id,
+        sandbox_class=sandbox_class_name,
     )
 
 
@@ -254,7 +269,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         parsed_config = Config.from_env(os.environ)
         config = parsed_config
-        daytona = Daytona(DaytonaConfig(api_key=parsed_config.daytona_api_key))
+        daytona = Daytona(
+            DaytonaConfig(
+                api_key=parsed_config.daytona_api_key,
+                target=parsed_config.daytona_target,
+            )
+        )
         result = spawn_worker(
             parsed_config,
             daytona,
@@ -278,6 +298,7 @@ def main(argv: list[str] | None = None) -> int:
                 "sandbox_name": result.sandbox_name,
                 "worker_id": result.worker_id,
                 "request_id": result.request_id,
+                "sandbox_class": result.sandbox_class,
             },
             separators=(",", ":"),
         )

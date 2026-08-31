@@ -234,10 +234,11 @@ def test_sandbox_labels_contain_exact_claim_identity() -> None:
         cursor_pool="pool-test",
     )
 
-    assert sandbox_labels(cast(Any, config)) == {
+    assert sandbox_labels(cast(Any, config), "linux-vm") == {
         "cursor.worker_id": "worker-123",
         "cursor.request_id": "request-456",
         "cursor.pool": "pool-test",
+        "cursor.sandbox_class": "linux-vm",
     }
 
 

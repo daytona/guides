@@ -22,6 +22,7 @@ from cursor_byom.config import Config
 @dataclass(frozen=True)
 class FakeConfig:
     daytona_api_key: str = "test-daytona-key"
+    daytona_target: str | None = None
     snapshot_name: str = "cursor-worker-snapshot-test"
     cursor_api_key: str = "test-cursor-key"
     cursor_agent_worker_id: str = "worker-01"
@@ -230,7 +231,12 @@ class MonitorLauncherTests(unittest.TestCase):
         start_monitor = spawn_module.start_monitor
 
         with patch.object(spawn_module.subprocess, "Popen") as popen:
-            start_monitor(cast(Any, FakeConfig()), "sandbox-123", "4242")
+            start_monitor(
+                cast(Any, FakeConfig()),
+                "sandbox-123",
+                "4242",
+                "linux-vm",
+            )
 
         popen.assert_called_once_with(
             [sys.executable, "-m", "cursor_byom.monitor"],
@@ -238,6 +244,7 @@ class MonitorLauncherTests(unittest.TestCase):
                 "DAYTONA_API_KEY": "test-daytona-key",
                 "SANDBOX_ID": "sandbox-123",
                 "WORKER_PID": "4242",
+                "SANDBOX_CLASS": "linux-vm",
                 "MONITOR_POLL_SECONDS": "0.25",
             },
             stdin=subprocess.DEVNULL,
@@ -316,7 +323,10 @@ class SpawnWorkerTests(unittest.TestCase):
         self.assertEqual(result.sandbox_name, "cursor-worker-01")
         self.assertEqual(result.worker_id, "worker-01")
         self.assertEqual(result.request_id, "request-01")
-        self.assertEqual(self.monitors, [(self.config, "sandbox-123", "4242")])
+        self.assertEqual(
+            self.monitors,
+            [(self.config, "sandbox-123", "4242", "container")],
+        )
 
     def test_create_waits_until_replacement_get_returns_not_found(self) -> None:
         daytona = FakeDaytona()
@@ -388,6 +398,7 @@ class SpawnWorkerTests(unittest.TestCase):
                 "cursor.worker_id": "worker-01",
                 "cursor.request_id": "request-01",
                 "cursor.pool": "pool-test",
+                "cursor.sandbox_class": "container",
             },
         )
         self.assertGreater(parameter(params, "auto_stop_interval"), 0)
@@ -490,7 +501,10 @@ class SpawnWorkerTests(unittest.TestCase):
         self.assertEqual(result.sandbox_name, "cursor-worker-01")
         self.assertEqual(result.worker_id, "worker-01")
         self.assertEqual(result.request_id, "request-01")
-        self.assertEqual(self.monitors, [(self.config, "sandbox-123", "4242")])
+        self.assertEqual(
+            self.monitors,
+            [(self.config, "sandbox-123", "4242", "container")],
+        )
 
     def test_detached_launch_rejects_zombie_worker_during_startup_check(
         self,
@@ -662,6 +676,7 @@ class SpawnCommandTests(unittest.TestCase):
             sandbox_name="cursor-worker-01",
             worker_id="worker-01",
             request_id="request-01",
+            sandbox_class="linux-vm",
         )
         output = io.StringIO()
 
@@ -690,6 +705,7 @@ class SpawnCommandTests(unittest.TestCase):
                 "sandbox_name": "cursor-worker-01",
                 "worker_id": "worker-01",
                 "request_id": "request-01",
+                "sandbox_class": "linux-vm",
             },
         )
 

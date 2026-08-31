@@ -16,6 +16,7 @@ from typing import Any
 from daytona import Daytona, DaytonaConfig
 
 from .config import ConfigError, redact
+from .sandbox_class import parse_sandbox_class
 
 _PROC_ROOT = "/proc"
 _DEFAULT_POLL_SECONDS = 5.0
@@ -27,15 +28,22 @@ class MonitorConfig:
     """Validated host-only settings for one cleanup monitor."""
 
     daytona_api_key: str
+    daytona_target: str | None
     sandbox_id: str
     worker_pid: str
+    sandbox_class: str
     poll_seconds: float
 
     @classmethod
     def from_env(cls, environment: Mapping[str, str]) -> MonitorConfig:
         required = {
             name: _environment_value(environment, name)
-            for name in ("DAYTONA_API_KEY", "SANDBOX_ID", "WORKER_PID")
+            for name in (
+                "DAYTONA_API_KEY",
+                "SANDBOX_ID",
+                "WORKER_PID",
+                "SANDBOX_CLASS",
+            )
         }
         missing = sorted(name for name, value in required.items() if value is None)
         if missing:
@@ -46,6 +54,7 @@ class MonitorConfig:
         worker_pid = required["WORKER_PID"]
         if worker_pid is None or not worker_pid.isdigit() or int(worker_pid) <= 0:
             raise ConfigError("WORKER_PID must be a positive numeric process ID")
+        sandbox_class = parse_sandbox_class(required["SANDBOX_CLASS"]).value
 
         poll_seconds = _positive_float(
             environment,
@@ -54,8 +63,10 @@ class MonitorConfig:
         )
         return cls(
             daytona_api_key=required["DAYTONA_API_KEY"] or "",
+            daytona_target=_environment_value(environment, "DAYTONA_TARGET"),
             sandbox_id=required["SANDBOX_ID"] or "",
             worker_pid=worker_pid,
+            sandbox_class=sandbox_class,
             poll_seconds=poll_seconds,
         )
 
@@ -166,7 +177,12 @@ def main(argv: list[str] | None = None) -> int:
     config: MonitorConfig | None = None
     try:
         config = MonitorConfig.from_env(os.environ)
-        daytona = Daytona(DaytonaConfig(api_key=config.daytona_api_key))
+        daytona = Daytona(
+            DaytonaConfig(
+                api_key=config.daytona_api_key,
+                target=config.daytona_target,
+            )
+        )
         status = monitor_worker(config, daytona)
     except Exception as error:
         secrets = (config.daytona_api_key,) if config is not None else ()

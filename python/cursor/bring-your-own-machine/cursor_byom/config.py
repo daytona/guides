@@ -24,6 +24,7 @@ class ConfigError(RuntimeError):
 @dataclass(frozen=True)
 class Config:
     daytona_api_key: str
+    daytona_target: str | None
     snapshot_name: str
     cursor_api_key: str
     cursor_agent_worker_id: str
@@ -66,6 +67,7 @@ class Config:
 
         return cls(
             daytona_api_key=cast(str, required["DAYTONA_API_KEY"]),
+            daytona_target=_optional_value(environment, "DAYTONA_TARGET"),
             snapshot_name=cast(str, required["SNAPSHOT_NAME"]),
             cursor_api_key=cast(str, required["CURSOR_API_KEY"]),
             cursor_agent_worker_id=cast(
@@ -118,11 +120,12 @@ def sandbox_name_for(worker_id: str) -> str:
     return f"cursor-{slug}-{digest}"
 
 
-def sandbox_labels(config: Config) -> dict[str, str]:
+def sandbox_labels(config: Config, sandbox_class: str) -> dict[str, str]:
     return {
         "cursor.worker_id": config.cursor_agent_worker_id,
         "cursor.request_id": config.cursor_request_id,
         "cursor.pool": config.cursor_pool,
+        "cursor.sandbox_class": sandbox_class,
     }
 
 

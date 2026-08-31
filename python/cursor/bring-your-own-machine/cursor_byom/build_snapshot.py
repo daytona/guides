@@ -13,7 +13,14 @@ from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Any
 
-from daytona import CreateSnapshotParams, Daytona, Image, Resources
+from daytona import (
+    CreateSnapshotParams,
+    Daytona,
+    DaytonaConfig,
+    Image,
+    Resources,
+    SandboxClass,
+)
 from dotenv import load_dotenv
 
 DOCKERFILE = resources.files("cursor_byom").joinpath("Dockerfile")
@@ -95,11 +102,20 @@ def _stream_build_log(chunk: str) -> None:
     sys.stderr.flush()
 
 
-def _write_result(snapshot: object, name: str, *, reused: bool) -> None:
+def _write_result(
+    snapshot: object,
+    name: str,
+    *,
+    reused: bool,
+    sandbox_class: SandboxClass,
+    target: str | None,
+) -> None:
     result = {
         "reused": reused,
+        "sandbox_class": sandbox_class.value,
         "snapshot_name": getattr(snapshot, "name", name),
         "state": _state_value(snapshot),
+        "target": target,
     }
     print(json.dumps(result, sort_keys=True))
 
@@ -108,20 +124,49 @@ def main(argv: list[str] | None = None) -> int:
     """Build the configured snapshot without prompts."""
     parser = argparse.ArgumentParser(
         prog="build-cursor-byom-snapshot",
-        description="Build or reuse the pinned Cursor worker snapshot.",
-        epilog="Examples:\n  build-cursor-byom-snapshot",
+        description="Build or reuse a Cursor worker snapshot.",
+        epilog=(
+            "Examples:\n"
+            "  build-cursor-byom-snapshot\n"
+            "  build-cursor-byom-snapshot --sandbox-class container --target us\n"
+            "  build-cursor-byom-snapshot --sandbox-class linux-vm "
+            "--target eu-central-1"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.parse_args(argv)
+    parser.add_argument(
+        "--sandbox-class",
+        choices=(SandboxClass.CONTAINER.value, SandboxClass.LINUX_VM.value),
+        default=SandboxClass.CONTAINER.value,
+        help="Daytona sandbox class to build (default: container)",
+    )
+    parser.add_argument(
+        "--target",
+        help="Daytona target region (default: DAYTONA_TARGET or organization default)",
+    )
+    parser.add_argument(
+        "--name",
+        help="snapshot name (default: SNAPSHOT_NAME or content-derived name)",
+    )
+    args = parser.parse_args(argv)
     load_dotenv(Path(".env"), override=False)
+    sandbox_class = SandboxClass(args.sandbox_class)
+    target = args.target or os.environ.get("DAYTONA_TARGET")
+    name_override = args.name or os.environ.get("SNAPSHOT_NAME")
     name: str | None = None
 
     try:
-        name = snapshot_name_for(SNAPSHOT_INPUTS, os.environ.get("SNAPSHOT_NAME"))
-        daytona = Daytona()
+        name = snapshot_name_for(SNAPSHOT_INPUTS, name_override)
+        daytona = Daytona(DaytonaConfig(target=target))
         existing = find_reusable_snapshot(daytona, name)
         if existing is not None:
-            _write_result(existing, name, reused=True)
+            _write_result(
+                existing,
+                name,
+                reused=True,
+                sandbox_class=sandbox_class,
+                target=target,
+            )
             return 0
 
         with resources.as_file(DOCKERFILE) as dockerfile:
@@ -134,16 +179,23 @@ def main(argv: list[str] | None = None) -> int:
                         memory=DEFAULT_MEMORY_GB,
                         disk=DEFAULT_DISK_GB,
                     ),
+                    region_id=target,
+                    sandbox_class=sandbox_class,
                 ),
                 on_logs=_stream_build_log,
                 timeout=0,
             )
-        _write_result(snapshot, name, reused=False)
+        _write_result(
+            snapshot,
+            name,
+            reused=False,
+            sandbox_class=sandbox_class,
+            target=target,
+        )
         return 0
     except SnapshotCollisionError as error:
         print(
-            f"{error}. Choose another SNAPSHOT_NAME or wait for the snapshot "
-            "to become active.",
+            f"{error}. Choose another snapshot name or wait for it to become active.",
             file=sys.stderr,
         )
         return EXIT_COLLISION
