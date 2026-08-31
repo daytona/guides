@@ -38,6 +38,27 @@ def _required_string(value: object, field: str) -> str:
     return value
 
 
+def _repository_url(value: object, field: str) -> str:
+    url = _required_string(value, field)
+    try:
+        parsed = urlsplit(url)
+        hostname = parsed.hostname
+    except ValueError:
+        parsed = urlsplit("")
+        hostname = None
+    if (
+        url != url.strip()
+        or parsed.scheme.lower() != "https"
+        or not hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or bool(parsed.query)
+        or bool(parsed.fragment)
+    ):
+        raise HookError(f"{field} must be a credential-free HTTPS URL")
+    return url
+
+
 def repos_from_payload(payload: object) -> tuple[Repo, ...]:
     """Validate repository metadata from a Cursor session-start payload."""
     if not isinstance(payload, dict):
@@ -53,7 +74,7 @@ def repos_from_payload(payload: object) -> tuple[Repo, ...]:
             if not isinstance(raw_repo, dict):
                 raise HookError(f"repos[{index}] must be a JSON object")
 
-            url = _required_string(
+            url = _repository_url(
                 raw_repo.get("repo_url"),
                 f"repos[{index}].repo_url",
             )
@@ -72,7 +93,7 @@ def repos_from_payload(payload: object) -> tuple[Repo, ...]:
 
     return tuple(
         Repo(
-            url=_required_string(raw_url, f"repo_urls[{index}]"),
+            url=_repository_url(raw_url, f"repo_urls[{index}]"),
         )
         for index, raw_url in enumerate(raw_urls)
     )

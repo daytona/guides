@@ -120,6 +120,34 @@ def test_repos_from_payload_uses_repo_urls_when_structured_repos_are_absent() ->
             },
             "repo_urls",
         ),
+        (
+            {
+                "repos": [
+                    {
+                        "repo_url": (
+                            "https://user:secret@github.com/acme/payments"
+                        )
+                    }
+                ]
+            },
+            "repo_url",
+        ),
+        (
+            {"repo_urls": ["ssh://git@github.com/acme/payments.git"]},
+            "repo_urls",
+        ),
+        (
+            {"repo_urls": ["file:///tmp/payments"]},
+            "repo_urls",
+        ),
+        (
+            {
+                "repo_urls": [
+                    "https://github.com/acme/payments?token=secret"
+                ]
+            },
+            "repo_urls",
+        ),
     ],
 )
 def test_repos_from_payload_rejects_malformed_repository_metadata(
@@ -309,7 +337,7 @@ def test_exhausted_clone_retries_raise_sanitized_actionable_error(
     tmp_path: Path,
 ) -> None:
     credential = "github_pat_secret-value"
-    url = f"https://x-access-token:{credential}@github.com/acme/private.git"
+    url = "https://github.com/acme/private.git"
     attempted_commands: list[tuple[str, ...]] = []
     sleeps: list[float] = []
 
@@ -321,7 +349,7 @@ def test_exhausted_clone_retries_raise_sanitized_actionable_error(
         raise subprocess.CalledProcessError(
             128,
             normalized,
-            stderr=f"fatal: unable to access '{url}': credentials unavailable",
+            stderr=f"fatal: unable to access '{url}': token {credential} unavailable",
         )
 
     with pytest.raises(HookError) as caught:

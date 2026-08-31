@@ -163,7 +163,9 @@ def test_linux_vm_snapshot_provisions_captures_verifies_and_cleans_up(
     )
 
 
-def test_active_linux_vm_snapshot_is_reused_without_sandbox_creation() -> None:
+def test_active_linux_vm_snapshot_is_cold_verified_before_reuse(
+    monkeypatch: Any,
+) -> None:
     module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
     existing = FakeSnapshot(
         name="cursor-byom-linux-vm-test",
@@ -171,6 +173,18 @@ def test_active_linux_vm_snapshot_is_reused_without_sandbox_creation() -> None:
         sandbox_class=SimpleNamespace(value="linux-vm"),
     )
     daytona = FakeDaytona([existing])
+    provision_calls: list[tuple[FakeSandbox, bool, int]] = []
+
+    def run_provisioner(
+        sandbox: FakeSandbox,
+        *,
+        verify_only: bool,
+        timeout: int,
+    ) -> object:
+        provision_calls.append((sandbox, verify_only, timeout))
+        return SimpleNamespace(exit_code=0, result="verified")
+
+    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
 
     snapshot, reused = module.build_linux_vm_snapshot(
         daytona,
@@ -182,8 +196,12 @@ def test_active_linux_vm_snapshot_is_reused_without_sandbox_creation() -> None:
 
     assert snapshot is existing
     assert reused is True
-    assert daytona.created == []
-    assert daytona.deleted == []
+    assert len(daytona.created) == 1
+    verifier = daytona.created[0]
+    assert getattr(daytona.create_calls[0][0], "snapshot") == existing.name
+    assert provision_calls == [(verifier, True, 300)]
+    assert daytona.deleted == [(verifier, 300)]
+    assert daytona.snapshot.deleted_snapshots == []
 
 
 def test_failed_linux_vm_verification_deletes_uncertified_snapshot(

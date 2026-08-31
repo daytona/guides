@@ -23,6 +23,27 @@ function Get-RequiredString {
     return [string]$Value
 }
 
+function Get-RepositoryUrl {
+    param(
+        [AllowNull()][object]$Value,
+        [Parameter(Mandatory = $true)][string]$Field
+    )
+
+    $url = Get-RequiredString -Value $Value -Field $Field
+    $parsedUri = $null
+    if (
+        -not [Uri]::TryCreate($url, [UriKind]::Absolute, [ref]$parsedUri) -or
+        $parsedUri.Scheme -cne 'https' -or
+        [String]::IsNullOrWhiteSpace($parsedUri.Host) -or
+        -not [String]::IsNullOrEmpty($parsedUri.UserInfo) -or
+        -not [String]::IsNullOrEmpty($parsedUri.Query) -or
+        -not [String]::IsNullOrEmpty($parsedUri.Fragment)
+    ) {
+        throw "$Field must be a credential-free HTTPS URL"
+    }
+    return $url
+}
+
 function Test-JsonProperty {
     param(
         [Parameter(Mandatory = $true)][object]$Object,
@@ -53,7 +74,7 @@ function Get-Repositories {
             if (Test-JsonProperty -Object $rawRepository -Name 'repo_url') {
                 $rawUrl = $rawRepository.repo_url
             }
-            $url = Get-RequiredString -Value $rawUrl -Field "repos[$index].repo_url"
+            $url = Get-RepositoryUrl -Value $rawUrl -Field "repos[$index].repo_url"
             $ref = $null
             if (Test-JsonProperty -Object $rawRepository -Name 'ref') {
                 if ($null -ne $rawRepository.ref) {
@@ -73,7 +94,7 @@ function Get-Repositories {
         throw 'repo_urls must be a JSON array'
     }
     for ($index = 0; $index -lt $rawUrls.Count; $index++) {
-        $url = Get-RequiredString -Value $rawUrls[$index] -Field "repo_urls[$index]"
+        $url = Get-RepositoryUrl -Value $rawUrls[$index] -Field "repo_urls[$index]"
         $repositories += [PSCustomObject]@{ Url = $url; Ref = $null }
     }
     return ,$repositories

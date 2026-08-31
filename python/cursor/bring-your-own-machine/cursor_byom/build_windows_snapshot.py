@@ -252,6 +252,55 @@ def _delete_sandbox(
         _raise_cleanup_failure(sandbox, purpose, cleanup_error)
 
 
+def _verify_or_delete_snapshot(
+    daytona: Any,
+    snapshot: object,
+    *,
+    sandbox_timeout: int,
+) -> None:
+    name = str(getattr(snapshot, "name"))
+    verifier: Any | None = None
+    verifier_error: Exception | None = None
+    try:
+        verifier = daytona.create(
+            CreateSandboxFromSnapshotParams(
+                snapshot=name,
+                name=_unique_sandbox_name("verifier"),
+            ),
+            timeout=sandbox_timeout,
+        )
+        _upload_snapshot_inputs(verifier, timeout=sandbox_timeout)
+        verification = run_windows_provisioner(
+            verifier,
+            verify_only=True,
+            timeout=sandbox_timeout,
+        )
+        if verification.exit_code != 0:
+            raise DaytonaError(
+                f"Windows snapshot verification failed with exit code "
+                f"{verification.exit_code}: {verification.result}"
+            )
+    except Exception as error:
+        verifier_error = error
+        try:
+            daytona.snapshot.delete(snapshot)
+        except Exception as cleanup_error:
+            error.add_note(
+                f"Cleanup also failed for uncertified Windows snapshot "
+                f"{name}: {cleanup_error}"
+            )
+        raise
+    finally:
+        if verifier is not None:
+            _delete_sandbox(
+                daytona,
+                verifier,
+                timeout=sandbox_timeout,
+                purpose="verifier",
+                primary_error=verifier_error,
+            )
+
+
 def build_windows_snapshot(
     daytona: Any,
     *,
@@ -263,6 +312,11 @@ def build_windows_snapshot(
     """Build and cold-verify a Windows snapshot, or reuse an active one."""
     reusable = _find_reusable_snapshot(daytona, name)
     if reusable is not None:
+        _verify_or_delete_snapshot(
+            daytona,
+            reusable,
+            sandbox_timeout=sandbox_timeout,
+        )
         return reusable, True
 
     builder: Any | None = None
@@ -306,45 +360,10 @@ def build_windows_snapshot(
                 primary_error=builder_error,
             )
 
-    verifier: Any | None = None
-    verifier_error: Exception | None = None
-    try:
-        verifier = daytona.create(
-            CreateSandboxFromSnapshotParams(
-                snapshot=name,
-                name=_unique_sandbox_name("verifier"),
-            ),
-            timeout=sandbox_timeout,
-        )
-        _upload_snapshot_inputs(verifier, timeout=sandbox_timeout)
-        verification = run_windows_provisioner(
-            verifier,
-            verify_only=True,
-            timeout=sandbox_timeout,
-        )
-        if verification.exit_code != 0:
-            raise DaytonaError(
-                f"Windows snapshot verification failed with exit code "
-                f"{verification.exit_code}: {verification.result}"
-            )
-    except Exception as error:
-        verifier_error = error
-        try:
-            daytona.snapshot.delete(snapshot)
-        except Exception as cleanup_error:
-            error.add_note(
-                f"Cleanup also failed for uncertified Windows snapshot "
-                f"{name}: {cleanup_error}"
-            )
-        raise
-    finally:
-        if verifier is not None:
-            _delete_sandbox(
-                daytona,
-                verifier,
-                timeout=sandbox_timeout,
-                purpose="verifier",
-                primary_error=verifier_error,
-            )
+    _verify_or_delete_snapshot(
+        daytona,
+        snapshot,
+        sandbox_timeout=sandbox_timeout,
+    )
 
     return snapshot, False

@@ -171,7 +171,9 @@ def test_windows_snapshot_build_provisions_captures_verifies_and_cleans_up(
     assert all(isinstance(source, bytes) for source, _, _ in verifier.fs.uploads)
 
 
-def test_active_windows_snapshot_is_reused_without_sandbox_creation() -> None:
+def test_active_windows_snapshot_is_cold_verified_before_reuse(
+    monkeypatch: Any,
+) -> None:
     module = importlib.import_module("cursor_byom.build_windows_snapshot")
     existing = FakeSnapshot(
         name="cursor-byom-windows-test",
@@ -179,6 +181,18 @@ def test_active_windows_snapshot_is_reused_without_sandbox_creation() -> None:
         sandbox_class=SimpleNamespace(value="windows"),
     )
     daytona = FakeDaytona([existing])
+    provision_calls: list[tuple[FakeSandbox, bool, int]] = []
+
+    def run_provisioner(
+        sandbox: FakeSandbox,
+        *,
+        verify_only: bool,
+        timeout: int,
+    ) -> object:
+        provision_calls.append((sandbox, verify_only, timeout))
+        return SimpleNamespace(exit_code=0, result="verified")
+
+    monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
 
     snapshot, reused = module.build_windows_snapshot(
         daytona,
@@ -190,8 +204,12 @@ def test_active_windows_snapshot_is_reused_without_sandbox_creation() -> None:
 
     assert snapshot is existing
     assert reused is True
-    assert daytona.created == []
-    assert daytona.deleted == []
+    assert len(daytona.created) == 1
+    verifier = daytona.created[0]
+    assert getattr(daytona.create_calls[0][0], "snapshot") == existing.name
+    assert provision_calls == [(verifier, True, 300)]
+    assert daytona.deleted == [(verifier, 300)]
+    assert daytona.snapshot.deleted_snapshots == []
 
 
 def test_windows_provisioner_command_uses_unquoted_daytona_executable() -> None:
@@ -219,6 +237,19 @@ def test_windows_provisioner_pins_node_22_and_probes_native_module() -> None:
     )
     assert "require(process.argv[1])" in provisioner
     assert "node_modules\\better-sqlite3" in provisioner
+
+
+def test_windows_clone_hook_rejects_credential_bearing_urls() -> None:
+    clone_hook = (
+        Path(__file__).parents[1]
+        / "cursor_byom"
+        / "clone_repos_windows.ps1"
+    ).read_text()
+
+    assert "Get-RepositoryUrl" in clone_hook
+    assert ".Scheme -cne 'https'" in clone_hook
+    assert ".UserInfo" in clone_hook
+    assert ".Query" in clone_hook
 
 
 def test_failed_windows_verification_deletes_uncertified_snapshot(

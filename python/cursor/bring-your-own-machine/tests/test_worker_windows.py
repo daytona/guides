@@ -67,12 +67,16 @@ def test_windows_worker_launch_uses_baked_agent_and_secret_file_cleanup() -> Non
 
     assert pid == "4242"
     assert sleeps == [module.WINDOWS_PID_POLL_SECONDS]
-    assert len(sandbox.process.calls) == 1
+    assert len(sandbox.process.calls) == 2
     launch = sandbox.process.calls[0]
     assert launch["timeout"] == 60
     launch_script = decode_powershell(str(launch["command"]))
     assert module.WINDOWS_BOOTSTRAP_PATH in launch_script
     assert module.WINDOWS_WORKER_PID_PATH in launch_script
+    inspection_script = decode_powershell(
+        str(sandbox.process.calls[1]["command"])
+    )
+    assert "Get-Process -Id 4242" in inspection_script
 
     launch_upload = next(
         source
@@ -104,3 +108,4 @@ def test_windows_inspection_checks_pid_and_expected_node_executable() -> None:
     assert module.WINDOWS_AGENT_NODE_PATH in script
     assert "running" in script
     assert "exited" in script
+    assert script.count("exit 1") == 2

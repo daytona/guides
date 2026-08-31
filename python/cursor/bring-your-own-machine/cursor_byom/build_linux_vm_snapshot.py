@@ -273,6 +273,32 @@ def _verify_snapshot(
         )
 
 
+def _verify_or_delete_snapshot(
+    daytona: Any,
+    snapshot: object,
+    *,
+    source_snapshot: str,
+    sandbox_timeout: int,
+) -> None:
+    try:
+        _verify_snapshot(
+            daytona,
+            snapshot,
+            source_snapshot=source_snapshot,
+            sandbox_timeout=sandbox_timeout,
+        )
+    except Exception as error:
+        name = str(getattr(snapshot, "name"))
+        try:
+            daytona.snapshot.delete(snapshot)
+        except Exception as cleanup_error:
+            error.add_note(
+                f"Cleanup also failed for uncertified Linux VM snapshot "
+                f"{name}: {cleanup_error}"
+            )
+        raise
+
+
 def build_linux_vm_snapshot(
     daytona: Any,
     *,
@@ -285,6 +311,12 @@ def build_linux_vm_snapshot(
 
     reusable = _find_reusable_snapshot(daytona, name)
     if reusable is not None:
+        _verify_or_delete_snapshot(
+            daytona,
+            reusable,
+            source_snapshot=source_snapshot,
+            sandbox_timeout=sandbox_timeout,
+        )
         return reusable, True
 
     snapshot = _capture_snapshot(
@@ -294,20 +326,10 @@ def build_linux_vm_snapshot(
         build_timeout=build_timeout,
         sandbox_timeout=sandbox_timeout,
     )
-    try:
-        _verify_snapshot(
-            daytona,
-            snapshot,
-            source_snapshot=source_snapshot,
-            sandbox_timeout=sandbox_timeout,
-        )
-    except Exception as error:
-        try:
-            daytona.snapshot.delete(snapshot)
-        except Exception as cleanup_error:
-            error.add_note(
-                f"Cleanup also failed for uncertified Linux VM snapshot "
-                f"{name}: {cleanup_error}"
-            )
-        raise
+    _verify_or_delete_snapshot(
+        daytona,
+        snapshot,
+        source_snapshot=source_snapshot,
+        sandbox_timeout=sandbox_timeout,
+    )
     return snapshot, False

@@ -231,7 +231,16 @@ def start_windows_worker_process(
         pid = _parse_positive_pid(
             _download_text(sandbox, WINDOWS_WORKER_PID_PATH)
         )
-        if pid is not None:
+        if pid is None:
+            continue
+        try:
+            inspection = sandbox.process.exec(
+                windows_inspection_command(pid),
+                timeout=min(30, config.sandbox_launch_timeout_seconds),
+            )
+        except Exception:
+            continue
+        if getattr(inspection, "exit_code", 1) == 0:
             return pid
 
     diagnostics = _bootstrap_diagnostics(sandbox, config)
@@ -253,10 +262,11 @@ def windows_inspection_command(pid: str) -> str:
     expected_path = _powershell_quote(WINDOWS_AGENT_NODE_PATH)
     return powershell_encoded(
         f"$process = Get-Process -Id {validated_pid} -ErrorAction SilentlyContinue; "
-        "if ($null -eq $process) { Write-Output 'exited'; exit 0 }; "
+        "if ($null -eq $process) { Write-Output 'exited'; exit 1 }; "
         "$path = $null; "
         "try { $path = $process.Path } catch { }; "
         f"if ([string]::Equals($path, {expected_path}, "
         "[System.StringComparison]::OrdinalIgnoreCase)) "
-        "{ Write-Output 'running' } else { Write-Output 'exited' }"
+        "{ Write-Output 'running'; exit 0 } "
+        "else { Write-Output 'exited'; exit 1 }"
     )
