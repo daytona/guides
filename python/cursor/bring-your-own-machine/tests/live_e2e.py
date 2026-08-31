@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run one real Cursor pool request through one Daytona sandbox class."""
+"""Run one real Cursor request through one Daytona sandbox class."""
 
 from __future__ import annotations
 
@@ -20,18 +20,34 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from daytona import Daytona, DaytonaConfig, ListSandboxesQuery
+from daytona import (
+    CreateSandboxFromSnapshotParams,
+    Daytona,
+    DaytonaConfig,
+    ListSandboxesQuery,
+)
 
+from cursor_byom.config import Config, worker_environment
+from cursor_byom.spawn import _parse_worker_pid, start_monitor
 from cursor_byom.worker_windows import (
+    WINDOWS_AGENT_INDEX_PATH,
+    WINDOWS_LAUNCH_CONFIG_PATH,
     WINDOWS_WORKER_PID_PATH,
+    WINDOWS_WORKER_STDERR_PATH,
+    WINDOWS_WORKSPACE_PATH,
+    _bootstrap_launcher,
     powershell_encoded,
     windows_inspection_command,
 )
 
 TERMINAL_RUN_STATES = {"FINISHED", "ERROR", "CANCELLED", "EXPIRED"}
-LINUX_MARKER_PATH = "/home/daytona/workspace/cursor-byom-live-marker.txt"
-WINDOWS_MARKER_PATH = r"C:\cursor\workspace\cursor-byom-live-marker.txt"
+LINUX_MARKER_PATH = "/home/daytona/workspace/.cursor-byom-live-marker.txt"
+WINDOWS_MARKER_PATH = r"C:\cursor\workspace\.cursor-byom-live-marker.txt"
 LINUX_PID_PATH = "/tmp/cursor-byom/worker.pid"
+LINUX_WORKER_LOG_PATH = "/tmp/cursor-byom/worker.log"
+MACHINE_REPO_URL = "https://github.com/daytona/guides"
+MACHINE_REPO_REF = "main"
+WINDOWS_GIT_PATH = r"C:\Program Files\Git\cmd\git.exe"
 POLL_SECONDS = 3.0
 
 
@@ -59,6 +75,15 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--target", required=True)
     result.add_argument("--snapshot", required=True)
+    result.add_argument(
+        "--cursor-mode",
+        choices=("machine", "team-pool"),
+        default="machine",
+        help=(
+            "personal My Machines worker or Enterprise team pool "
+            "(default: machine)"
+        ),
+    )
     result.add_argument(
         "--timeout",
         type=positive_int,
@@ -122,13 +147,23 @@ def cursor_request(
 
 
 def is_not_found(error: BaseException) -> bool:
-    status_code = getattr(error, "status_code", None)
-    if status_code is None:
-        return False
-    try:
-        return int(status_code) == 404
-    except (TypeError, ValueError):
-        return False
+    current: BaseException | None = error
+    while current is not None:
+        for status_code in (
+            getattr(current, "status_code", None),
+            getattr(getattr(current, "response", None), "status_code", None),
+        ):
+            if status_code is None:
+                continue
+            try:
+                if int(status_code) == 404:
+                    return True
+            except (TypeError, ValueError):
+                pass
+        if "404 Not Found" in str(current):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
 
 
 def decode_text(content: object) -> str:
@@ -139,17 +174,17 @@ def decode_text(content: object) -> str:
     return str(content or "")
 
 
-def find_sandbox(daytona: Daytona, pool: str) -> Any | None:
+def find_sandbox(daytona: Daytona, route_name: str) -> Any | None:
     sandboxes = list(
         daytona.list(
-            ListSandboxesQuery(labels={"cursor.pool": pool})
+            ListSandboxesQuery(labels={"cursor.pool": route_name})
         )
     )
     if not sandboxes:
         return None
     if len(sandboxes) != 1:
         names = sorted(str(item.name) for item in sandboxes)
-        raise RuntimeError(f"Pool {pool} has multiple sandboxes: {names}")
+        raise RuntimeError(f"Pool {route_name} has multiple sandboxes: {names}")
     return sandboxes[0]
 
 
@@ -234,17 +269,235 @@ def terminate_process(process: subprocess.Popen[str] | None) -> None:
         process.wait(timeout=15)
 
 
+def machine_worker_command(
+    config: Config,
+    route_name: str,
+    sandbox_class: str,
+) -> list[str]:
+    if sandbox_class == "windows":
+        command = [WINDOWS_AGENT_INDEX_PATH, "worker"]
+        worker_directory = WINDOWS_WORKSPACE_PATH
+    else:
+        command = ["/usr/local/bin/agent", "worker"]
+        worker_directory = "/home/daytona/workspace"
+    command.extend(
+        (
+            "--worker-dir",
+            worker_directory,
+            "--management-addr",
+            "0.0.0.0:8080",
+            "--name",
+            route_name,
+            "--idle-release-timeout",
+            str(config.idle_release_timeout_seconds),
+            "start",
+        )
+    )
+    return command
+
+
+def linux_machine_launch_command(command: list[str]) -> str:
+    worker = shlex.join(command)
+    pid_path = shlex.quote(LINUX_PID_PATH)
+    log_path = shlex.quote(LINUX_WORKER_LOG_PATH)
+    inner = " && ".join(
+        (
+            "mkdir -p /tmp/cursor-byom",
+            f"rm -f {pid_path}",
+            f"(nohup {worker} > {log_path} 2>&1 < /dev/null & echo $! > {pid_path})",
+            "sleep 1",
+            f"pid=$(cat {pid_path})",
+            'case "$pid" in ""|*[!0-9]*) exit 1;; esac',
+            'test "$pid" -gt 0',
+            'kill -0 "$pid" 2>/dev/null',
+            'printf \'%s\n\' "$pid"',
+        )
+    )
+    return f"sh -c {shlex.quote(inner)}"
+
+
+def worker_diagnostics(
+    sandbox: Any,
+    sandbox_class: str,
+    secrets_to_redact: tuple[str, ...],
+) -> str:
+    path = (
+        WINDOWS_WORKER_STDERR_PATH
+        if sandbox_class == "windows"
+        else LINUX_WORKER_LOG_PATH
+    )
+    if sandbox_class == "windows":
+        path = path.replace("\\", "/")
+    try:
+        output = decode_text(sandbox.fs.download_file(path))
+    except Exception:
+        output = "worker produced no readable log"
+    for secret_value in secrets_to_redact:
+        output = output.replace(secret_value, "<redacted>")
+    return output[-4000:]
+
+
+def prepare_machine_workspace(sandbox: Any, sandbox_class: str) -> None:
+    if sandbox_class == "windows":
+        script = (
+            "$ErrorActionPreference = 'Stop'; "
+            f"Set-Location -LiteralPath '{WINDOWS_WORKSPACE_PATH}'; "
+            f"& '{WINDOWS_GIT_PATH}' clone --depth 1 --branch "
+            f"'{MACHINE_REPO_REF}' '{MACHINE_REPO_URL}' .; "
+            "if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }; "
+            "Add-Content -LiteralPath '.git\\info\\exclude' "
+            "-Value '.cursor-byom-live-marker.txt'"
+        )
+        response = sandbox.process.exec(powershell_encoded(script), timeout=180)
+    else:
+        clone = shlex.join(
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "--branch",
+                MACHINE_REPO_REF,
+                MACHINE_REPO_URL,
+                ".",
+            ]
+        )
+        exclude_command = (
+            f"printf '%s\\n' {shlex.quote('.cursor-byom-live-marker.txt')} "
+            ">> .git/info/exclude"
+        )
+        response = sandbox.process.exec(
+            f"sh -c {shlex.quote(f'{clone} && {exclude_command}')}",
+            cwd="/home/daytona/workspace",
+            timeout=180,
+        )
+    if getattr(response, "exit_code", 1) != 0:
+        detail = str(getattr(response, "result", ""))[-2000:]
+        raise RuntimeError(f"Failed to prepare the machine workspace: {detail}")
+
+
+def start_machine_worker_process(
+    sandbox: Any,
+    config: Config,
+    route_name: str,
+    sandbox_class: str,
+) -> str:
+    command = machine_worker_command(config, route_name, sandbox_class)
+    if sandbox_class == "windows":
+        launch_config = {
+            "environment": worker_environment(config),
+            "arguments": subprocess.list2cmdline(command),
+        }
+        sandbox.fs.upload_file(
+            json.dumps(launch_config, sort_keys=True).encode("utf-8"),
+            WINDOWS_LAUNCH_CONFIG_PATH,
+        )
+        response = sandbox.process.exec(
+            _bootstrap_launcher(),
+            timeout=config.sandbox_launch_timeout_seconds,
+        )
+        if getattr(response, "exit_code", 1) != 0:
+            raise RuntimeError("Windows machine worker bootstrap failed")
+        pid: str | None = None
+    else:
+        response = sandbox.process.exec(
+            linux_machine_launch_command(command),
+            cwd="/home/daytona/workspace",
+            env=worker_environment(config),
+            timeout=config.sandbox_launch_timeout_seconds,
+        )
+        if getattr(response, "exit_code", 1) != 0:
+            raise RuntimeError("Linux machine worker failed to launch")
+        pid = _parse_worker_pid(getattr(response, "result", ""))
+
+    deadline = time.monotonic() + config.sandbox_launch_timeout_seconds
+    while time.monotonic() < deadline:
+        if pid is None:
+            try:
+                pid = read_pid(sandbox, sandbox_class)
+            except Exception as error:
+                if not (is_not_found(error) or isinstance(error, FileNotFoundError)):
+                    raise
+        if pid is not None and worker_is_live(sandbox, sandbox_class, pid):
+            return pid
+        time.sleep(1)
+    diagnostics = worker_diagnostics(
+        sandbox,
+        sandbox_class,
+        (config.daytona_api_key, config.cursor_api_key),
+    )
+    raise RuntimeError(f"Machine worker exited during startup: {diagnostics}")
+
+
+def start_direct_worker(
+    daytona: Daytona,
+    *,
+    daytona_key: str,
+    cursor_key: str,
+    route_name: str,
+    sandbox_class: str,
+    snapshot: str,
+    target: str,
+) -> Any:
+    config = Config(
+        daytona_api_key=daytona_key,
+        daytona_target=target,
+        snapshot_name=snapshot,
+        cursor_api_key=cursor_key,
+        cursor_agent_worker_id="",
+        cursor_pool=route_name,
+        cursor_request_id="",
+        cursor_repo_url=None,
+        cursor_repo_urls=(),
+        cursor_worker_name=route_name,
+        cursor_api_url=None,
+        cursor_api_endpoint=None,
+        idle_release_timeout_seconds=600,
+        monitor_poll_seconds=2.0,
+        sandbox_create_timeout_seconds=300,
+        sandbox_launch_timeout_seconds=180,
+    )
+    sandbox = daytona.create(
+        CreateSandboxFromSnapshotParams(
+            name=f"cursor-live-{sandbox_class.replace('-', '')}-{secrets.token_hex(4)}",
+            snapshot=snapshot,
+            labels={
+                "cursor.machine": route_name,
+                "cursor.sandbox_class": sandbox_class,
+                "cursor.live_e2e": "true",
+            },
+            auto_stop_interval=10,
+            auto_delete_interval=0,
+        ),
+        timeout=300,
+    )
+    try:
+        prepare_machine_workspace(sandbox, sandbox_class)
+        pid = start_machine_worker_process(
+            sandbox,
+            config,
+            route_name,
+            sandbox_class,
+        )
+        start_monitor(config, str(sandbox.id), pid, sandbox_class)
+    except Exception:
+        daytona.delete(sandbox, timeout=300)
+        raise
+    return sandbox
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    if not args.agent or not Path(args.agent).is_file():
-        parser().error("--agent must name the Cursor Agent executable")
-    if not Path(args.spawn).is_file():
-        parser().error("--spawn must name spawn-cursor-byom-worker")
+    if args.cursor_mode == "team-pool":
+        if not args.agent or not Path(args.agent).is_file():
+            parser().error("--agent must name the Cursor Agent executable")
+        if not Path(args.spawn).is_file():
+            parser().error("--spawn must name spawn-cursor-byom-worker")
 
     daytona_key = required_secret("DAYTONA_API_KEY")
     cursor_key = required_secret("CURSOR_API_KEY")
     token = secrets.token_hex(16)
-    pool = f"daytona-{args.sandbox_class.replace('-', '')}-{token[:8]}"
+    route_name = f"daytona-{args.sandbox_class.replace('-', '')}-{token[:8]}"
     agent_id: str | None = None
     run_id: str | None = None
     sandbox: Any | None = None
@@ -261,56 +514,107 @@ def main(argv: list[str] | None = None) -> int:
             DaytonaConfig(api_key=daytona_key, target=args.target)
         )
         try:
-            cursor_request(
-                cursor_key,
-                "POST",
-                "/v0/private-workers/pools",
-                {"scope": "team", "poolName": pool},
-            )
-            controller_env = {
-                **os.environ,
-                "CURSOR_API_KEY": cursor_key,
-                "DAYTONA_API_KEY": daytona_key,
-                "DAYTONA_TARGET": args.target,
-                "SNAPSHOT_NAME": args.snapshot,
-                "CURSOR_WORKER_IDLE_RELEASE_TIMEOUT": "600",
-                "MONITOR_POLL_SECONDS": "2",
-                "SANDBOX_CREATE_TIMEOUT_SECONDS": "300",
-                "SANDBOX_LAUNCH_TIMEOUT_SECONDS": "180",
-            }
-            controller = subprocess.Popen(
-                [
-                    args.agent,
-                    "worker",
-                    "controller",
-                    "--spawn",
-                    args.spawn,
-                    "--pool",
-                    pool,
-                ],
-                env=controller_env,
-                stdin=subprocess.DEVNULL,
-                stdout=stdout_file,
-                stderr=stderr_file,
-                text=True,
-                start_new_session=True,
-            )
-            created = cursor_request(
-                cursor_key,
-                "POST",
-                "/v1/agents",
-                {
-                    "name": f"Daytona {args.sandbox_class} live E2E",
-                    "prompt": {
-                        "text": (
-                            f"Create {marker_path(args.sandbox_class)} with the exact "
-                            f"text {token} and no trailing newline. Read the file back. "
-                            "Do not change any other file."
-                        )
-                    },
-                    "env": {"type": "pool", "name": pool},
+            if args.cursor_mode == "machine":
+                sandbox = start_direct_worker(
+                    daytona,
+                    daytona_key=daytona_key,
+                    cursor_key=cursor_key,
+                    route_name=route_name,
+                    sandbox_class=args.sandbox_class,
+                    snapshot=args.snapshot,
+                    target=args.target,
+                )
+            else:
+                cursor_request(
+                    cursor_key,
+                    "POST",
+                    "/v0/private-workers/pools",
+                    {"scope": "team", "poolName": route_name},
+                )
+                controller_env = {
+                    **os.environ,
+                    "CURSOR_API_KEY": cursor_key,
+                    "DAYTONA_API_KEY": daytona_key,
+                    "DAYTONA_TARGET": args.target,
+                    "SNAPSHOT_NAME": args.snapshot,
+                    "CURSOR_WORKER_IDLE_RELEASE_TIMEOUT": "600",
+                    "MONITOR_POLL_SECONDS": "2",
+                    "SANDBOX_CREATE_TIMEOUT_SECONDS": "300",
+                    "SANDBOX_LAUNCH_TIMEOUT_SECONDS": "180",
+                }
+                controller = subprocess.Popen(
+                    [
+                        args.agent,
+                        "worker",
+                        "controller",
+                        "--spawn",
+                        args.spawn,
+                        "--pool",
+                        route_name,
+                    ],
+                    env=controller_env,
+                    stdin=subprocess.DEVNULL,
+                    stdout=stdout_file,
+                    stderr=stderr_file,
+                    text=True,
+                    start_new_session=True,
+                )
+            agent_request: dict[str, Any] = {
+                "name": f"Daytona {args.sandbox_class} live E2E",
+                "prompt": {
+                    "text": (
+                        f"Create {marker_path(args.sandbox_class)} with the exact "
+                        f"text {token} and no trailing newline. Read the file back. "
+                        "Do not change any other file."
+                    )
                 },
-            )
+                "env": {
+                    "type": (
+                        "machine"
+                        if args.cursor_mode == "machine"
+                        else "pool"
+                    ),
+                    "name": route_name,
+                },
+            }
+            if args.cursor_mode == "machine":
+                agent_request["repos"] = [
+                    {
+                        "url": MACHINE_REPO_URL,
+                        "startingRef": MACHINE_REPO_REF,
+                    }
+                ]
+                agent_request["workOnCurrentBranch"] = True
+            route_deadline = min(deadline, time.monotonic() + 120)
+            while True:
+                try:
+                    created = cursor_request(
+                        cursor_key,
+                        "POST",
+                        "/v1/agents",
+                        agent_request,
+                    )
+                    break
+                except RuntimeError as error:
+                    route_is_starting = (
+                        args.cursor_mode == "machine"
+                        and "Repo-less private-worker requests require"
+                        in str(error)
+                    )
+                    if not route_is_starting or time.monotonic() >= route_deadline:
+                        raise
+                    if sandbox is not None:
+                        pid = read_pid(sandbox, args.sandbox_class)
+                        if not worker_is_live(sandbox, args.sandbox_class, pid):
+                            diagnostics = worker_diagnostics(
+                                sandbox,
+                                args.sandbox_class,
+                                (daytona_key, cursor_key),
+                            )
+                            raise RuntimeError(
+                                f"Machine worker exited before registration: {diagnostics}"
+                            ) from error
+                    time.sleep(POLL_SECONDS)
             if not isinstance(created, dict):
                 raise RuntimeError("Cursor create-agent response is not an object")
             agent_id = str(created["agent"]["id"])
@@ -318,7 +622,7 @@ def main(argv: list[str] | None = None) -> int:
 
             marker_value: str | None = None
             while time.monotonic() < deadline:
-                if controller.poll() is not None:
+                if controller is not None and controller.poll() is not None:
                     raise RuntimeError(
                         f"Controller exited with status {controller.returncode}"
                     )
@@ -331,7 +635,7 @@ def main(argv: list[str] | None = None) -> int:
                 if not isinstance(run, dict):
                     raise RuntimeError("Cursor run response is not an object")
                 run_payload = run
-                sandbox = sandbox or find_sandbox(daytona, pool)
+                sandbox = sandbox or find_sandbox(daytona, route_name)
                 if sandbox is not None:
                     marker_value = read_marker(sandbox, args.sandbox_class)
                 status = str(run.get("status", ""))
@@ -375,7 +679,8 @@ def main(argv: list[str] | None = None) -> int:
 
             result = {
                 "agent_id": agent_id,
-                "pool": pool,
+                "cursor_mode": args.cursor_mode,
+                "route_name": route_name,
                 "run_id": run_id,
                 "run_status": run_payload["status"] if run_payload else None,
                 "sandbox_class": args.sandbox_class,
@@ -408,6 +713,16 @@ def main(argv: list[str] | None = None) -> int:
                     daytona.delete(sandbox, timeout=300)
                 except Exception:
                     pass
+            if agent_id is not None and run_id is not None:
+                try:
+                    cursor_request(
+                        cursor_key,
+                        "POST",
+                        f"/v1/agents/{urllib.parse.quote(agent_id)}/runs/"
+                        f"{urllib.parse.quote(run_id)}/cancel",
+                    )
+                except Exception:
+                    pass
             if agent_id is not None:
                 try:
                     cursor_request(
@@ -417,17 +732,18 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 except Exception:
                     pass
-            try:
-                query = urllib.parse.urlencode(
-                    {"scope": "team", "pool_name": pool}
-                )
-                cursor_request(
-                    cursor_key,
-                    "DELETE",
-                    f"/v0/private-workers/pools?{query}",
-                )
-            except Exception:
-                pass
+            if args.cursor_mode == "team-pool":
+                try:
+                    query = urllib.parse.urlencode(
+                        {"scope": "team", "pool_name": route_name}
+                    )
+                    cursor_request(
+                        cursor_key,
+                        "DELETE",
+                        f"/v0/private-workers/pools?{query}",
+                    )
+                except Exception:
+                    pass
             stdout_file.close()
             stderr_file.close()
 
