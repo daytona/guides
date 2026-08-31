@@ -28,6 +28,7 @@ Then follow the guide's own README to install dependencies and run it.
 | [AG2 Bug Fixer](python/ag2/bug-fixer-agent) | Two AG2 agents that iteratively fix broken code, running each attempt in a sandbox. |
 | [Data Analyst](python/ai-data-analyst) | Natural-language data analysis with LiteLLM (works with any LLM provider), executing Python in a sandbox. |
 | [Claude Managed Agents](python/claude/claude-managed-agents) | Self-host Claude Managed Agents inside Daytona sandboxes. |
+| [Cursor BYOM Workers](python/cursor/bring-your-own-machine) | Run Cursor Cloud Agent pool workers on demand in Daytona sandboxes. |
 | [Windows Computer-Use Evals](python/computer-use/windows-evals) | Windows GUI computer-use eval suite driven by Claude Code / Codex via MCP. |
 | [DSPy RLMs](python/dspy-rlms) | Run DSPy's Recursive Language Model (REPL-in-a-loop) module on Daytona. |
 | [Google ADK Code Generator](python/google-adk/code-generator-agent) | Google ADK agent that generates and verifies code with the Daytona plugin. |

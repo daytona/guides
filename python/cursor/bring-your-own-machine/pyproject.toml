@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cursor-byom-daytona"
+version = "0.1.0"
+description = "Run claimed Cursor self-hosted workers in Daytona sandboxes"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "daytona>=0.196.0",
+  "python-dotenv",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+spawn-cursor-byom-worker = "cursor_byom.spawn:main"
+monitor-cursor-byom-worker = "cursor_byom.monitor:main"
+build-cursor-byom-snapshot = "cursor_byom.build_snapshot:main"
+
+[tool.setuptools]
+packages = ["cursor_byom"]
+
+[tool.setuptools.package-data]
+cursor_byom = ["Dockerfile"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
