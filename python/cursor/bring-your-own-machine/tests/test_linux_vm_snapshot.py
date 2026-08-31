@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import pytest
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any
@@ -23,6 +24,7 @@ class FakeSnapshotClient:
     def __init__(self, existing: list[FakeSnapshot] | None = None) -> None:
         self.existing = existing or []
         self.created: FakeSnapshot | None = None
+        self.deleted_snapshots: list[FakeSnapshot] = []
 
     def list(self, *, page: int, limit: int) -> object:
         return SimpleNamespace(items=self.existing, total_pages=1)
@@ -31,6 +33,9 @@ class FakeSnapshotClient:
         if self.created is None or self.created.name != name:
             raise AssertionError(f"snapshot {name!r} was not captured")
         return self.created
+
+    def delete(self, snapshot: FakeSnapshot) -> None:
+        self.deleted_snapshots.append(snapshot)
 
 
 class FakeFs:
@@ -179,3 +184,33 @@ def test_active_linux_vm_snapshot_is_reused_without_sandbox_creation() -> None:
     assert reused is True
     assert daytona.created == []
     assert daytona.deleted == []
+
+
+def test_failed_linux_vm_verification_deletes_uncertified_snapshot(
+    monkeypatch: Any,
+) -> None:
+    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    daytona = FakeDaytona()
+
+    def run_provisioner(
+        sandbox: FakeSandbox,
+        *,
+        verify_only: bool,
+        timeout: int,
+    ) -> object:
+        if verify_only:
+            raise RuntimeError("verification transport failed")
+        return SimpleNamespace(exit_code=0, result="provisioned")
+
+    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
+
+    with pytest.raises(RuntimeError, match="verification transport failed"):
+        module.build_linux_vm_snapshot(
+            daytona,
+            name="cursor-byom-linux-vm-unverified",
+            source_snapshot="daytona-vm-medium",
+            build_timeout=1800,
+            sandbox_timeout=300,
+        )
+
+    assert daytona.snapshot.deleted_snapshots == [daytona.snapshot.created]

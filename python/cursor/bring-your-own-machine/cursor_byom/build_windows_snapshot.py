@@ -329,6 +329,13 @@ def build_windows_snapshot(
             )
     except Exception as error:
         verifier_error = error
+        try:
+            daytona.snapshot.delete(snapshot)
+        except Exception as cleanup_error:
+            error.add_note(
+                f"Cleanup also failed for uncertified Windows snapshot "
+                f"{name}: {cleanup_error}"
+            )
         raise
     finally:
         if verifier is not None:

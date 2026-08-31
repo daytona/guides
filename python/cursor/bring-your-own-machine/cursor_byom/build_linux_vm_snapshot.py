@@ -294,10 +294,20 @@ def build_linux_vm_snapshot(
         build_timeout=build_timeout,
         sandbox_timeout=sandbox_timeout,
     )
-    _verify_snapshot(
-        daytona,
-        snapshot,
-        source_snapshot=source_snapshot,
-        sandbox_timeout=sandbox_timeout,
-    )
+    try:
+        _verify_snapshot(
+            daytona,
+            snapshot,
+            source_snapshot=source_snapshot,
+            sandbox_timeout=sandbox_timeout,
+        )
+    except Exception as error:
+        try:
+            daytona.snapshot.delete(snapshot)
+        except Exception as cleanup_error:
+            error.add_note(
+                f"Cleanup also failed for uncertified Linux VM snapshot "
+                f"{name}: {cleanup_error}"
+            )
+        raise
     return snapshot, False

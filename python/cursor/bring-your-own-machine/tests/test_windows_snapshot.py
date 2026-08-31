@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import pytest
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,6 +25,7 @@ class FakeSnapshotClient:
     def __init__(self, existing: list[FakeSnapshot]) -> None:
         self.existing = existing
         self.created: FakeSnapshot | None = None
+        self.deleted_snapshots: list[FakeSnapshot] = []
         self.list_calls: list[tuple[int, int]] = []
         self.get_calls: list[str] = []
 
@@ -36,6 +38,9 @@ class FakeSnapshotClient:
         if self.created is None or self.created.name != name:
             raise AssertionError(f"snapshot {name!r} was not captured")
         return self.created
+
+    def delete(self, snapshot: FakeSnapshot) -> None:
+        self.deleted_snapshots.append(snapshot)
 
 
 class FakeFs:
@@ -214,3 +219,33 @@ def test_windows_provisioner_pins_node_22_and_probes_native_module() -> None:
     )
     assert "require(process.argv[1])" in provisioner
     assert "node_modules\\better-sqlite3" in provisioner
+
+
+def test_failed_windows_verification_deletes_uncertified_snapshot(
+    monkeypatch: Any,
+) -> None:
+    module = importlib.import_module("cursor_byom.build_windows_snapshot")
+    daytona = FakeDaytona()
+
+    def run_provisioner(
+        sandbox: FakeSandbox,
+        *,
+        verify_only: bool,
+        timeout: int,
+    ) -> object:
+        if verify_only:
+            raise RuntimeError("verification transport failed")
+        return SimpleNamespace(exit_code=0, result="provisioned")
+
+    monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
+
+    with pytest.raises(RuntimeError, match="verification transport failed"):
+        module.build_windows_snapshot(
+            daytona,
+            name="cursor-byom-windows-unverified",
+            source_snapshot="windows-medium",
+            build_timeout=1800,
+            sandbox_timeout=300,
+        )
+
+    assert daytona.snapshot.deleted_snapshots == [daytona.snapshot.created]
