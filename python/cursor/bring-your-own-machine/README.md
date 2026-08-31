@@ -1,55 +1,25 @@
 # Cursor BYOM workers on Daytona
 
-> **Scope:** The operator host can use macOS or Linux. The Daytona worker runs only in a Linux sandbox.
+Run Cursor self-hosted workers in Daytona Linux sandboxes. A computer runs `agent worker controller` and the Python helper in this guide. That computer waits for Cursor requests, creates one sandbox per worker, and deletes each sandbox when its worker exits. Cursor keeps the agent loop and model access in its cloud. Commands, file changes, builds, and repository data stay in the sandbox.
 
-## What runs where
-
-This example uses Cursor's controller on a long-running operator host. It is not a serverless controller.
-
-1. A user sends a request to the Cursor pool named `daytona`.
-2. Cursor's cloud queues and orchestrates the request.
-3. `agent worker controller` runs on the operator host and claims the request.
-4. The controller calls the installed `spawn-cursor-byom-worker` command on that host.
-5. The spawn command uses the Daytona API to create one sandbox from the configured snapshot.
-6. The Cursor worker runs the session-start hook, which clones the requested GitHub repositories.
-7. A monitor on the operator host deletes the sandbox after the worker exits.
-
-The agent loop and model access stay in Cursor's cloud. Commands, file edits, builds, and repository data run in the Daytona sandbox.
+The commands below use a POSIX shell. They work on macOS and Linux. Cursor BYOM can support other platforms, but this template has no Windows instructions.
 
 ## Prerequisites
 
-Prepare these items before setup:
+- A computer that stays online while workers run.
+- Python 3.12 or newer, with the `venv` module.
+- A POSIX shell and `curl`.
+- A Daytona account and [Daytona API key](https://www.daytona.io/docs/en/api-keys/).
+- Daytona quota for one snapshot build and one sandbox per active worker. See [Daytona limits](https://www.daytona.io/docs/en/limits/).
+- A Cursor Enterprise team and a Cursor service-account API key.
+- A team-level Cursor GitHub App installation with access to each requested repository.
+- Cursor team-administrator access to Cloud Agents settings.
 
-- A macOS or Linux host that stays online while the controller runs
-- Python 3.12 or newer with the `venv` module
-- `curl` on the operator host
-- A Daytona account and [Daytona API key](https://www.daytona.io/docs/en/api-keys/)
-- Enough Daytona quota for snapshot builds and one sandbox per active worker; see [Daytona limits](https://www.daytona.io/docs/en/limits/)
-- A Cursor Enterprise team and a Cursor service-account API key
-- A team-level Cursor GitHub App installation with access to the requested repositories
-- Team-administrator access to Cursor's Cloud Agents settings
+Pool workers require an [Enterprise service-account key](https://cursor.com/docs/account/enterprise/service-accounts). A personal Cursor API key does not work.
 
-A personal Cursor API key cannot authenticate a pool worker. Use a [service-account API key](https://cursor.com/docs/account/enterprise/service-accounts).
+## Install
 
-## 1. Enable the Cursor settings
-
-A Cursor team administrator must configure the team before the controller starts:
-
-1. Open **Dashboard > Cloud Agents > Self-Hosted**.
-2. Enable **Allow Self-Hosted Agents** for pool requests.
-3. Enable Self-Hosted Pools for the team.
-4. Enable GitHub token minting for self-hosted pool workers.
-5. Confirm that the team's Cursor GitHub App installation can access each requested repository.
-
-Cursor's web documentation describes `--clone-git-repos`, but pinned Linux build `2026.08.25-3e8eec8` does not include that option. This template instead uses `--mint-github-token` with the executable session-start hook `/usr/local/bin/clone-cursor-byom-repos`.
-
-Cursor still mints a short-lived GitHub credential for each claimed request. Keep the team-level GitHub App installation and token-minting setting. Do not put a GitHub personal access token in `.env`.
-
-See [Cursor Self-Hosted Pools](https://cursor.com/docs/cloud-agent/bring-your-own-machine/pools) for the current administrator settings and pool constraints.
-
-## 2. Install the Cursor CLI on the operator host
-
-Run these commands from the macOS or Linux operator host:
+Install the Cursor CLI on the computer that runs the controller:
 
 ```bash
 curl https://cursor.com/install -fsS | bash
@@ -58,26 +28,39 @@ agent --version
 agent worker controller --help
 ```
 
-For this guide revision, `agent --version` must report `2026.08.25-3e8eec8`. The worker snapshot pins the same Cursor CLI archive.
+`agent --version` must report `2026.08.25-3e8eec8`. `agent worker controller --help` must list `--spawn`.
 
-The last command must show help for `agent worker controller`, including the required `--spawn` option.
-
-## 3. Install this package
-
-Start in a clean clone of `daytona-guides`:
+Install this package from a clean `daytona-guides` clone:
 
 ```bash
 cd python/cursor/bring-your-own-machine
 python3 -m venv .venv
-source .venv/bin/activate
+. .venv/bin/activate
 python3 -m pip install --editable .
 command -v spawn-cursor-byom-worker
 command -v build-cursor-byom-snapshot
 ```
 
-Both commands must resolve inside the current `.venv`.
+Both installed commands must resolve inside the current `.venv`.
 
-## 4. Set the operator environment
+## Set up Cursor
+
+A Cursor team administrator must complete these steps:
+
+1. Open **Dashboard > Cloud Agents > Self-Hosted**.
+2. Enable **Allow Self-Hosted Agents** for pool requests.
+3. Enable Self-Hosted Pools for the team.
+4. Enable GitHub token minting for self-hosted pool workers.
+5. Give the Cursor GitHub App access to each requested repository.
+6. Create or select the pool named `daytona`.
+
+See [Cursor Self-Hosted Pools](https://cursor.com/docs/cloud-agent/bring-your-own-machine/pools) for current team settings and pool limits.
+
+> **Note:** Linux CLI `2026.08.25-3e8eec8` lacks `--clone-git-repos`. The snapshot supplies `/usr/local/bin/clone-cursor-byom-repos` instead.
+
+Do not put a GitHub personal access token in `.env`.
+
+## Set the environment
 
 Create the local environment file:
 
@@ -85,24 +68,20 @@ Create the local environment file:
 cp .env.example .env
 ```
 
-Edit `.env` and set these values:
+Set the two keys and leave `SNAPSHOT_NAME` empty before the first build:
 
 ```dotenv
 DAYTONA_API_KEY=replace-with-your-daytona-api-key
 SNAPSHOT_NAME=
 CURSOR_API_KEY=replace-with-your-cursor-service-account-key
 
-CURSOR_WORKER_IDLE_RELEASE_TIMEOUT=900
-MONITOR_POLL_SECONDS=5
-SANDBOX_CREATE_TIMEOUT_SECONDS=120
-SANDBOX_LAUNCH_TIMEOUT_SECONDS=60
 ```
 
-Leave `SNAPSHOT_NAME` empty so the builder derives a stable name from the snapshot-content hash. Never commit `.env`.
+Do not add `CURSOR_AGENT_WORKER_ID`, `CURSOR_POOL`, or `CURSOR_REQUEST_ID` to `.env`. Cursor supplies these values.
 
-## 5. Build the worker snapshot
+## Build the snapshot
 
-The snapshot contains Linux, `git`, Cursor CLI `2026.08.25-3e8eec8`, and the executable repository-clone hook. It does not contain either API key.
+The snapshot contains Linux, `git`, Cursor CLI `2026.08.25-3e8eec8`, and the executable clone hook. It contains no API keys.
 
 Run the installed builder:
 
@@ -110,261 +89,115 @@ Run the installed builder:
 build-cursor-byom-snapshot
 ```
 
-Build progress goes to standard error. Success writes one JSON object to standard output:
+The command prints the snapshot name:
 
 ```json
 {"reused":false,"snapshot_name":"cursor-byom-default-1234abcd","state":"active"}
 ```
 
-A repeated build can return `"reused":true`. Copy the exact `snapshot_name` value into `.env`:
+Copy the printed `snapshot_name` into `.env`. The name above is only an example. See [Daytona snapshots](https://www.daytona.io/docs/en/snapshots/).
 
-```dotenv
-SNAPSHOT_NAME=cursor-byom-default-1234abcd
-```
+## Start the controller
 
-The value above is only an example. Use the value from your own JSON output. See [Daytona snapshots](https://www.daytona.io/docs/en/snapshots/).
-
-## 6. Start the controller
-
-Load the operator settings and start the controller from the guide directory:
+From `python/cursor/bring-your-own-machine`, load `.env` and start the controller:
 
 ```bash
-set -a; source .env; set +a
+set -a; . ./.env; set +a
 agent worker controller --spawn "$(pwd)/.venv/bin/spawn-cursor-byom-worker" --pool daytona
 ```
 
-Keep this foreground process running. Cursor supplies the claim values when it invokes the spawn command.
+Keep this foreground process running. Do not run `spawn-cursor-byom-worker` directly during normal operation.
 
-Do not run `spawn-cursor-byom-worker` directly for normal operation. A direct run does not have the controller-supplied claim values.
-
-## 7. Submit one pool request
-
-Use the Cloud Agents UI or the documented API.
-
-### UI
+## Submit one request
 
 1. Open [Cursor Agents](https://cursor.com/agents).
-2. Create an agent for a GitHub repository.
+2. Create an agent for an HTTPS GitHub repository.
 3. Select the self-hosted pool named `daytona`.
 4. Submit the request while the controller runs.
 
-### API example
+The minted GitHub token does not authenticate an SSH remote.
 
-The service-account key in `CURSOR_API_KEY` can authenticate this documented request. Replace the repository URL before use:
+## Code map
 
-```bash
-curl --request POST \
-  --url https://api.cursor.com/v1/agents \
-  -u "$CURSOR_API_KEY:" \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "prompt": {
-      "text": "Add a health check and document how to run it"
-    },
-    "env": {
-      "type": "pool",
-      "name": "daytona"
-    },
-    "repos": [
-      {
-        "url": "https://github.com/your-org/your-repo",
-        "startingRef": "main"
-      }
-    ]
-  }'
-```
+- `cursor_byom/config.py` parses environment values and builds sandbox names, labels, and the worker command.
+- `cursor_byom/build_snapshot.py` builds or reuses the content-hash snapshot.
+- `cursor_byom/spawn.py` replaces the sandbox, launches the worker, and starts cleanup.
+- `cursor_byom/monitor.py` watches the worker process and deletes its sandbox.
+- `cursor_byom/clone_repos.py` validates hook input and clones requested repositories.
+- `cursor_byom/Dockerfile` installs the pinned Cursor CLI and `/usr/local/bin/clone-cursor-byom-repos`.
 
-The response contains the agent ID, run state, and agent URL. See [Create An Agent](https://cursor.com/docs/cloud-agent/api/endpoints#create-an-agent) for the full request and response contract.
+## Controller configuration
 
-Use an HTTPS GitHub repository URL. The worker's minted token does not authenticate an SSH remote.
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DAYTONA_API_KEY` | Yes | Creates, finds, and deletes Daytona sandboxes. |
+| `SNAPSHOT_NAME` | Yes after the build | Selects the active snapshot from the builder output. |
+| `CURSOR_API_KEY` | Yes | Authenticates the controller and worker. Use an Enterprise service-account key. |
+| `CURSOR_WORKER_IDLE_RELEASE_TIMEOUT` | No | Keeps a completed worker available for follow-up work. Default: `900` seconds. |
+| `MONITOR_POLL_SECONDS` | No | Sets the monitor interval. Default: `5` seconds. |
+| `SANDBOX_CREATE_TIMEOUT_SECONDS` | No | Sets the Daytona create and delete timeout. Default: `120` seconds. |
+| `SANDBOX_LAUNCH_TIMEOUT_SECONDS` | No | Sets the worker launch timeout. Default: `60` seconds. |
 
-## Expected outputs and proof
+## Runtime flow
 
-A successful spawn writes one compact JSON object through the controller logs:
+1. A user submits a request to the `daytona` pool.
+2. Cursor queues the request. The controller claims it and calls the installed spawn command.
+3. The spawn command replaces the worker's deterministic sandbox and creates a fresh sandbox from `SNAPSHOT_NAME`.
+4. The sandbox starts `/usr/local/bin/agent`. The session-start hook clones HTTPS repositories into `/home/daytona/workspace`.
+5. The computer that runs the controller starts a monitor. The monitor deletes the sandbox after the worker exits.
+6. If startup fails, the spawn command releases the claim, deletes the sandbox, and reports a redacted error.
 
-```json
-{"sandbox_id":"...","sandbox_name":"cursor-worker-...","worker_id":"worker-...","request_id":"bc-..."}
-```
 
-Use these proof steps for each deployment:
+If the monitor fails, Daytona auto-stop and delete-on-stop provide a fallback.
 
-1. Confirm that the API response or UI shows a request for pool `daytona`.
-2. Confirm that the controller logs contain the matching `worker_id` and `request_id`.
-3. Confirm that Daytona shows the matching sandbox and `cursor.worker_id`, `cursor.request_id`, and `cursor.pool` labels.
-4. Confirm that the Cursor agent reaches a running state.
-5. Confirm that the requested HTTPS repository exists under `/home/daytona/workspace` in the sandbox.
-6. Confirm that the agent completes and that the host monitor deletes the sandbox.
+## Security and network
 
-The worker stores its process ID at `/tmp/cursor-byom/worker.pid`. It writes worker output to `/tmp/cursor-byom/worker.log` inside the sandbox.
+No inbound port is required. The worker management address `0.0.0.0:8080` stays inside the sandbox.
 
-This repository does not claim an Enterprise end-to-end proof. A coordinator must complete the proof steps with an Enterprise team before marking a deployment ready.
-
-## Settings and ownership
-
-| Variable | Owner | Required | Purpose |
-| --- | --- | --- | --- |
-| `DAYTONA_API_KEY` | Operator | Yes | Creates, finds, and deletes Daytona sandboxes. The host monitor also uses it. |
-| `SNAPSHOT_NAME` | Operator | Yes | Selects the active Daytona snapshot from the builder output. |
-| `CURSOR_API_KEY` | Operator | Yes | Authenticates the controller and the claimed Cursor worker. Use a service-account key. |
-| `CURSOR_WORKER_IDLE_RELEASE_TIMEOUT` | Operator | No | Keeps a completed worker available for follow-up work. Default: `900` seconds. |
-| `MONITOR_POLL_SECONDS` | Operator | No | Sets the host monitor interval. Default: `5` seconds. |
-| `SANDBOX_CREATE_TIMEOUT_SECONDS` | Operator | No | Sets the Daytona create and delete timeout. Default: `120` seconds. |
-| `SANDBOX_LAUNCH_TIMEOUT_SECONDS` | Operator | No | Sets the worker launch timeout. Default: `60` seconds. |
-| `CURSOR_AGENT_WORKER_ID` | Cursor controller | Yes | Gives the claimed worker its stable ID and its deterministic sandbox name. |
-| `CURSOR_POOL` | Cursor controller | Yes | Selects the pool passed to the sandbox worker. |
-| `CURSOR_REQUEST_ID` | Cursor controller | Yes | Identifies the claim for labels and failure release. |
-| `CURSOR_REPO_URL`, `CURSOR_REPO_URLS` | Cursor controller | No | Provide claimed repository metadata. `CURSOR_REPO_URLS` is a JSON string array. |
-| `CURSOR_WORKER_NAME` | Cursor controller | No | Provides an optional display name to the worker. |
-| `CURSOR_API_URL`, `CURSOR_API_ENDPOINT` | Cursor controller | No | Override the Cursor API base for claim release. |
-| `CURSOR_WORKER_WORKSPACE_DIR` | Cursor worker | Yes for the hook | Gives the hook the directory selected by `--worker-dir`. |
-
-Do not add controller-owned or worker-owned values to `.env`. The controller and worker set them at run time.
-
-## Lifecycle and cleanup
-
-The spawn command derives one stable sandbox name from `CURSOR_AGENT_WORKER_ID`. Before each claim attempt, it deletes any existing sandbox with that name.
-
-The spawn command then creates a fresh sandbox from `SNAPSHOT_NAME` and launches one new worker. A retry never trusts prior files or processes.
-
-For a claim with repository metadata, the sandbox worker runs this logical command:
-
-```bash
-/usr/local/bin/agent worker --pool "$CURSOR_POOL" \
-  --worker-dir /home/daytona/workspace \
-  --management-addr 0.0.0.0:8080 \
-  --mint-github-token \
-  --on-session-start /usr/local/bin/clone-cursor-byom-repos \
-  --idle-release-timeout 900 \
-  start
-```
-
-The configured timeout replaces `900`. The management address stays inside the sandbox; this guide does not publish it.
-The launcher uses non-login `sh -c` and the absolute `/usr/local/bin/agent` path. Login files and workspace `PATH` entries cannot select the worker executable.
-
-At session start, Cursor sends one JSON object to the hook through standard input. The object has this form:
-
-```json
-{
-  "hook_event_name": "sessionStart",
-  "repo_urls": ["https://github.com/your-org/your-repo"],
-  "repos": [
-    {
-      "repo_url": "https://github.com/your-org/your-repo",
-      "ref": "main",
-      "primary": true
-    }
-  ]
-}
-```
-
-The hook uses `repos` when that array is present. It uses `repo_urls` as a fallback. The JSON does not contain the minted credential.
-
-The worker sets `CURSOR_WORKER_WORKSPACE_DIR` from `--worker-dir`. The hook clones each repository into a stable, URL-specific directory under `/home/daytona/workspace`.
-
-The hook removes a partial clone and retries `git clone` up to five times. The delays allow the minted GitHub credential to become available. If all attempts fail, the hook writes one actionable error to standard error and exits with status `1`.
-
-After a successful launch, the operator host starts a detached monitor. The monitor receives only the Daytona key, sandbox ID, worker PID, and monitor settings.
-
-When the Cursor worker exits, the host monitor deletes the Daytona sandbox. Daytona auto-stop plus delete-on-stop is the cleanup fallback if the monitor cannot complete its work.
-
-If startup fails, the spawn command tries to release the Cursor claim. It also deletes the fresh sandbox. The command then exits with a redacted error.
-
-## Network and secret boundaries
-
-No inbound port is required. Permit these outbound HTTPS destinations:
-
-| Runs from | Required destination |
+| Runs from | Outbound HTTPS destination |
 | --- | --- |
-| Operator host | `cursor.com` for CLI installation |
-| Operator host | `downloads.cursor.com` for Cursor CLI downloads |
-| Operator host | The Python package index configured for `pip` when this package is installed |
-| Operator host | `api.cursor.com` for the controller, agent API, and claim release |
-| Operator host | `https://app.daytona.io/api` for Daytona API access |
-| Daytona sandbox | `api2.cursor.sh` or `api2direct.cursor.sh` for the Cursor worker session |
+| Computer running the controller | `cursor.com`, `downloads.cursor.com`, the configured Python package index, `api.cursor.com`, and `https://app.daytona.io/api` |
+| Daytona sandbox | `api2.cursor.sh` or `api2direct.cursor.sh` |
 | Daytona sandbox | `cloud-agent-artifacts.s3.us-east-1.amazonaws.com` for optional artifact uploads |
-| Daytona sandbox | The requested HTTPS Git host, plus package registries and tool-specific hosts needed by the task |
+| Daytona sandbox | The requested HTTPS Git host and task-specific package or tool hosts |
 
-Prefer the exact artifact host. A wildcard for all `*.s3.us-east-1.amazonaws.com` creates a larger egress boundary.
+The computer running the controller holds both API keys. The sandbox receives the Cursor service-account key, but not the Daytona key.
 
-The operator host holds both API keys. The Daytona sandbox receives the Cursor service-account key, worker ID, and optional worker name.
+Cursor requires the key in the worker process. Agent tools and repository code run as the same OS user.
 
-Cursor requires the service-account key inside the Cursor worker process. Agent tools and repository code run as the same OS user as that process.
+Untrusted agent code can inspect same-user process state and obtain the Cursor key. Use a dedicated, least-privilege service account for each customer.
 
-Untrusted agent code can potentially inspect same-user process state and obtain the Cursor key. Treat this access as an unavoidable trust boundary.
+Rotate the key after suspected exposure. Do not reuse sandboxes, service accounts, or Cursor keys across customers.
 
-The non-login shell and absolute agent path protect worker startup from login files and workspace `PATH` entries. They cannot fully hide the Cursor key from code in the same sandbox.
+Cursor sends short-lived GitHub credentials to the claimed worker. This guide stores no GitHub token.
 
-Use these controls for each deployment:
+Cursor receives file chunks for inference and uploaded artifacts. Review [Cursor's security and network model](https://cursor.com/docs/cloud-agent/security-network).
 
-- Use one dedicated, least-privilege Cursor service account for each customer.
-- Give the service account only the access that its worker pool requires.
-- Rotate the Cursor key regularly and immediately after suspected exposure.
-- Create one fresh sandbox for each claim.
-- On a retry, replace the deterministic sandbox. Do not trust its files or processes.
-- Do not reuse a sandbox, service account, or Cursor key across customers.
+## Validation checklist
 
-The Daytona sandbox does not receive the Daytona key. The host monitor receives the Daytona key, but it does not receive the Cursor key.
+1. Confirm `agent --version` reports `2026.08.25-3e8eec8`.
+2. Build the snapshot and copy its exact name into `.env`.
+3. Start the controller and submit one UI request to pool `daytona`.
+4. Confirm Daytona shows labels `cursor.worker_id`, `cursor.request_id`, and `cursor.pool` on the new sandbox.
+5. Confirm the HTTPS repository exists under `/home/daytona/workspace`.
+6. Confirm the agent completes and the monitor deletes the sandbox.
 
-Cursor sends the short-lived GitHub token to the claimed worker. This guide stores no GitHub token.
-
-Cursor still receives file chunks used for inference and uploaded Cloud Agent artifacts. Review [Cursor's security and network model](https://cursor.com/docs/cloud-agent/security-network) before production use.
+Complete this checklist with an Enterprise team before production use.
 
 ## Troubleshooting
 
-### `agent` is not found
+- **`agent` is not found or has the wrong version.** Export `PATH` again. Use `2026.08.25-3e8eec8` for both environments.
 
-Run `export PATH="$HOME/.local/bin:$PATH"` again. Then run `agent --version` and `agent worker controller --help`.
+- **The controller rejects the Cursor key.** Confirm `CURSOR_API_KEY` is an Enterprise service-account key. Load `.env` again.
 
-### The CLI version differs
+- **The spawn command reports missing claim values.** Start it through `agent worker controller`. Do not set claim values by hand.
 
-Do not assume controller and worker compatibility. Confirm the operator CLI contract against worker version `2026.08.25-3e8eec8` before use.
+- **The request stays queued.** Confirm the controller and request use pool `daytona`. Confirm **Allow Self-Hosted Agents** is enabled.
 
-### The controller rejects the Cursor key
+- **Repository clone fails.** Inspect `/tmp/cursor-byom/worker.log`. Confirm HTTPS access, token minting, and executable `/usr/local/bin/clone-cursor-byom-repos`.
 
-Confirm that `CURSOR_API_KEY` is an Enterprise service-account key. Run `set -a; source .env; set +a` again after each edit.
+- **Snapshot creation or worker launch fails.** Confirm `DAYTONA_API_KEY`, `SNAPSHOT_NAME`, the Daytona organization, and [Daytona limits](https://www.daytona.io/docs/en/limits/).
 
-### The spawn command reports missing `CURSOR_AGENT_WORKER_ID`, `CURSOR_POOL`, or `CURSOR_REQUEST_ID`
+- **A sandbox remains after worker exit.** Confirm the computer retained Daytona access. Delete the sandbox only when no worker uses it.
 
-Start the command through `agent worker controller`. Do not set claim values by hand or run the spawn command directly.
-
-### The request stays queued
-
-Confirm that the controller runs with `--pool daytona`. Confirm that the request also targets pool `daytona`.
-
-Confirm that **Allow Self-Hosted Agents** is enabled. If the API reports an unknown pool, register or select `daytona` in the Cursor Self-Hosted Pools dashboard first.
-
-### The pinned Linux CLI rejects `--clone-git-repos`
-
-The Cursor web documentation mentions this option, but Linux build `2026.08.25-3e8eec8` does not include it. Do not add the option to this template.
-
-Rebuild the snapshot from this guide. The template uses `--mint-github-token` and `/usr/local/bin/clone-cursor-byom-repos` instead.
-
-### Repository clone fails
-
-Inspect `/tmp/cursor-byom/worker.log` for the hook's error. Confirm all these requirements:
-
-- The repository URL uses HTTPS.
-- The team's Cursor GitHub App installation can access the repository.
-- A team administrator enabled GitHub token minting.
-- The snapshot contains the executable `/usr/local/bin/clone-cursor-byom-repos`.
-- The worker uses `--mint-github-token` and `--on-session-start /usr/local/bin/clone-cursor-byom-repos`.
-- The request targets the named, any-repo pool `daytona`, not `default`.
-- `/home/daytona/workspace` is writable by the `daytona` user.
-
-The hook retries each clone up to five times before it reports a credential error. Cursor leaves a clone-failed request in the queue. Correct the setting before the next claim.
-
-### Snapshot creation fails or times out
-
-Confirm `DAYTONA_API_KEY`, the selected Daytona organization, and the current [Daytona limits](https://www.daytona.io/docs/en/limits/). Increase `SANDBOX_CREATE_TIMEOUT_SECONDS` only when the Daytona operation needs more time.
-
-### The worker process fails to launch
-
-Open the sandbox before fallback cleanup completes. Inspect `/tmp/cursor-byom/worker.log`. Confirm that the pinned Cursor CLI and `/usr/local/bin/clone-cursor-byom-repos` exist in the snapshot.
-
-### A sandbox remains after the worker exits
-
-Confirm that the operator host stayed online and retained Daytona API access. Check the sandbox state in Daytona, then delete the stale sandbox after you confirm no worker uses it.
-
-### A failed startup leaves a claimed request
-
-Use Cursor's documented [release-claim endpoint](https://cursor.com/docs/cloud-agent/api/endpoints#release-a-claim). Release only the request ID shown by the failed controller operation.
+- **A failed startup leaves a claimed request.** Use the [release-claim endpoint](https://cursor.com/docs/cloud-agent/api/endpoints#release-a-claim). Release only the failed request ID.
