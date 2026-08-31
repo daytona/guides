@@ -26,7 +26,6 @@ from dotenv import load_dotenv
 DOCKERFILE = resources.files("cursor_byom").joinpath("Dockerfile")
 CLONE_HOOK = resources.files("cursor_byom").joinpath("clone_repos.py")
 SNAPSHOT_INPUTS = (DOCKERFILE, CLONE_HOOK)
-DEFAULT_SNAPSHOT_PREFIX = "cursor-byom-default"
 DEFAULT_CPU = 2
 DEFAULT_MEMORY_GB = 8
 DEFAULT_DISK_GB = 10
@@ -41,6 +40,7 @@ class SnapshotCollisionError(RuntimeError):
 
 def snapshot_name_for(
     inputs: tuple[Traversable, ...],
+    sandbox_class: SandboxClass,
     override: str | None = None,
 ) -> str:
     """Return an explicit name or one derived from the exact image inputs."""
@@ -54,7 +54,7 @@ def snapshot_name_for(
         digest.update(b"\0")
         digest.update(snapshot_input.read_bytes())
         digest.update(b"\0")
-    return f"{DEFAULT_SNAPSHOT_PREFIX}-{digest.hexdigest()[:8]}"
+    return f"cursor-byom-{sandbox_class.value}-{digest.hexdigest()[:8]}"
 
 
 def _iter_snapshots(daytona: Any) -> Iterator[object]:
@@ -78,12 +78,23 @@ def _state_value(snapshot: object) -> str:
     return str(getattr(state, "value", state or "unknown"))
 
 
-def find_reusable_snapshot(daytona: Any, name: str) -> object | None:
-    """Return the matching active snapshot and reject all other matching states."""
+def find_reusable_snapshot(
+    daytona: Any,
+    name: str,
+    sandbox_class: SandboxClass,
+) -> object | None:
+    """Return the matching active snapshot and reject all other matches."""
     for snapshot in _iter_snapshots(daytona):
         if getattr(snapshot, "name", None) != name:
             continue
 
+        actual_class = getattr(snapshot, "sandbox_class", None)
+        actual_class_value = str(getattr(actual_class, "value", actual_class))
+        if actual_class_value != sandbox_class.value:
+            raise SnapshotCollisionError(
+                f"Snapshot name collision: {name} "
+                f"sandbox_class={actual_class_value}; expected {sandbox_class.value}"
+            )
         state = _state_value(snapshot)
         if state == "active":
             return snapshot
@@ -156,9 +167,9 @@ def main(argv: list[str] | None = None) -> int:
     name: str | None = None
 
     try:
-        name = snapshot_name_for(SNAPSHOT_INPUTS, name_override)
+        name = snapshot_name_for(SNAPSHOT_INPUTS, sandbox_class, name_override)
         daytona = Daytona(DaytonaConfig(target=target))
-        existing = find_reusable_snapshot(daytona, name)
+        existing = find_reusable_snapshot(daytona, name, sandbox_class)
         if existing is not None:
             _write_result(
                 existing,

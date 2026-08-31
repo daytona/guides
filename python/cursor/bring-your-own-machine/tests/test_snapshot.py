@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+from daytona import SandboxClass
 import pytest
 
 from cursor_byom import build_snapshot as snapshot_module
@@ -28,7 +29,7 @@ class FakeSnapshotState:
 class FakeSnapshot:
     name: str
     state: FakeSnapshotState
-    sandbox_class: object | None = None
+    sandbox_class: object | None = "container"
 
 
 @dataclass(frozen=True)
@@ -85,7 +86,10 @@ def test_default_snapshot_name_contains_exact_snapshot_inputs_sha256_prefix(
     dockerfile.write_bytes(b"FROM python:3.13-slim\n")
     clone_hook.write_bytes(b"#!/usr/bin/env python3\nprint('clone')\n")
 
-    name = snapshot_name_for((dockerfile, clone_hook))
+    name = snapshot_name_for(
+        (dockerfile, clone_hook),
+        SandboxClass.CONTAINER,
+    )
 
     expected_sha8 = hashlib.sha256(
         b"Dockerfile\0"
@@ -93,7 +97,7 @@ def test_default_snapshot_name_contains_exact_snapshot_inputs_sha256_prefix(
         b"clone_repos.py\0"
         b"#!/usr/bin/env python3\nprint('clone')\n\0"
     ).hexdigest()[:8]
-    assert name == f"cursor-byom-default-{expected_sha8}"
+    assert name == f"cursor-byom-container-{expected_sha8}"
 
 
 def test_default_snapshot_name_changes_when_only_dockerfile_changes(
@@ -105,10 +109,13 @@ def test_default_snapshot_name_changes_when_only_dockerfile_changes(
     clone_hook.write_bytes(b"#!/usr/bin/env python3\n")
     inputs = (dockerfile, clone_hook)
 
-    original_name = snapshot_name_for(inputs)
+    original_name = snapshot_name_for(inputs, SandboxClass.CONTAINER)
     dockerfile.write_bytes(b"FROM python:3.14-slim\n")
 
-    assert snapshot_name_for(inputs) != original_name
+    assert (
+        snapshot_name_for(inputs, SandboxClass.CONTAINER)
+        != original_name
+    )
 
 
 def test_default_snapshot_name_changes_when_only_clone_hook_changes(
@@ -120,10 +127,30 @@ def test_default_snapshot_name_changes_when_only_clone_hook_changes(
     clone_hook.write_bytes(b"#!/usr/bin/env python3\n")
     inputs = (dockerfile, clone_hook)
 
-    original_name = snapshot_name_for(inputs)
+    original_name = snapshot_name_for(inputs, SandboxClass.CONTAINER)
     clone_hook.write_bytes(b"#!/usr/bin/env python3\nprint('clone')\n")
 
-    assert snapshot_name_for(inputs) != original_name
+    assert (
+        snapshot_name_for(inputs, SandboxClass.CONTAINER)
+        != original_name
+    )
+
+
+def test_default_snapshot_name_is_unique_per_linux_sandbox_class(
+    tmp_path: Path,
+) -> None:
+    dockerfile = tmp_path / "Dockerfile"
+    clone_hook = tmp_path / "clone_repos.py"
+    dockerfile.write_bytes(b"FROM daytonaio/sandbox:0.6.0\n")
+    clone_hook.write_bytes(b"#!/usr/bin/env python3\n")
+    inputs = (dockerfile, clone_hook)
+
+    container = snapshot_name_for(inputs, SandboxClass.CONTAINER)
+    linux_vm = snapshot_name_for(inputs, SandboxClass.LINUX_VM)
+
+    assert container.startswith("cursor-byom-container-")
+    assert linux_vm.startswith("cursor-byom-linux-vm-")
+    assert container != linux_vm
 
 
 def test_explicit_snapshot_name_override_is_trimmed_without_reading_inputs(
@@ -136,6 +163,7 @@ def test_explicit_snapshot_name_override_is_trimmed_without_reading_inputs(
 
     name = snapshot_name_for(
         missing_inputs,
+        SandboxClass.CONTAINER,
         override="  operator-snapshot  ",
     )
 
@@ -160,7 +188,11 @@ def test_active_snapshot_with_matching_name_is_reused() -> None:
     )
     daytona = FakeDaytona([[existing]])
 
-    found = find_reusable_snapshot(daytona, existing.name)
+    found = find_reusable_snapshot(
+        daytona,
+        existing.name,
+        SandboxClass.CONTAINER,
+    )
 
     assert found is existing
 
@@ -182,7 +214,11 @@ def test_active_snapshot_with_matching_name_on_second_page_is_reused() -> None:
         ]
     )
 
-    found = find_reusable_snapshot(daytona, existing.name)
+    found = find_reusable_snapshot(
+        daytona,
+        existing.name,
+        SandboxClass.CONTAINER,
+    )
 
     assert found is existing
     assert daytona.snapshot.list_calls == [1, 2]
@@ -196,13 +232,38 @@ def test_non_active_snapshot_with_matching_name_raises_collision_error() -> None
     daytona = FakeDaytona([[existing]])
 
     with pytest.raises(SnapshotCollisionError) as caught:
-        find_reusable_snapshot(daytona, existing.name)
+        find_reusable_snapshot(
+            daytona,
+            existing.name,
+            SandboxClass.CONTAINER,
+        )
 
     assert str(caught.value) == (
         "Snapshot name collision: cursor-byom-default-ba7816bf "
         "state=building; expected active"
     )
 
+
+
+def test_active_snapshot_with_wrong_class_is_rejected() -> None:
+    existing = FakeSnapshot(
+        name="cursor-byom-linux-vm-ba7816bf",
+        state=FakeSnapshotState("active"),
+        sandbox_class=SimpleNamespace(value="container"),
+    )
+    daytona = FakeDaytona([[existing]])
+
+    with pytest.raises(SnapshotCollisionError) as caught:
+        find_reusable_snapshot(
+            daytona,
+            existing.name,
+            SandboxClass.LINUX_VM,
+        )
+
+    assert str(caught.value) == (
+        "Snapshot name collision: cursor-byom-linux-vm-ba7816bf "
+        "sandbox_class=container; expected linux-vm"
+    )
 
 @pytest.mark.parametrize(
     ("sandbox_class", "target"),
