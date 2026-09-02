@@ -82,32 +82,22 @@ def test_default_snapshot_name_contains_exact_snapshot_inputs_sha256_prefix(
     tmp_path: Path,
 ) -> None:
     dockerfile = tmp_path / "Dockerfile"
-    clone_hook = tmp_path / "clone_repos.py"
     dockerfile.write_bytes(b"FROM python:3.13-slim\n")
-    clone_hook.write_bytes(b"#!/usr/bin/env python3\nprint('clone')\n")
 
-    name = snapshot_name_for(
-        (dockerfile, clone_hook),
-        SandboxClass.CONTAINER,
-    )
+    name = snapshot_name_for((dockerfile,), SandboxClass.CONTAINER)
 
     expected_sha8 = hashlib.sha256(
-        b"Dockerfile\0"
-        b"FROM python:3.13-slim\n\0"
-        b"clone_repos.py\0"
-        b"#!/usr/bin/env python3\nprint('clone')\n\0"
+        b"Dockerfile\0" b"FROM python:3.13-slim\n\0"
     ).hexdigest()[:8]
     assert name == f"cursor-self-hosted-container-{expected_sha8}"
 
 
-def test_default_snapshot_name_changes_when_only_dockerfile_changes(
+def test_default_snapshot_name_changes_when_dockerfile_changes(
     tmp_path: Path,
 ) -> None:
     dockerfile = tmp_path / "Dockerfile"
-    clone_hook = tmp_path / "clone_repos.py"
     dockerfile.write_bytes(b"FROM python:3.13-slim\n")
-    clone_hook.write_bytes(b"#!/usr/bin/env python3\n")
-    inputs = (dockerfile, clone_hook)
+    inputs = (dockerfile,)
 
     original_name = snapshot_name_for(inputs, SandboxClass.CONTAINER)
     dockerfile.write_bytes(b"FROM python:3.14-slim\n")
@@ -118,32 +108,13 @@ def test_default_snapshot_name_changes_when_only_dockerfile_changes(
     )
 
 
-def test_default_snapshot_name_changes_when_only_clone_hook_changes(
-    tmp_path: Path,
-) -> None:
-    dockerfile = tmp_path / "Dockerfile"
-    clone_hook = tmp_path / "clone_repos.py"
-    dockerfile.write_bytes(b"FROM python:3.13-slim\n")
-    clone_hook.write_bytes(b"#!/usr/bin/env python3\n")
-    inputs = (dockerfile, clone_hook)
-
-    original_name = snapshot_name_for(inputs, SandboxClass.CONTAINER)
-    clone_hook.write_bytes(b"#!/usr/bin/env python3\nprint('clone')\n")
-
-    assert (
-        snapshot_name_for(inputs, SandboxClass.CONTAINER)
-        != original_name
-    )
-
 
 def test_default_snapshot_name_is_unique_per_linux_sandbox_class(
     tmp_path: Path,
 ) -> None:
     dockerfile = tmp_path / "Dockerfile"
-    clone_hook = tmp_path / "clone_repos.py"
     dockerfile.write_bytes(b"FROM daytonaio/sandbox:0.6.0\n")
-    clone_hook.write_bytes(b"#!/usr/bin/env python3\n")
-    inputs = (dockerfile, clone_hook)
+    inputs = (dockerfile,)
 
     container = snapshot_name_for(inputs, SandboxClass.CONTAINER)
     linux_vm = snapshot_name_for(inputs, SandboxClass.LINUX_VM)
@@ -156,10 +127,7 @@ def test_default_snapshot_name_is_unique_per_linux_sandbox_class(
 def test_explicit_snapshot_name_override_is_trimmed_without_reading_inputs(
     tmp_path: Path,
 ) -> None:
-    missing_inputs = (
-        tmp_path / "missing" / "Dockerfile",
-        tmp_path / "missing" / "clone_repos.py",
-    )
+    missing_inputs = (tmp_path / "missing" / "Dockerfile",)
 
     name = snapshot_name_for(
         missing_inputs,
@@ -177,7 +145,6 @@ def test_snapshot_inputs_are_exact_packaged_image_inputs() -> None:
 
     assert tuple(snapshot_inputs_for(SandboxClass.CONTAINER)) == (
         package_dir / "Dockerfile",
-        package_dir / "clone_repos.py",
     )
 
 
@@ -441,47 +408,11 @@ def test_builder_dispatches_windows_snapshot_provisioning(
     }
 
 
-
-
-def test_dockerfile_installs_executable_clone_hook_without_unsupported_flag() -> None:
+def test_dockerfile_pins_a_cursor_build_that_clones_repositories_itself() -> None:
     snapshot_file = snapshot_module.__file__
     assert snapshot_file is not None
-    dockerfile = (
-        Path(snapshot_file).with_name("Dockerfile").read_text()
-    )
-    hook_path = "/usr/local/bin/clone-cursor-self-hosted-repos"
-    copy_line = next(
-        (
-            line
-            for line in dockerfile.splitlines()
-            if line.startswith("COPY ")
-            and "clone_repos.py" in line
-            and hook_path in line
-        ),
-        None,
-    )
+    dockerfile = Path(snapshot_file).with_name("Dockerfile").read_text()
 
-    assert copy_line is not None
-    copy_makes_executable = (
-        re.search(r"--chmod=0?755(?:\s|$)", copy_line) is not None
-    )
-    later_chmod_makes_executable = (
-        re.search(
-            (
-                rf"(?m)^\s*(?:RUN\s+)?chmod\s+(?:0?755|\+x)\s+"
-                rf"{re.escape(hook_path)}(?:\s|$)"
-            ),
-            dockerfile,
-        )
-        is not None
-    )
-    assert copy_makes_executable or later_chmod_makes_executable
-    assert "--clone-git-repos" not in dockerfile
-
-
-def test_clone_hook_source_starts_with_python3_shebang() -> None:
-    snapshot_file = snapshot_module.__file__
-    assert snapshot_file is not None
-    clone_hook = Path(snapshot_file).with_name("clone_repos.py")
-
-    assert clone_hook.read_bytes().startswith(b"#!/usr/bin/env python3\n")
+    assert "downloads.cursor.com/lab/2026.09.02-e3e9343/" in dockerfile
+    assert "b2sum --check" in dockerfile
+    assert "clone_repos" not in dockerfile

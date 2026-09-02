@@ -94,8 +94,8 @@ def test_windows_worker_launch_uses_baked_agent_and_secret_file_cleanup() -> Non
     assert "worker" in arguments
     assert "--pool windows-pool" in arguments
     assert "--worker-dir C:\\cursor\\workspace" in arguments
-    assert "--on-session-start" in arguments
-    assert "clone-cursor-self-hosted-repos.cmd" in arguments
+    assert "--clone-git-repos" in arguments
+    assert "--on-session-start" not in arguments
     assert "host-daytona-key" not in json.dumps(payload)
 
 

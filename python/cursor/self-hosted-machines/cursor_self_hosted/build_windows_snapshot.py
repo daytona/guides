@@ -19,20 +19,14 @@ from daytona import (
 )
 
 WINDOWS_PROVISIONER = resources.files("cursor_self_hosted").joinpath("provision_windows.ps1")
-WINDOWS_CLONE_HOOK = resources.files("cursor_self_hosted").joinpath("clone_repos_windows.ps1")
-WINDOWS_CLONE_WRAPPER = resources.files("cursor_self_hosted").joinpath("clone_repos_windows.cmd")
 WINDOWS_BOOTSTRAP = resources.files("cursor_self_hosted").joinpath("windows_bootstrap.ps1")
 
 WINDOWS_SNAPSHOT_INPUTS = (
     WINDOWS_PROVISIONER,
-    WINDOWS_CLONE_HOOK,
-    WINDOWS_CLONE_WRAPPER,
     WINDOWS_BOOTSTRAP,
 )
 WINDOWS_SNAPSHOT_UPLOADS = (
     (WINDOWS_PROVISIONER, "C:/Windows/Temp/provision_windows.ps1"),
-    (WINDOWS_CLONE_HOOK, "C:/Windows/Temp/clone_repos_windows.ps1"),
-    (WINDOWS_CLONE_WRAPPER, "C:/Windows/Temp/clone_repos_windows.cmd"),
     (WINDOWS_BOOTSTRAP, "C:/Windows/Temp/windows_bootstrap.ps1"),
 )
 

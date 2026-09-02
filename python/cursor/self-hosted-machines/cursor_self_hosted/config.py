@@ -150,13 +150,7 @@ def worker_command(config: Config) -> list[str]:
         "0.0.0.0:8080",
     ]
     if config.cursor_repo_urls:
-        command.extend(
-            [
-                "--mint-github-token",
-                "--on-session-start",
-                "/usr/local/bin/clone-cursor-self-hosted-repos",
-            ]
-        )
+        command.append("--clone-git-repos")
     command.extend(
         [
             "--idle-release-timeout",

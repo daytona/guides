@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly CURSOR_AGENT_VERSION="2026.08.25-3e8eec8"
-readonly CURSOR_AGENT_URL="https://downloads.cursor.com/lab/2026.08.25-3e8eec8/linux/x64/agent-cli-package.tar.gz"
-readonly CURSOR_AGENT_BLAKE2="cd5485f7524688e1a688daa2b64669c76bedcdd9ab87638bac78f9b42c2442bd5000559920a2f5171e00b5eb7fcf737f9111ef296f1eba40369cebf3279ee0a9"
+readonly CURSOR_AGENT_VERSION="2026.09.02-e3e9343"
+readonly CURSOR_AGENT_URL="https://downloads.cursor.com/lab/2026.09.02-e3e9343/linux/x64/agent-cli-package.tar.gz"
+readonly CURSOR_AGENT_BLAKE2="a29694895b3b5d90e7d751eddfd2682e4872c9db6c2a3dee9eb3940a74d58c1cd498be3cc5ddf22bc7a22f2e8011e7430e5392149d1704ce952b368fa105d484"
 readonly CURSOR_AGENT_ROOT="/opt/cursor-agent"
-readonly CLONE_HOOK_DESTINATION="/usr/local/bin/clone-cursor-self-hosted-repos"
 readonly WORKSPACE="/home/daytona/workspace"
 temporary_directory=""
 
@@ -30,14 +29,10 @@ else
     fail "usage: provision_linux_vm.sh [VerifyOnly]"
 fi
 
-readonly SCRIPT_DIRECTORY="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-readonly CLONE_HOOK_SOURCE="${SCRIPT_DIRECTORY}/clone_repos.py"
 
 [[ $(uname -s) == "Linux" ]] || fail "requires Linux"
 [[ $(uname -m) == "x86_64" ]] || fail "requires x86_64; found $(uname -m)"
 [[ $(id -un) == "daytona" ]] || fail "must run as the daytona user"
-[[ -r "$CLONE_HOOK_SOURCE" && -f "$CLONE_HOOK_SOURCE" ]] || \
-    fail "missing uploaded clone_repos.py"
 command -v sudo >/dev/null 2>&1 || fail "sudo is not installed"
 sudo -n true >/dev/null 2>&1 || fail "daytona does not have passwordless sudo"
 
@@ -46,7 +41,7 @@ install_snapshot_contents() {
 
     sudo -n env DEBIAN_FRONTEND=noninteractive apt-get update
     sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install \
-        --yes --no-install-recommends ca-certificates curl git python3
+        --yes --no-install-recommends ca-certificates curl git
     sudo -n rm -rf /var/lib/apt/lists/*
 
     local archive staging_root downloaded_version
@@ -94,8 +89,6 @@ install_snapshot_contents() {
         "${CURSOR_AGENT_ROOT}/cursor-agent" /usr/local/bin/agent
     sudo -n ln --symbolic --force \
         "${CURSOR_AGENT_ROOT}/cursor-agent" /usr/local/bin/cursor-agent
-    sudo -n install --owner=root --group=root --mode=0755 \
-        "$CLONE_HOOK_SOURCE" "$CLONE_HOOK_DESTINATION"
     sudo -n install -d --owner=daytona --group=daytona --mode=0755 "$WORKSPACE"
     rm -rf -- "$temporary_directory"
     temporary_directory=""
@@ -104,7 +97,7 @@ install_snapshot_contents() {
 verify_snapshot_contents() {
     local package status agent_version worker_help write_probe
 
-    for package in ca-certificates curl git python3; do
+    for package in ca-certificates curl git; do
         status="$(dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null || true)"
         [[ $status == "install ok installed" ]] \
             || fail "required package '${package}' is not installed"
@@ -127,15 +120,10 @@ verify_snapshot_contents() {
         || fail "Cursor worker CLI is unavailable"
     grep --quiet --fixed-strings -- '--pool' <<<"$worker_help" \
         || fail "Cursor worker CLI does not expose --pool"
+    grep --quiet --fixed-strings -- '--clone-git-repos' <<<"$worker_help" \
+        || fail "Cursor worker CLI does not expose --clone-git-repos"
 
     git --version >/dev/null 2>&1 || fail "git is unavailable"
-    python3 --version >/dev/null 2>&1 || fail "python3 is unavailable"
-    [[ -x "$CLONE_HOOK_DESTINATION" ]] \
-        || fail "installed clone hook is not executable"
-    cmp --silent "$CLONE_HOOK_SOURCE" "$CLONE_HOOK_DESTINATION" \
-        || fail "installed clone hook does not match the uploaded recipe"
-    "$CLONE_HOOK_DESTINATION" --help >/dev/null \
-        || fail "installed clone hook cannot execute"
 
     [[ -d "$WORKSPACE" && -w "$WORKSPACE" ]] \
         || fail "workspace is not writable by daytona"

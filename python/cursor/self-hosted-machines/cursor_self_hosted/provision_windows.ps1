@@ -9,9 +9,9 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$CursorAgentVersion = '2026.08.25-3e8eec8'
-$CursorPackageUrl = 'https://downloads.cursor.com/lab/2026.08.25-3e8eec8/windows/x64/agent-cli-package.zip'
-$CursorPackageSha512 = 'd6a839cb3ac95ee37e042804afad4eae2465066a4d4d2e75c8ddab9aa8befcca9e41e99780e82757ad1ba6b29a993e00db03777e54a1949677aff3d52d3d7b45'
+$CursorAgentVersion = '2026.09.02-e3e9343'
+$CursorPackageUrl = 'https://downloads.cursor.com/lab/2026.09.02-e3e9343/windows/x64/agent-cli-package.zip'
+$CursorPackageSha512 = 'd21126ba285c554c92f37cf816d0eddae0b1238a7f497c8462d33f6c462c60f9d893ed309b1e87b0a8146f3e37c1da68ee8692d49c77f1b51c0453a6066362de'
 $NodeVersion = '22.23.2'
 $NodeExecutableUrl = "https://nodejs.org/dist/v$NodeVersion/win-x64/node.exe"
 $NodeExecutableSha256 = '0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4'
@@ -27,11 +27,7 @@ $CursorNativeModule = Join-Path $CursorVersionRoot 'node_modules\better-sqlite3'
 $GitRoot = 'C:\Program Files\Git'
 $GitExe = Join-Path $GitRoot 'cmd\git.exe'
 $ProgramRoot = 'C:\ProgramData\cursor-self-hosted'
-$CloneHookSource = Join-Path $PSScriptRoot 'clone_repos_windows.ps1'
-$CloneWrapperSource = Join-Path $PSScriptRoot 'clone_repos_windows.cmd'
 $BootstrapSource = Join-Path $PSScriptRoot 'windows_bootstrap.ps1'
-$CloneHook = Join-Path $ProgramRoot 'clone_repos_windows.ps1'
-$CloneWrapper = Join-Path $ProgramRoot 'clone-cursor-self-hosted-repos.cmd'
 $Bootstrap = Join-Path $ProgramRoot 'windows-bootstrap.ps1'
 $Workspace = 'C:\cursor\workspace'
 $SuccessMarker = 'CURSOR_SELF_HOSTED_WINDOWS_PREFLIGHT_OK'
@@ -193,8 +189,8 @@ function Test-Provisioning {
 
     Write-Host '[preflight] Checking Cursor worker help'
     $workerHelp = Invoke-CheckedCommand -Executable $CursorNode -Arguments @($CursorIndex, 'worker', '--help') -Description 'Cursor Agent worker --help'
-    if ([String]::IsNullOrWhiteSpace(($workerHelp -join ' '))) {
-        throw 'Cursor Agent worker --help returned no output.'
+    if (($workerHelp -join ' ') -notmatch '--clone-git-repos') {
+        throw 'Cursor Agent worker --help does not list --clone-git-repos.'
     }
 
     Write-Host '[preflight] Checking Git for Windows'
@@ -203,11 +199,9 @@ function Test-Provisioning {
         throw "git --version returned unexpected output: $($gitOutput -join [Environment]::NewLine)"
     }
 
-    Write-Host '[preflight] Checking runtime hook files'
-    foreach ($requiredFile in @($CloneHook, $CloneWrapper, $Bootstrap)) {
-        if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
-            throw "Required Cursor Self-Hosted Machines runtime file is missing: $requiredFile"
-        }
+    Write-Host '[preflight] Checking runtime files'
+    if (-not (Test-Path -LiteralPath $Bootstrap -PathType Leaf)) {
+        throw "Required Cursor Self-Hosted Machines runtime file is missing: $Bootstrap"
     }
 
     Write-Host '[preflight] Checking repository workspace'
@@ -343,13 +337,9 @@ try {
 
 
     New-Item -ItemType Directory -Path $ProgramRoot -Force | Out-Null
-    foreach ($sourceFile in @($CloneHookSource, $CloneWrapperSource, $BootstrapSource)) {
-        if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
-            throw "Provisioning input is missing: $sourceFile"
-        }
+    if (-not (Test-Path -LiteralPath $BootstrapSource -PathType Leaf)) {
+        throw "Provisioning input is missing: $BootstrapSource"
     }
-    Copy-Item -LiteralPath $CloneHookSource -Destination $CloneHook -Force
-    Copy-Item -LiteralPath $CloneWrapperSource -Destination $CloneWrapper -Force
     Copy-Item -LiteralPath $BootstrapSource -Destination $Bootstrap -Force
     New-Item -ItemType Directory -Path $Workspace -Force | Out-Null
 

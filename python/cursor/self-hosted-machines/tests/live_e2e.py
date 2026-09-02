@@ -127,6 +127,14 @@ def parser() -> argparse.ArgumentParser:
         default=DEFAULT_REPO_REF,
         help=f"branch or commit to start from (default: {DEFAULT_REPO_REF})",
     )
+    result.add_argument(
+        "--keep-sandbox-on-failure",
+        action="store_true",
+        help=(
+            "leave the worker sandbox running when the run fails so it can be "
+            "inspected; the sandbox id is printed to stderr"
+        ),
+    )
     return result
 
 
@@ -184,6 +192,29 @@ def cancel_cursor_run(api_key: str, agent_id: str, run_id: str) -> None:
         if "run_not_cancellable" in str(error):
             return
         raise
+
+
+def cursor_run_conversation(api_key: str, agent_id: str, run_id: str) -> str:
+    """Return the agent conversation as compact text; never raise."""
+    try:
+        payload = cursor_request(
+            api_key,
+            "GET",
+            f"/v0/agents/{urllib.parse.quote(agent_id)}/conversation",
+        )
+    except Exception as error:  # diagnostics only
+        return f"<unavailable: {error}>"
+    if not isinstance(payload, dict):
+        return json.dumps(payload)[-3000:]
+    messages = payload.get("messages")
+    if not isinstance(messages, list):
+        return json.dumps(payload, sort_keys=True)[-3000:]
+    lines = [
+        f"{message.get('type', '?')}: {str(message.get('text', ''))[:600]}"
+        for message in messages
+        if isinstance(message, dict)
+    ]
+    return f"run {run_id}: " + " | ".join(lines)[-3000:]
 
 
 def _error_status_codes(error: BaseException) -> set[int]:
@@ -437,29 +468,46 @@ def worker_diagnostics(
     return output[-4000:]
 
 
-def cloned_repositories(sandbox: Any, sandbox_class: str) -> list[str]:
-    """Return workspace subdirectories that contain a Git checkout."""
+def cloned_repository_origins(sandbox: Any, sandbox_class: str) -> list[str]:
+    """Return credential-free origin URLs of Git checkouts in the workspace.
+
+    Checks the workspace root and its direct children, so the result does not
+    depend on where the Cursor CLI places the clone.
+    """
     if sandbox_class == "windows":
         script = (
-            f"Get-ChildItem -LiteralPath '{WINDOWS_WORKSPACE_PATH}' -Directory "
-            "| Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '.git') } "
-            "| ForEach-Object { $_.Name }"
+            f"$roots = @(Get-Item -LiteralPath '{WINDOWS_WORKSPACE_PATH}') + "
+            f"@(Get-ChildItem -LiteralPath '{WINDOWS_WORKSPACE_PATH}' -Directory); "
+            "foreach ($root in $roots) { "
+            "if (Test-Path -LiteralPath (Join-Path $root.FullName '.git')) { "
+            f"& '{WINDOWS_GIT_PATH}' -C $root.FullName remote get-url origin }} }}"
         )
         response = sandbox.process.exec(powershell_encoded(script), timeout=60)
     else:
         response = sandbox.process.exec(
-            "find /home/daytona/workspace -mindepth 2 -maxdepth 2 -name .git "
-            "-exec dirname {} \\; | xargs -r -n1 basename",
+            "for d in /home/daytona/workspace /home/daytona/workspace/*/; do "
+            "[ -d \"$d/.git\" ] && git -C \"$d\" remote get-url origin; done; true",
             timeout=60,
         )
     if getattr(response, "exit_code", 1) != 0:
         detail = str(getattr(response, "result", ""))[-2000:]
         raise RuntimeError(f"Failed to list cloned repositories: {detail}")
     return sorted(
-        line.strip()
+        strip_url_credentials(line.strip())
         for line in decode_text(getattr(response, "result", "")).splitlines()
         if line.strip()
     )
+
+
+def strip_url_credentials(url: str) -> str:
+    """Drop userinfo and a trailing .git so origin URLs compare to request URLs."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.hostname:
+        netloc = parts.hostname + (f":{parts.port}" if parts.port else "")
+        url = urllib.parse.urlunsplit(
+            (parts.scheme, netloc, parts.path, parts.query, parts.fragment)
+        )
+    return url.removesuffix(".git").rstrip("/")
 
 
 def prepare_machine_workspace(
@@ -820,8 +868,13 @@ def main(argv: list[str] | None = None) -> int:
                 status = str(run.get("status", ""))
                 if status in TERMINAL_RUN_STATES:
                     if status != "FINISHED":
+                        detail = json.dumps(run, sort_keys=True)[-3000:]
+                        conversation = cursor_run_conversation(
+                            cursor_key, agent_id, run_id
+                        )
                         raise RuntimeError(
-                            f"Cursor run ended with {status}: {run.get('result', '')}"
+                            f"Cursor run ended with {status}: {detail}\n"
+                            f"conversation: {conversation}"
                         )
                     if marker_value == token:
                         break
@@ -845,11 +898,11 @@ def main(argv: list[str] | None = None) -> int:
                 raise RuntimeError("Cursor run did not write the exact marker token")
             cloned: list[str] = []
             if args.cursor_mode == "team-pool" and not args.any_repo:
-                cloned = cloned_repositories(sandbox, args.sandbox_class)
-                if not cloned:
+                cloned = cloned_repository_origins(sandbox, args.sandbox_class)
+                if strip_url_credentials(args.repo_url) not in cloned:
                     raise RuntimeError(
-                        "The session-start hook did not clone the requested "
-                        f"repository {args.repo_url} into the workspace"
+                        "The worker did not clone the requested repository "
+                        f"{args.repo_url} into the workspace; found {cloned}"
                     )
 
             pid = read_pid(sandbox, args.sandbox_class)
@@ -919,7 +972,12 @@ def main(argv: list[str] | None = None) -> int:
             exit_status = 1
         finally:
             terminate_process(controller)
-            if sandbox is not None:
+            if sandbox is not None and exit_status != 0 and args.keep_sandbox_on_failure:
+                print(
+                    f"kept sandbox {sandbox.id} for inspection; delete it manually",
+                    file=sys.stderr,
+                )
+            elif sandbox is not None:
                 cleanup_with_retries(
                     "Daytona sandbox cleanup",
                     lambda: delete_sandbox_and_wait(daytona, sandbox),

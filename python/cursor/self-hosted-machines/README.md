@@ -51,7 +51,7 @@ agent --version
 agent worker controller --help
 ```
 
-`agent --version` must report `2026.08.25-3e8eec8`. `agent worker controller --help` must list `--spawn`.
+`agent --version` must report `2026.09.02-e3e9343`. `agent worker controller --help` must list `--spawn`.
 
 Install this package from a clean `daytona-guides` clone:
 
@@ -79,7 +79,7 @@ A Cursor team administrator must complete these steps:
 
 For example, use `daytona-container`, `daytona-linux-vm`, and `daytona-windows`. See [Cursor Self-Hosted Pools](https://cursor.com/docs/cloud-agent/self-hosted/pool) for current team settings and limits.
 
-The pinned Cursor CLI does not have `--clone-git-repos`. Each snapshot includes a class-specific session-start hook instead.
+The worker starts with `--clone-git-repos`. Cursor clones the requested repositories into the workspace with a short-lived GitHub token that it mints for the run.
 
 Do not put a GitHub personal access token in `.env`.
 
@@ -163,7 +163,7 @@ The minted GitHub token does not authenticate an SSH remote.
 2. The controller claims the request and calls the installed spawn command.
 3. The spawn command reads the snapshot class and creates a fresh sandbox from `SNAPSHOT_NAME`.
 4. A Linux sandbox starts `/usr/local/bin/agent`. A Windows sandbox starts the pinned `node.exe` and Cursor agent entry point.
-5. The session-start hook clones the requested HTTPS repositories into the class workspace.
+5. The worker clones the requested repositories into the class workspace (`--clone-git-repos`).
 6. The controller computer starts a monitor. Linux monitoring reads `/proc`. Windows monitoring checks the exact Node process path.
 7. The monitor deletes the sandbox after the worker exits.
 8. If startup fails, the spawn command releases the claim, deletes the sandbox, and reports a redacted error.
@@ -179,8 +179,6 @@ If the monitor fails, Daytona auto-stop and delete-on-stop provide a fallback.
 - `cursor_self_hosted/spawn.py` creates the sandbox, launches the worker, and starts cleanup.
 - `cursor_self_hosted/worker_windows.py` starts and inspects the native Windows worker.
 - `cursor_self_hosted/monitor.py` deletes the sandbox when its worker exits.
-- `cursor_self_hosted/clone_repos.py` handles Linux session-start cloning.
-- `cursor_self_hosted/clone_repos_windows.ps1` handles Windows session-start cloning.
 
 ## Controller configuration
 
@@ -214,7 +212,7 @@ Use a dedicated, least-privilege service account for each customer. Rotate the k
 
 Cursor sends short-lived GitHub credentials to the claimed worker. This guide stores no GitHub token. Cursor receives file chunks for inference and uploaded artifacts. Review [Cursor's security and network model](https://cursor.com/docs/cloud-agent/security-network).
 
-The clone hooks accept only credential-free HTTPS repository URLs. They reject URL user information, query strings, and fragments before Git can store them in repository metadata.
+Cursor clones with a short-lived token only. It stores no long-lived credential in the sandbox.
 
 ## Validation
 
@@ -253,13 +251,13 @@ Run the live command once for each class and its matching target.
 
 ## Troubleshooting
 
-- **`agent` is not found or has the wrong version.** Export `PATH` again. Select the lab channel and run `agent update`. Use `2026.08.25-3e8eec8` on the controller and in every snapshot.
+- **`agent` is not found or has the wrong version.** Export `PATH` again. Select the lab channel and run `agent update`. Use `2026.09.02-e3e9343` on the controller and in every snapshot.
 - **The controller rejects the Cursor key.** Confirm `CURSOR_API_KEY` is an Enterprise service-account key. Load `.env` again.
 - **The spawn command reports missing claim values.** Start it through `agent worker controller`. Do not set claim values by hand.
 - **The request stays queued.** Confirm the controller and request use the same pool. Confirm **Allow Self-Hosted Agents** is enabled.
 - **Daytona cannot find the snapshot.** Confirm `DAYTONA_TARGET` matches the target used for the build.
 - **A VM build cannot find its source snapshot.** Select a source in the same target with `--source-snapshot`.
-- **Linux repository cloning fails.** Inspect `/tmp/cursor-self-hosted/worker.log`. Confirm HTTPS access and the executable clone hook.
-- **Windows repository cloning fails.** Inspect `C:\ProgramData\cursor-self-hosted\worker.stderr.log`. Confirm HTTPS access, Git installation, and the PowerShell clone hook.
+- **Linux repository cloning fails.** Inspect `/tmp/cursor-self-hosted/worker.log`. Confirm GitHub token minting is enabled for the team and the Cursor GitHub App can access the repository.
+- **Windows repository cloning fails.** Inspect `C:\ProgramData\cursor-self-hosted\worker.stderr.log`. Confirm GitHub token minting is enabled, Git is installed, and the Cursor GitHub App can access the repository.
 - **A sandbox remains after worker exit.** Confirm the controller computer retained Daytona access. Delete the sandbox only when no worker uses it.
 - **A failed startup leaves a claimed request.** Use the [release-claim endpoint](https://cursor.com/docs/cloud-agent/api/endpoints#release-a-claim). Release only the failed request ID.

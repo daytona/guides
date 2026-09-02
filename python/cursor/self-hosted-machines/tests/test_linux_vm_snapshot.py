@@ -93,10 +93,8 @@ def test_linux_vm_snapshot_name_covers_recipe_and_source_snapshot(
 ) -> None:
     module = importlib.import_module("cursor_self_hosted.build_linux_vm_snapshot")
     provisioner = tmp_path / "provision_linux_vm.sh"
-    clone_hook = tmp_path / "clone_repos.py"
     provisioner.write_bytes(b"install cursor\n")
-    clone_hook.write_bytes(b"clone repo\n")
-    inputs = (provisioner, clone_hook)
+    inputs = (provisioner,)
 
     name = module.linux_vm_snapshot_name_for(
         inputs,

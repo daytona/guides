@@ -298,7 +298,7 @@ def test_worker_environment_contains_only_worker_credentials_and_optional_name(
     }.isdisjoint(environment)
 
 
-def test_worker_command_with_repositories_mints_token_and_runs_clone_hook() -> None:
+def test_worker_command_with_repositories_clones_them_with_the_cursor_cli() -> None:
     config = SimpleNamespace(
         cursor_pool="pool-test",
         cursor_repo_urls=(
@@ -319,14 +319,12 @@ def test_worker_command_with_repositories_mints_token_and_runs_clone_hook() -> N
         "/home/daytona/workspace",
         "--management-addr",
         "0.0.0.0:8080",
-        "--mint-github-token",
-        "--on-session-start",
-        "/usr/local/bin/clone-cursor-self-hosted-repos",
+        "--clone-git-repos",
         "--idle-release-timeout",
         "900",
         "start",
     ]
-    assert "--clone-git-repos" not in command
+    assert "--on-session-start" not in command
 
 
 def test_worker_command_without_repositories_omits_repository_flags() -> None:

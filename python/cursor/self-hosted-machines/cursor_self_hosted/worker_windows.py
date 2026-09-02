@@ -14,7 +14,7 @@ from .config import Config, redact, worker_environment
 WINDOWS_POWERSHELL_PATH = (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
 )
-WINDOWS_AGENT_VERSION = "2026.08.25-3e8eec8"
+WINDOWS_AGENT_VERSION = "2026.09.02-e3e9343"
 WINDOWS_AGENT_ROOT = (
     rf"C:\ProgramData\cursor-agent\versions\{WINDOWS_AGENT_VERSION}"
 )
@@ -22,9 +22,6 @@ WINDOWS_AGENT_NODE_PATH = rf"{WINDOWS_AGENT_ROOT}\node.exe"
 WINDOWS_AGENT_INDEX_PATH = rf"{WINDOWS_AGENT_ROOT}\index.js"
 WINDOWS_WORKSPACE_PATH = r"C:\cursor\workspace"
 WINDOWS_RUNTIME_ROOT = r"C:\ProgramData\cursor-self-hosted"
-WINDOWS_CLONE_HOOK_PATH = (
-    rf"{WINDOWS_RUNTIME_ROOT}\clone-cursor-self-hosted-repos.cmd"
-)
 WINDOWS_BOOTSTRAP_PATH = rf"{WINDOWS_RUNTIME_ROOT}\windows-bootstrap.ps1"
 WINDOWS_LAUNCH_CONFIG_PATH = rf"{WINDOWS_RUNTIME_ROOT}\launch.json"
 WINDOWS_WORKER_PID_PATH = rf"{WINDOWS_RUNTIME_ROOT}\worker.pid"
@@ -67,13 +64,7 @@ def _worker_arguments(config: Config) -> str:
         "0.0.0.0:8080",
     ]
     if config.cursor_repo_urls:
-        arguments.extend(
-            (
-                "--mint-github-token",
-                "--on-session-start",
-                WINDOWS_CLONE_HOOK_PATH,
-            )
-        )
+        arguments.append("--clone-git-repos")
     arguments.extend(
         (
             "--idle-release-timeout",
