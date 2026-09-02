@@ -79,7 +79,7 @@ A Cursor team administrator must complete these steps:
 
 For example, use `daytona-container`, `daytona-linux-vm`, and `daytona-windows`. See [Cursor Self-Hosted Pools](https://cursor.com/docs/cloud-agent/self-hosted/pool) for current team settings and limits.
 
-The worker starts with `--clone-git-repos`. Cursor clones the requested repositories into the workspace with a short-lived GitHub token that it mints for the run.
+The spawn command configures the request's repository as the workspace `origin` before the worker starts, and the worker starts with `--mint-github-token --on-session-start <checkout hook>`. When Cursor claims the worker, it mints a short-lived GitHub token for the run and runs the checkout hook (`checkout_repo.sh` on Linux, `checkout_repo.ps1` on Windows), which fetches the requested ref into the workspace.
 
 Do not put a GitHub personal access token in `.env`.
 
@@ -162,8 +162,8 @@ The minted GitHub token does not authenticate an SSH remote.
 1. A user submits a request to a Cursor pool.
 2. The controller claims the request and calls the installed spawn command.
 3. The spawn command reads the snapshot class and creates a fresh sandbox from `SNAPSHOT_NAME`.
-4. A Linux sandbox starts `/usr/local/bin/agent`. A Windows sandbox starts the pinned `node.exe` and Cursor agent entry point.
-5. The worker clones the requested repositories into the class workspace (`--clone-git-repos`).
+4. The spawn command sets the request's repository as the workspace `origin`. A Linux sandbox starts `/usr/local/bin/agent`. A Windows sandbox starts the pinned `node.exe` and Cursor agent entry point.
+5. Cursor mints a GitHub token for the run and runs the checkout hook, which fetches the requested ref into the class workspace.
 6. The controller computer starts a monitor. Linux monitoring reads `/proc`. Windows monitoring checks the exact Node process path.
 7. The monitor deletes the sandbox after the worker exits.
 8. If startup fails, the spawn command releases the claim, deletes the sandbox, and reports a redacted error.
