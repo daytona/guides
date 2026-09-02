@@ -52,6 +52,9 @@ DEFAULT_REPO_URL = "https://github.com/daytona/guides"
 DEFAULT_REPO_REF = "main"
 WINDOWS_GIT_PATH = r"C:\Program Files\Git\cmd\git.exe"
 POLL_SECONDS = 3.0
+# Cursor checks repository access with GitHub before it answers this call.
+# Retrying it could create duplicate agents, so allow a slow answer instead.
+AGENT_CREATE_TIMEOUT_SECONDS = 120.0
 
 
 def positive_int(value: str) -> int:
@@ -139,6 +142,8 @@ def cursor_request(
     method: str,
     path: str,
     payload: object | None = None,
+    *,
+    timeout: float = 30,
 ) -> object:
     body = None
     headers = {
@@ -155,7 +160,7 @@ def cursor_request(
         headers=headers,
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             content = response.read()
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[-2000:]
@@ -756,6 +761,7 @@ def main(argv: list[str] | None = None) -> int:
                         "POST",
                         "/v1/agents",
                         agent_request,
+                        timeout=AGENT_CREATE_TIMEOUT_SECONDS,
                     )
                     break
                 except RuntimeError as error:
