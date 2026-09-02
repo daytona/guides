@@ -250,6 +250,9 @@ def test_windows_provisioner_pins_lab_build_and_installs_checkout_hook() -> None
     assert "-notmatch '--on-session-start'" in provisioner
     assert "checkout_repo.ps1" in provisioner
     assert "Join-Path $GitRoot 'bin\\bash.exe'" in provisioner
+    # A headless SYSTEM worker must never block on a credential prompt.
+    assert "'credential.interactive', 'never'" in provisioner
+    assert "SetEnvironmentVariable('GIT_TERMINAL_PROMPT', '0', 'Machine')" in provisioner
     assert ".cmd" not in provisioner
     assert "--clone-git-repos" not in provisioner
 

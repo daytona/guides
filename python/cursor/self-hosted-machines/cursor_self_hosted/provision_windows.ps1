@@ -142,6 +142,16 @@ function Ensure-MachinePathEntry {
     [Environment]::SetEnvironmentVariable('Path', ($newEntries -join ';'), 'Machine')
 }
 
+function Set-HeadlessGitPrompting {
+    # The worker runs headless as SYSTEM. Without these settings a git command
+    # that has no credential yet (Cursor's own `git fetch origin` before the
+    # minted token lands, or the checkout hook) blocks forever on a Git
+    # Credential Manager or console prompt instead of failing.
+    $null = Invoke-CheckedCommand -Executable $GitExe -Arguments @('config', '--system', 'credential.interactive', 'never') -Description 'git config credential.interactive never'
+    [Environment]::SetEnvironmentVariable('GIT_TERMINAL_PROMPT', '0', 'Machine')
+    $env:GIT_TERMINAL_PROMPT = '0'
+}
+
 function Set-ExplicitProcessPath {
     $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
@@ -202,6 +212,13 @@ function Test-Provisioning {
     $gitOutput = Invoke-CheckedCommand -Executable $GitExe -Arguments @('--version') -Description 'git --version'
     if (($gitOutput -join ' ') -cne $ExpectedGitVersionOutput) {
         throw "git --version returned unexpected output: $($gitOutput -join [Environment]::NewLine)"
+    }
+    $credentialInteractive = Invoke-CheckedCommand -Executable $GitExe -Arguments @('config', '--system', '--get', 'credential.interactive') -Description 'git config credential.interactive'
+    if (($credentialInteractive -join '') -ne 'never') {
+        throw "git credential.interactive is not 'never' in the system config: $($credentialInteractive -join ' ')"
+    }
+    if ([Environment]::GetEnvironmentVariable('GIT_TERMINAL_PROMPT', 'Machine') -ne '0') {
+        throw 'GIT_TERMINAL_PROMPT=0 is not set in the machine environment.'
     }
 
     Write-Host '[preflight] Checking runtime files'
@@ -356,6 +373,7 @@ try {
     Ensure-MachinePathEntry -Entry (Join-Path $GitRoot 'cmd')
     Ensure-MachinePathEntry -Entry (Join-Path $GitRoot 'bin')
     Set-ExplicitProcessPath
+    Set-HeadlessGitPrompting
     Test-Provisioning
 }
 finally {
