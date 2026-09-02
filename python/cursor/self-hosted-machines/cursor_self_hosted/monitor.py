@@ -171,9 +171,9 @@ def monitor_worker(
 def main(argv: list[str] | None = None) -> int:
     """Run the non-interactive sandbox cleanup monitor."""
     parser = argparse.ArgumentParser(
-        prog="monitor-cursor-byom-worker",
+        prog="monitor-cursor-self-hosted-worker",
         description="Delete a Daytona sandbox after its Cursor worker exits.",
-        epilog="Examples:\n  monitor-cursor-byom-worker",
+        epilog="Examples:\n  monitor-cursor-self-hosted-worker",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.parse_args(argv)
@@ -191,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as error:
         secrets = (config.daytona_api_key,) if config is not None else ()
         print(
-            "monitor-cursor-byom-worker: cleanup failed: "
+            "monitor-cursor-self-hosted-worker: cleanup failed: "
             f"{redact(str(error), secrets)}",
             file=sys.stderr,
         )
@@ -199,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if status != 0:
         print(
-            "monitor-cursor-byom-worker: could not confirm worker exit or "
+            "monitor-cursor-self-hosted-worker: could not confirm worker exit or "
             f"delete sandbox {config.sandbox_id}",
             file=sys.stderr,
         )

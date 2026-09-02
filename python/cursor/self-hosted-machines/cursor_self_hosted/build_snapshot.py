@@ -39,8 +39,8 @@ from .build_windows_snapshot import (
     windows_snapshot_name_for,
 )
 
-CONTAINER_DOCKERFILE = resources.files("cursor_byom").joinpath("Dockerfile")
-CLONE_HOOK = resources.files("cursor_byom").joinpath("clone_repos.py")
+CONTAINER_DOCKERFILE = resources.files("cursor_self_hosted").joinpath("Dockerfile")
+CLONE_HOOK = resources.files("cursor_self_hosted").joinpath("clone_repos.py")
 DEFAULT_CPU = 2
 DEFAULT_MEMORY_GB = 8
 DEFAULT_DISK_GB = 10
@@ -88,7 +88,7 @@ def snapshot_name_for(
         digest.update(b"\0")
         digest.update(snapshot_input.read_bytes())
         digest.update(b"\0")
-    return f"cursor-byom-{sandbox_class.value}-{digest.hexdigest()[:8]}"
+    return f"cursor-self-hosted-{sandbox_class.value}-{digest.hexdigest()[:8]}"
 
 
 def _iter_snapshots(daytona: Any) -> Iterator[object]:
@@ -168,15 +168,15 @@ def _write_result(
 def main(argv: list[str] | None = None) -> int:
     """Build the configured snapshot without prompts."""
     parser = argparse.ArgumentParser(
-        prog="build-cursor-byom-snapshot",
+        prog="build-cursor-self-hosted-snapshot",
         description="Build or reuse a Cursor worker snapshot.",
         epilog=(
             "Examples:\n"
-            "  build-cursor-byom-snapshot\n"
-            "  build-cursor-byom-snapshot --sandbox-class container --target us\n"
-            "  build-cursor-byom-snapshot --sandbox-class linux-vm "
+            "  build-cursor-self-hosted-snapshot\n"
+            "  build-cursor-self-hosted-snapshot --sandbox-class container --target us\n"
+            "  build-cursor-self-hosted-snapshot --sandbox-class linux-vm "
             "--target eu-central-1\n"
-            "  build-cursor-byom-snapshot --sandbox-class windows --target us"
+            "  build-cursor-self-hosted-snapshot --sandbox-class windows --target us"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

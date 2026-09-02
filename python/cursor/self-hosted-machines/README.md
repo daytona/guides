@@ -1,4 +1,4 @@
-# Cursor BYOM workers on Daytona
+# Cursor Self-Hosted Machines on Daytona
 
 Run Cursor Self-Hosted Pool workers in Daytona `container`, `linux-vm`, or `windows` sandboxes. A macOS or Linux computer runs `agent worker controller` and the Python helper in this guide. The controller claims Cursor requests, creates one sandbox for each worker, and deletes the sandbox when the worker exits.
 
@@ -56,12 +56,12 @@ agent worker controller --help
 Install this package from a clean `daytona-guides` clone:
 
 ```bash
-cd python/cursor/bring-your-own-machine
+cd python/cursor/self-hosted-machines
 python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install --editable .
-command -v spawn-cursor-byom-worker
-command -v build-cursor-byom-snapshot
+command -v spawn-cursor-self-hosted-worker
+command -v build-cursor-self-hosted-snapshot
 ```
 
 Both commands must resolve inside the current `.venv`.
@@ -77,7 +77,7 @@ A Cursor team administrator must complete these steps:
 5. Give the Cursor GitHub App access to each requested repository.
 6. Create one pool for each sandbox class that you plan to run.
 
-For example, use `daytona-container`, `daytona-linux-vm`, and `daytona-windows`. See [Cursor Self-Hosted Pools](https://cursor.com/docs/cloud-agent/self-hosted-guides/pool) for current team settings and limits.
+For example, use `daytona-container`, `daytona-linux-vm`, and `daytona-windows`. See [Cursor Self-Hosted Pools](https://cursor.com/docs/cloud-agent/self-hosted/pool) for current team settings and limits.
 
 The pinned Cursor CLI does not have `--clone-git-repos`. Each snapshot includes a class-specific session-start hook instead.
 
@@ -108,25 +108,25 @@ The builder creates or reuses a content-addressed snapshot. It stores no API key
 
 ```bash
 # Linux container
-build-cursor-byom-snapshot --sandbox-class container --target us
+build-cursor-self-hosted-snapshot --sandbox-class container --target us
 
 # Linux VM
-build-cursor-byom-snapshot \
+build-cursor-self-hosted-snapshot \
   --sandbox-class linux-vm \
   --target eu-central-1
 
 # Windows
-build-cursor-byom-snapshot --sandbox-class windows --target us
+build-cursor-self-hosted-snapshot --sandbox-class windows --target us
 ```
 
 The targets above are examples. Class availability depends on the Daytona organization.
 
-The container build uses `cursor_byom/Dockerfile`. A VM build creates a temporary sandbox from the source snapshot, provisions it inside the guest, stops it, and captures a cold snapshot. Every VM build or reuse then boots a fresh verifier. A failed verifier causes deletion of the uncertified snapshot.
+The container build uses `cursor_self_hosted/Dockerfile`. A VM build creates a temporary sandbox from the source snapshot, provisions it inside the guest, stops it, and captures a cold snapshot. Every VM build or reuse then boots a fresh verifier. A failed verifier causes deletion of the uncertified snapshot.
 
 The command prints JSON:
 
 ```json
-{"reused":false,"sandbox_class":"windows","snapshot_name":"cursor-byom-windows-1234abcd","state":"active","target":"us"}
+{"reused":false,"sandbox_class":"windows","snapshot_name":"cursor-self-hosted-windows-1234abcd","state":"active","target":"us"}
 ```
 
 Copy the exact `snapshot_name` into `.env`. The name above is only an example. Keep `DAYTONA_TARGET` set to the target that owns the snapshot. See [Daytona snapshots](https://www.daytona.io/docs/en/snapshots/).
@@ -140,11 +140,11 @@ Load the environment and start one controller for the selected snapshot:
 ```bash
 set -a; . ./.env; set +a
 agent worker controller \
-  --spawn "$(pwd)/.venv/bin/spawn-cursor-byom-worker" \
+  --spawn "$(pwd)/.venv/bin/spawn-cursor-self-hosted-worker" \
   --pool daytona-windows
 ```
 
-Keep this foreground process running. Do not run `spawn-cursor-byom-worker` directly during normal operation.
+Keep this foreground process running. Do not run `spawn-cursor-self-hosted-worker` directly during normal operation.
 
 One controller configuration selects one snapshot and one Daytona target. Run a separate controller, environment, snapshot, and Cursor pool for each sandbox class. The spawn helper reads the class from the snapshot metadata. Do not set a separate sandbox-class environment variable.
 
@@ -172,15 +172,15 @@ If the monitor fails, Daytona auto-stop and delete-on-stop provide a fallback.
 
 ## Code map
 
-- `cursor_byom/build_snapshot.py` selects the class builder.
-- `cursor_byom/build_linux_vm_snapshot.py` provisions, captures, and verifies Linux VM snapshots.
-- `cursor_byom/build_windows_snapshot.py` provisions, captures, and verifies Windows snapshots.
-- `cursor_byom/config.py` parses controller values and builds worker commands and labels.
-- `cursor_byom/spawn.py` creates the sandbox, launches the worker, and starts cleanup.
-- `cursor_byom/worker_windows.py` starts and inspects the native Windows worker.
-- `cursor_byom/monitor.py` deletes the sandbox when its worker exits.
-- `cursor_byom/clone_repos.py` handles Linux session-start cloning.
-- `cursor_byom/clone_repos_windows.ps1` handles Windows session-start cloning.
+- `cursor_self_hosted/build_snapshot.py` selects the class builder.
+- `cursor_self_hosted/build_linux_vm_snapshot.py` provisions, captures, and verifies Linux VM snapshots.
+- `cursor_self_hosted/build_windows_snapshot.py` provisions, captures, and verifies Windows snapshots.
+- `cursor_self_hosted/config.py` parses controller values and builds worker commands and labels.
+- `cursor_self_hosted/spawn.py` creates the sandbox, launches the worker, and starts cleanup.
+- `cursor_self_hosted/worker_windows.py` starts and inspects the native Windows worker.
+- `cursor_self_hosted/monitor.py` deletes the sandbox when its worker exits.
+- `cursor_self_hosted/clone_repos.py` handles Linux session-start cloning.
+- `cursor_self_hosted/clone_repos_windows.ps1` handles Windows session-start cloning.
 
 ## Controller configuration
 
@@ -259,7 +259,7 @@ Run the live command once for each class and its matching target.
 - **The request stays queued.** Confirm the controller and request use the same pool. Confirm **Allow Self-Hosted Agents** is enabled.
 - **Daytona cannot find the snapshot.** Confirm `DAYTONA_TARGET` matches the target used for the build.
 - **A VM build cannot find its source snapshot.** Select a source in the same target with `--source-snapshot`.
-- **Linux repository cloning fails.** Inspect `/tmp/cursor-byom/worker.log`. Confirm HTTPS access and the executable clone hook.
-- **Windows repository cloning fails.** Inspect `C:\ProgramData\cursor-byom\worker.stderr.log`. Confirm HTTPS access, Git installation, and the PowerShell clone hook.
+- **Linux repository cloning fails.** Inspect `/tmp/cursor-self-hosted/worker.log`. Confirm HTTPS access and the executable clone hook.
+- **Windows repository cloning fails.** Inspect `C:\ProgramData\cursor-self-hosted\worker.stderr.log`. Confirm HTTPS access, Git installation, and the PowerShell clone hook.
 - **A sandbox remains after worker exit.** Confirm the controller computer retained Daytona access. Delete the sandbox only when no worker uses it.
 - **A failed startup leaves a claimed request.** Use the [release-claim endpoint](https://cursor.com/docs/cloud-agent/api/endpoints#release-a-claim). Release only the failed request ID.

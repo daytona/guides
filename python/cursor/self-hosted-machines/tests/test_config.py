@@ -7,7 +7,7 @@ from typing import Any, cast
 
 import pytest
 
-from cursor_byom.config import (
+from cursor_self_hosted.config import (
     Config,
     ConfigError,
     redact,
@@ -321,7 +321,7 @@ def test_worker_command_with_repositories_mints_token_and_runs_clone_hook() -> N
         "0.0.0.0:8080",
         "--mint-github-token",
         "--on-session-start",
-        "/usr/local/bin/clone-cursor-byom-repos",
+        "/usr/local/bin/clone-cursor-self-hosted-repos",
         "--idle-release-timeout",
         "900",
         "start",

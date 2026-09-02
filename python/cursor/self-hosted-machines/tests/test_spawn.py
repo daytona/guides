@@ -15,8 +15,8 @@ from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import patch
 
-from cursor_byom import spawn as spawn_module
-from cursor_byom.config import Config
+from cursor_self_hosted import spawn as spawn_module
+from cursor_self_hosted.config import Config
 
 
 @dataclass(frozen=True)
@@ -239,7 +239,7 @@ class MonitorLauncherTests(unittest.TestCase):
             )
 
         popen.assert_called_once_with(
-            [sys.executable, "-m", "cursor_byom.monitor"],
+            [sys.executable, "-m", "cursor_self_hosted.monitor"],
             env={
                 "DAYTONA_API_KEY": "test-daytona-key",
                 "SANDBOX_ID": "sandbox-123",

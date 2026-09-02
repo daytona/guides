@@ -5,21 +5,21 @@ import unittest
 from contextlib import ExitStack
 from unittest.mock import patch
 
-from cursor_byom import build_snapshot as build_snapshot_module
-from cursor_byom import monitor as monitor_module
-from cursor_byom import spawn as spawn_module
+from cursor_self_hosted import build_snapshot as build_snapshot_module
+from cursor_self_hosted import monitor as monitor_module
+from cursor_self_hosted import spawn as spawn_module
 
 
 ENTRY_POINTS = (
-    ("spawn-cursor-byom-worker", spawn_module, spawn_module.Config, "from_env"),
+    ("spawn-cursor-self-hosted-worker", spawn_module, spawn_module.Config, "from_env"),
     (
-        "monitor-cursor-byom-worker",
+        "monitor-cursor-self-hosted-worker",
         monitor_module,
         monitor_module.MonitorConfig,
         "from_env",
     ),
     (
-        "build-cursor-byom-snapshot",
+        "build-cursor-self-hosted-snapshot",
         build_snapshot_module,
         build_snapshot_module,
         "load_dotenv",

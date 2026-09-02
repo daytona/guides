@@ -4,6 +4,7 @@ import hashlib
 import importlib
 import pytest
 from dataclasses import dataclass
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -21,15 +22,19 @@ class FakeSnapshot:
 
 
 class FakeSnapshotClient:
-    def __init__(self, existing: list[FakeSnapshot] | None = None) -> None:
-        self.existing = existing or []
+    def __init__(self, existing: list[FakeSnapshot]) -> None:
+        self.existing = existing
         self.created: FakeSnapshot | None = None
         self.deleted_snapshots: list[FakeSnapshot] = []
+        self.list_calls: list[tuple[int, int]] = []
+        self.get_calls: list[str] = []
 
     def list(self, *, page: int, limit: int) -> object:
+        self.list_calls.append((page, limit))
         return SimpleNamespace(items=self.existing, total_pages=1)
 
     def get(self, name: str) -> FakeSnapshot:
+        self.get_calls.append(name)
         if self.created is None or self.created.name != name:
             raise AssertionError(f"snapshot {name!r} was not captured")
         return self.created
@@ -53,6 +58,7 @@ class FakeFs:
 
 class FakeSandbox:
     def __init__(self, name: str, snapshots: FakeSnapshotClient) -> None:
+        self.id = f"id-{name}"
         self.name = name
         self.fs = FakeFs()
         self.stop_calls: list[int] = []
@@ -67,13 +73,13 @@ class FakeSandbox:
         self._snapshots.created = FakeSnapshot(
             name=name,
             state=FakeState("active"),
-            sandbox_class=SimpleNamespace(value="linux-vm"),
+            sandbox_class=SimpleNamespace(value="windows"),
         )
 
 
 class FakeDaytona:
     def __init__(self, existing: list[FakeSnapshot] | None = None) -> None:
-        self.snapshot = FakeSnapshotClient(existing)
+        self.snapshot = FakeSnapshotClient(existing or [])
         self.create_calls: list[tuple[object, int]] = []
         self.created: list[FakeSandbox] = []
         self.deleted: list[tuple[FakeSandbox, int]] = []
@@ -88,19 +94,19 @@ class FakeDaytona:
         self.deleted.append((sandbox, timeout))
 
 
-def test_linux_vm_snapshot_name_covers_recipe_and_source_snapshot(
-    tmp_path: Any,
+def test_windows_snapshot_name_covers_recipe_and_source_snapshot(
+    tmp_path: Path,
 ) -> None:
-    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
-    provisioner = tmp_path / "provision_linux_vm.sh"
-    clone_hook = tmp_path / "clone_repos.py"
+    module = importlib.import_module("cursor_self_hosted.build_windows_snapshot")
+    provisioner = tmp_path / "provision_windows.ps1"
+    clone_hook = tmp_path / "clone_repos_windows.ps1"
     provisioner.write_bytes(b"install cursor\n")
     clone_hook.write_bytes(b"clone repo\n")
     inputs = (provisioner, clone_hook)
 
-    name = module.linux_vm_snapshot_name_for(
+    name = module.windows_snapshot_name_for(
         inputs,
-        source_snapshot="daytona-vm-medium",
+        source_snapshot="windows-medium",
     )
 
     digest = hashlib.sha256()
@@ -109,14 +115,14 @@ def test_linux_vm_snapshot_name_covers_recipe_and_source_snapshot(
         digest.update(b"\0")
         digest.update(item.read_bytes())
         digest.update(b"\0")
-    digest.update(b"daytona-vm-medium")
-    assert name == f"cursor-byom-linux-vm-{digest.hexdigest()[:8]}"
+    digest.update(b"windows-medium")
+    assert name == f"cursor-self-hosted-windows-{digest.hexdigest()[:8]}"
 
 
-def test_linux_vm_snapshot_provisions_captures_verifies_and_cleans_up(
+def test_windows_snapshot_build_provisions_captures_verifies_and_cleans_up(
     monkeypatch: Any,
 ) -> None:
-    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    module = importlib.import_module("cursor_self_hosted.build_windows_snapshot")
     daytona = FakeDaytona()
     provision_calls: list[tuple[FakeSandbox, bool, int]] = []
 
@@ -129,21 +135,21 @@ def test_linux_vm_snapshot_provisions_captures_verifies_and_cleans_up(
         provision_calls.append((sandbox, verify_only, timeout))
         return SimpleNamespace(exit_code=0, result="verified")
 
-    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
+    monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
 
-    snapshot, reused = module.build_linux_vm_snapshot(
+    snapshot, reused = module.build_windows_snapshot(
         daytona,
-        name="cursor-byom-linux-vm-test",
-        source_snapshot="daytona-vm-medium",
+        name="cursor-self-hosted-windows-test",
+        source_snapshot="windows-medium",
         build_timeout=1800,
         sandbox_timeout=300,
     )
 
     assert reused is False
-    assert snapshot.name == "cursor-byom-linux-vm-test"
+    assert snapshot.name == "cursor-self-hosted-windows-test"
     assert len(daytona.created) == 2
     builder, verifier = daytona.created
-    assert getattr(daytona.create_calls[0][0], "snapshot") == "daytona-vm-medium"
+    assert getattr(daytona.create_calls[0][0], "snapshot") == "windows-medium"
     assert getattr(daytona.create_calls[1][0], "snapshot") == snapshot.name
     assert builder.stop_calls == [300]
     assert builder.snapshot_calls == [(snapshot.name, 1800)]
@@ -153,7 +159,7 @@ def test_linux_vm_snapshot_provisions_captures_verifies_and_cleans_up(
     ]
     assert daytona.deleted == [(builder, 300), (verifier, 300)]
     expected_destinations = {
-        remote for _, remote in module.LINUX_VM_SNAPSHOT_UPLOADS
+        remote for _, remote in module.WINDOWS_SNAPSHOT_UPLOADS
     }
     assert {destination for _, destination, _ in builder.fs.uploads} == (
         expected_destinations
@@ -161,16 +167,18 @@ def test_linux_vm_snapshot_provisions_captures_verifies_and_cleans_up(
     assert {destination for _, destination, _ in verifier.fs.uploads} == (
         expected_destinations
     )
+    assert all(isinstance(source, bytes) for source, _, _ in builder.fs.uploads)
+    assert all(isinstance(source, bytes) for source, _, _ in verifier.fs.uploads)
 
 
-def test_active_linux_vm_snapshot_is_cold_verified_before_reuse(
+def test_active_windows_snapshot_is_cold_verified_before_reuse(
     monkeypatch: Any,
 ) -> None:
-    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    module = importlib.import_module("cursor_self_hosted.build_windows_snapshot")
     existing = FakeSnapshot(
-        name="cursor-byom-linux-vm-test",
+        name="cursor-self-hosted-windows-test",
         state=FakeState("active"),
-        sandbox_class=SimpleNamespace(value="linux-vm"),
+        sandbox_class=SimpleNamespace(value="windows"),
     )
     daytona = FakeDaytona([existing])
     provision_calls: list[tuple[FakeSandbox, bool, int]] = []
@@ -184,12 +192,12 @@ def test_active_linux_vm_snapshot_is_cold_verified_before_reuse(
         provision_calls.append((sandbox, verify_only, timeout))
         return SimpleNamespace(exit_code=0, result="verified")
 
-    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
+    monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
 
-    snapshot, reused = module.build_linux_vm_snapshot(
+    snapshot, reused = module.build_windows_snapshot(
         daytona,
         name=existing.name,
-        source_snapshot="daytona-vm-medium",
+        source_snapshot="windows-medium",
         build_timeout=1800,
         sandbox_timeout=300,
     )
@@ -204,10 +212,50 @@ def test_active_linux_vm_snapshot_is_cold_verified_before_reuse(
     assert daytona.snapshot.deleted_snapshots == []
 
 
-def test_failed_linux_vm_verification_deletes_uncertified_snapshot(
+def test_windows_provisioner_command_uses_unquoted_daytona_executable() -> None:
+    module = importlib.import_module("cursor_self_hosted.build_windows_snapshot")
+
+    command = module._powershell_encoded("Write-Output 'ready'")
+
+    assert command.startswith(
+        r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe "
+    )
+
+
+def test_windows_provisioner_pins_node_22_and_probes_native_module() -> None:
+    provisioner = (
+        Path(__file__).parents[1]
+        / "cursor_self_hosted"
+        / "provision_windows.ps1"
+    ).read_text()
+
+    assert "$NodeVersion = '22.23.2'" in provisioner
+    assert (
+        "$NodeExecutableSha256 = "
+        "'0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4'"
+        in provisioner
+    )
+    assert "require(process.argv[1])" in provisioner
+    assert "node_modules\\better-sqlite3" in provisioner
+
+
+def test_windows_clone_hook_rejects_credential_bearing_urls() -> None:
+    clone_hook = (
+        Path(__file__).parents[1]
+        / "cursor_self_hosted"
+        / "clone_repos_windows.ps1"
+    ).read_text()
+
+    assert "Get-RepositoryUrl" in clone_hook
+    assert ".Scheme -cne 'https'" in clone_hook
+    assert ".UserInfo" in clone_hook
+    assert ".Query" in clone_hook
+
+
+def test_failed_windows_verification_deletes_uncertified_snapshot(
     monkeypatch: Any,
 ) -> None:
-    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    module = importlib.import_module("cursor_self_hosted.build_windows_snapshot")
     daytona = FakeDaytona()
 
     def run_provisioner(
@@ -220,13 +268,13 @@ def test_failed_linux_vm_verification_deletes_uncertified_snapshot(
             raise RuntimeError("verification transport failed")
         return SimpleNamespace(exit_code=0, result="provisioned")
 
-    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
+    monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
 
     with pytest.raises(RuntimeError, match="verification transport failed"):
-        module.build_linux_vm_snapshot(
+        module.build_windows_snapshot(
             daytona,
-            name="cursor-byom-linux-vm-unverified",
-            source_snapshot="daytona-vm-medium",
+            name="cursor-self-hosted-windows-unverified",
+            source_snapshot="windows-medium",
             build_timeout=1800,
             sandbox_timeout=300,
         )
@@ -234,10 +282,10 @@ def test_failed_linux_vm_verification_deletes_uncertified_snapshot(
     assert daytona.snapshot.deleted_snapshots == [daytona.snapshot.created]
 
 
-def test_linux_vm_verification_runs_after_builder_cleanup_failure(
+def test_windows_verification_runs_after_builder_cleanup_failure(
     monkeypatch: Any,
 ) -> None:
-    module = importlib.import_module("cursor_byom.build_linux_vm_snapshot")
+    module = importlib.import_module("cursor_self_hosted.build_windows_snapshot")
     daytona = FakeDaytona()
     provision_calls: list[bool] = []
     delete_sandbox = daytona.delete
@@ -260,14 +308,17 @@ def test_linux_vm_verification_runs_after_builder_cleanup_failure(
             raise RuntimeError("builder cleanup failed")
         delete_sandbox(sandbox, timeout=timeout)
 
-    monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
+    monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
     monkeypatch.setattr(daytona, "delete", fail_builder_cleanup)
 
-    with pytest.raises(RuntimeError, match="temporary sandbox"):
-        module.build_linux_vm_snapshot(
+    with pytest.raises(
+        module.WindowsSnapshotCleanupError,
+        match="builder",
+    ):
+        module.build_windows_snapshot(
             daytona,
-            name="cursor-byom-linux-vm-cleanup-failure",
-            source_snapshot="daytona-vm-medium",
+            name="cursor-self-hosted-windows-cleanup-failure",
+            source_snapshot="windows-medium",
             build_timeout=1800,
             sandbox_timeout=300,
         )

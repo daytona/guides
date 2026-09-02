@@ -11,8 +11,8 @@ from typing import Any
 from daytona import SandboxClass
 import pytest
 
-from cursor_byom import build_snapshot as snapshot_module
-from cursor_byom.build_snapshot import (
+from cursor_self_hosted import build_snapshot as snapshot_module
+from cursor_self_hosted.build_snapshot import (
     SnapshotCollisionError,
     find_reusable_snapshot,
     snapshot_inputs_for,
@@ -97,7 +97,7 @@ def test_default_snapshot_name_contains_exact_snapshot_inputs_sha256_prefix(
         b"clone_repos.py\0"
         b"#!/usr/bin/env python3\nprint('clone')\n\0"
     ).hexdigest()[:8]
-    assert name == f"cursor-byom-container-{expected_sha8}"
+    assert name == f"cursor-self-hosted-container-{expected_sha8}"
 
 
 def test_default_snapshot_name_changes_when_only_dockerfile_changes(
@@ -148,8 +148,8 @@ def test_default_snapshot_name_is_unique_per_linux_sandbox_class(
     container = snapshot_name_for(inputs, SandboxClass.CONTAINER)
     linux_vm = snapshot_name_for(inputs, SandboxClass.LINUX_VM)
 
-    assert container.startswith("cursor-byom-container-")
-    assert linux_vm.startswith("cursor-byom-linux-vm-")
+    assert container.startswith("cursor-self-hosted-container-")
+    assert linux_vm.startswith("cursor-self-hosted-linux-vm-")
     assert container != linux_vm
 
 
@@ -183,7 +183,7 @@ def test_snapshot_inputs_are_exact_packaged_image_inputs() -> None:
 
 def test_active_snapshot_with_matching_name_is_reused() -> None:
     existing = FakeSnapshot(
-        name="cursor-byom-default-ba7816bf",
+        name="cursor-self-hosted-default-ba7816bf",
         state=FakeSnapshotState("active"),
     )
     daytona = FakeDaytona([[existing]])
@@ -199,7 +199,7 @@ def test_active_snapshot_with_matching_name_is_reused() -> None:
 
 def test_active_snapshot_with_matching_name_on_second_page_is_reused() -> None:
     existing = FakeSnapshot(
-        name="cursor-byom-default-ba7816bf",
+        name="cursor-self-hosted-default-ba7816bf",
         state=FakeSnapshotState("active"),
     )
     daytona = FakeDaytona(
@@ -226,7 +226,7 @@ def test_active_snapshot_with_matching_name_on_second_page_is_reused() -> None:
 
 def test_non_active_snapshot_with_matching_name_raises_collision_error() -> None:
     existing = FakeSnapshot(
-        name="cursor-byom-default-ba7816bf",
+        name="cursor-self-hosted-default-ba7816bf",
         state=FakeSnapshotState("building"),
     )
     daytona = FakeDaytona([[existing]])
@@ -239,7 +239,7 @@ def test_non_active_snapshot_with_matching_name_raises_collision_error() -> None
         )
 
     assert str(caught.value) == (
-        "Snapshot name collision: cursor-byom-default-ba7816bf "
+        "Snapshot name collision: cursor-self-hosted-default-ba7816bf "
         "state=building; expected active"
     )
 
@@ -247,7 +247,7 @@ def test_non_active_snapshot_with_matching_name_raises_collision_error() -> None
 
 def test_active_snapshot_with_wrong_class_is_rejected() -> None:
     existing = FakeSnapshot(
-        name="cursor-byom-linux-vm-ba7816bf",
+        name="cursor-self-hosted-linux-vm-ba7816bf",
         state=FakeSnapshotState("active"),
         sandbox_class=SimpleNamespace(value="container"),
     )
@@ -261,7 +261,7 @@ def test_active_snapshot_with_wrong_class_is_rejected() -> None:
         )
 
     assert str(caught.value) == (
-        "Snapshot name collision: cursor-byom-linux-vm-ba7816bf "
+        "Snapshot name collision: cursor-self-hosted-linux-vm-ba7816bf "
         "sandbox_class=container; expected linux-vm"
     )
 
@@ -271,7 +271,7 @@ def test_builder_creates_explicit_container_snapshot_in_requested_target(
 ) -> None:
     sandbox_class = "container"
     target = "us"
-    name = "cursor-byom-container-test"
+    name = "cursor-self-hosted-container-test"
     created = FakeSnapshot(
         name=name,
         state=FakeSnapshotState("active"),
@@ -319,7 +319,7 @@ def test_builder_dispatches_linux_vm_snapshot_provisioning(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     created = FakeSnapshot(
-        name="cursor-byom-linux-vm-test",
+        name="cursor-self-hosted-linux-vm-test",
         state=FakeSnapshotState("active"),
         sandbox_class=SimpleNamespace(value="linux-vm"),
     )
@@ -384,7 +384,7 @@ def test_builder_dispatches_windows_snapshot_provisioning(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     created = FakeSnapshot(
-        name="cursor-byom-windows-test",
+        name="cursor-self-hosted-windows-test",
         state=FakeSnapshotState("active"),
         sandbox_class=SimpleNamespace(value="windows"),
     )
@@ -449,7 +449,7 @@ def test_dockerfile_installs_executable_clone_hook_without_unsupported_flag() ->
     dockerfile = (
         Path(snapshot_file).with_name("Dockerfile").read_text()
     )
-    hook_path = "/usr/local/bin/clone-cursor-byom-repos"
+    hook_path = "/usr/local/bin/clone-cursor-self-hosted-repos"
     copy_line = next(
         (
             line

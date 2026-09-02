@@ -12,10 +12,10 @@ from typing import Any
 from daytona import CreateSandboxFromSnapshotParams, SandboxClass
 
 
-_LINUX_VM_PROVISIONER = resources.files("cursor_byom").joinpath(
+_LINUX_VM_PROVISIONER = resources.files("cursor_self_hosted").joinpath(
     "provision_linux_vm.sh"
 )
-_CLONE_HOOK = resources.files("cursor_byom").joinpath("clone_repos.py")
+_CLONE_HOOK = resources.files("cursor_self_hosted").joinpath("clone_repos.py")
 _PROVISIONER_REMOTE_PATH = "/tmp/provision_linux_vm.sh"
 _CLONE_HOOK_REMOTE_PATH = "/tmp/clone_repos.py"
 _SNAPSHOT_PAGE_LIMIT = 100
@@ -54,7 +54,7 @@ def linux_vm_snapshot_name_for(
         digest.update(snapshot_input.read_bytes())
         digest.update(b"\0")
     digest.update(source_snapshot.encode("utf-8"))
-    return f"cursor-byom-linux-vm-{digest.hexdigest()[:8]}"
+    return f"cursor-self-hosted-linux-vm-{digest.hexdigest()[:8]}"
 
 
 def _iter_snapshots(daytona: Any) -> Iterator[object]:
@@ -124,7 +124,7 @@ def _sandbox_name_for(name: str, source_snapshot: str, role: str) -> str:
     for value in (name, source_snapshot, role):
         digest.update(value.encode("utf-8"))
         digest.update(b"\0")
-    return f"cursor-byom-linux-vm-{role}-{digest.hexdigest()[:12]}"
+    return f"cursor-self-hosted-linux-vm-{role}-{digest.hexdigest()[:12]}"
 
 
 def _sandbox_params(name: str, snapshot: str) -> CreateSandboxFromSnapshotParams:

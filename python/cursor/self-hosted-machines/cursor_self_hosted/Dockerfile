@@ -2,7 +2,7 @@ FROM daytonaio/sandbox:0.6.0
 
 USER root
 
-COPY --chown=root:root --chmod=0755 clone_repos.py /usr/local/bin/clone-cursor-byom-repos
+COPY --chown=root:root --chmod=0755 clone_repos.py /usr/local/bin/clone-cursor-self-hosted-repos
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates curl git \

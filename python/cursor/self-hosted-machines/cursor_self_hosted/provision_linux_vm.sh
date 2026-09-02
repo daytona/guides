@@ -5,7 +5,7 @@ readonly CURSOR_AGENT_VERSION="2026.08.25-3e8eec8"
 readonly CURSOR_AGENT_URL="https://downloads.cursor.com/lab/2026.08.25-3e8eec8/linux/x64/agent-cli-package.tar.gz"
 readonly CURSOR_AGENT_BLAKE2="cd5485f7524688e1a688daa2b64669c76bedcdd9ab87638bac78f9b42c2442bd5000559920a2f5171e00b5eb7fcf737f9111ef296f1eba40369cebf3279ee0a9"
 readonly CURSOR_AGENT_ROOT="/opt/cursor-agent"
-readonly CLONE_HOOK_DESTINATION="/usr/local/bin/clone-cursor-byom-repos"
+readonly CLONE_HOOK_DESTINATION="/usr/local/bin/clone-cursor-self-hosted-repos"
 readonly WORKSPACE="/home/daytona/workspace"
 temporary_directory=""
 
@@ -141,7 +141,7 @@ verify_snapshot_contents() {
         || fail "workspace is not writable by daytona"
     [[ $(stat --format='%U:%G' "$WORKSPACE") == "daytona:daytona" ]] \
         || fail "workspace is not owned by daytona"
-    write_probe="$(mktemp "${WORKSPACE}/.cursor-byom-write-test.XXXXXX")" \
+    write_probe="$(mktemp "${WORKSPACE}/.cursor-self-hosted-write-test.XXXXXX")" \
         || fail "workspace write probe failed"
     rm -f -- "$write_probe"
 }

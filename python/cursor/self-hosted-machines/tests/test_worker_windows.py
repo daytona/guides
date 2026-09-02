@@ -55,7 +55,7 @@ def decode_powershell(command: str) -> str:
 
 
 def test_windows_worker_launch_uses_baked_agent_and_secret_file_cleanup() -> None:
-    module = importlib.import_module("cursor_byom.worker_windows")
+    module = importlib.import_module("cursor_self_hosted.worker_windows")
     sandbox = FakeSandbox(module.WINDOWS_WORKER_PID_PATH)
     sleeps: list[float] = []
 
@@ -95,12 +95,12 @@ def test_windows_worker_launch_uses_baked_agent_and_secret_file_cleanup() -> Non
     assert "--pool windows-pool" in arguments
     assert "--worker-dir C:\\cursor\\workspace" in arguments
     assert "--on-session-start" in arguments
-    assert "clone-cursor-byom-repos.cmd" in arguments
+    assert "clone-cursor-self-hosted-repos.cmd" in arguments
     assert "host-daytona-key" not in json.dumps(payload)
 
 
 def test_windows_inspection_checks_pid_and_expected_node_executable() -> None:
-    module = importlib.import_module("cursor_byom.worker_windows")
+    module = importlib.import_module("cursor_self_hosted.worker_windows")
 
     script = decode_powershell(module.windows_inspection_command("4242"))
 

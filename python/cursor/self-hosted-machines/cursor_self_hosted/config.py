@@ -154,7 +154,7 @@ def worker_command(config: Config) -> list[str]:
             [
                 "--mint-github-token",
                 "--on-session-start",
-                "/usr/local/bin/clone-cursor-byom-repos",
+                "/usr/local/bin/clone-cursor-self-hosted-repos",
             ]
         )
     command.extend(

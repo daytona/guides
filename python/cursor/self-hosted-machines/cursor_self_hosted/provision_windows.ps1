@@ -26,15 +26,15 @@ $CursorIndex = Join-Path $CursorVersionRoot 'index.js'
 $CursorNativeModule = Join-Path $CursorVersionRoot 'node_modules\better-sqlite3'
 $GitRoot = 'C:\Program Files\Git'
 $GitExe = Join-Path $GitRoot 'cmd\git.exe'
-$ProgramRoot = 'C:\ProgramData\cursor-byom'
+$ProgramRoot = 'C:\ProgramData\cursor-self-hosted'
 $CloneHookSource = Join-Path $PSScriptRoot 'clone_repos_windows.ps1'
 $CloneWrapperSource = Join-Path $PSScriptRoot 'clone_repos_windows.cmd'
 $BootstrapSource = Join-Path $PSScriptRoot 'windows_bootstrap.ps1'
 $CloneHook = Join-Path $ProgramRoot 'clone_repos_windows.ps1'
-$CloneWrapper = Join-Path $ProgramRoot 'clone-cursor-byom-repos.cmd'
+$CloneWrapper = Join-Path $ProgramRoot 'clone-cursor-self-hosted-repos.cmd'
 $Bootstrap = Join-Path $ProgramRoot 'windows-bootstrap.ps1'
 $Workspace = 'C:\cursor\workspace'
-$SuccessMarker = 'CURSOR_BYOM_WINDOWS_PREFLIGHT_OK'
+$SuccessMarker = 'CURSOR_SELF_HOSTED_WINDOWS_PREFLIGHT_OK'
 
 function Assert-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -57,7 +57,7 @@ function Download-File {
 
     $client = New-Object System.Net.WebClient
     try {
-        $client.Headers.Add('User-Agent', 'cursor-byom-windows-provisioner')
+        $client.Headers.Add('User-Agent', 'cursor-self-hosted-windows-provisioner')
         $download = $client.DownloadFileTaskAsync($parsedUri, $Destination)
         while (-not $download.IsCompleted) {
             Write-Host "[download] Waiting for $($parsedUri.Host)"
@@ -206,7 +206,7 @@ function Test-Provisioning {
     Write-Host '[preflight] Checking runtime hook files'
     foreach ($requiredFile in @($CloneHook, $CloneWrapper, $Bootstrap)) {
         if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
-            throw "Required Cursor BYOM runtime file is missing: $requiredFile"
+            throw "Required Cursor Self-Hosted Machines runtime file is missing: $requiredFile"
         }
     }
 
@@ -214,7 +214,7 @@ function Test-Provisioning {
     if (-not (Test-Path -LiteralPath $Workspace -PathType Container)) {
         throw "Cursor workspace is missing: $Workspace"
     }
-    $probePath = Join-Path $Workspace ('.cursor-byom-write-probe-{0}.txt' -f [Guid]::NewGuid().ToString('N'))
+    $probePath = Join-Path $Workspace ('.cursor-self-hosted-write-probe-{0}.txt' -f [Guid]::NewGuid().ToString('N'))
     $probeValue = [Guid]::NewGuid().ToString('N')
     try {
         [IO.File]::WriteAllText($probePath, $probeValue, (New-Object Text.UTF8Encoding($false)))
@@ -247,7 +247,7 @@ if ($VerifyOnly) {
 }
 
 Assert-Administrator
-$tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('cursor-byom-provision-{0}' -f [Guid]::NewGuid().ToString('N'))
+$tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('cursor-self-hosted-provision-{0}' -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
 
 try {

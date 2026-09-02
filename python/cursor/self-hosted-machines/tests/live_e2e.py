@@ -7,6 +7,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import secrets
 import shutil
 import shlex
@@ -28,9 +29,9 @@ from daytona import (
     ListSandboxesQuery,
 )
 
-from cursor_byom.config import Config, worker_environment
-from cursor_byom.spawn import _parse_worker_pid, start_monitor
-from cursor_byom.worker_windows import (
+from cursor_self_hosted.config import Config, worker_environment
+from cursor_self_hosted.spawn import _parse_worker_pid, start_monitor
+from cursor_self_hosted.worker_windows import (
     WINDOWS_AGENT_INDEX_PATH,
     WINDOWS_LAUNCH_CONFIG_PATH,
     WINDOWS_WORKER_PID_PATH,
@@ -43,12 +44,12 @@ from cursor_byom.worker_windows import (
 )
 
 TERMINAL_RUN_STATES = {"FINISHED", "ERROR", "CANCELLED", "EXPIRED"}
-LINUX_MARKER_PATH = "/home/daytona/workspace/.cursor-byom-live-marker.txt"
-WINDOWS_MARKER_PATH = r"C:\cursor\workspace\.cursor-byom-live-marker.txt"
-LINUX_PID_PATH = "/tmp/cursor-byom/worker.pid"
-LINUX_WORKER_LOG_PATH = "/tmp/cursor-byom/worker.log"
-MACHINE_REPO_URL = "https://github.com/daytona/guides"
-MACHINE_REPO_REF = "main"
+LINUX_MARKER_PATH = "/home/daytona/workspace/.cursor-self-hosted-live-marker.txt"
+WINDOWS_MARKER_PATH = r"C:\cursor\workspace\.cursor-self-hosted-live-marker.txt"
+LINUX_PID_PATH = "/tmp/cursor-self-hosted/worker.pid"
+LINUX_WORKER_LOG_PATH = "/tmp/cursor-self-hosted/worker.log"
+DEFAULT_REPO_URL = "https://github.com/daytona/guides"
+DEFAULT_REPO_REF = "main"
 WINDOWS_GIT_PATH = r"C:\Program Files\Git\cmd\git.exe"
 POLL_SECONDS = 3.0
 
@@ -66,7 +67,7 @@ def parser() -> argparse.ArgumentParser:
         epilog=(
             "Example:\n"
             "  python tests/live_e2e.py --sandbox-class linux-vm "
-            "--target eu-central-1 --snapshot cursor-byom-linux-vm-abcd1234"
+            "--target eu-central-1 --snapshot cursor-self-hosted-linux-vm-abcd1234"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -101,9 +102,27 @@ def parser() -> argparse.ArgumentParser:
         "--spawn",
         default=str(
             Path(__file__).resolve().parents[1]
-            / ".venv/bin/spawn-cursor-byom-worker"
+            / ".venv/bin/spawn-cursor-self-hosted-worker"
         ),
-        help="spawn-cursor-byom-worker path",
+        help="spawn-cursor-self-hosted-worker path",
+    )
+    result.add_argument(
+        "--any-repo",
+        action="store_true",
+        help=(
+            "team-pool only: omit repos from the Cursor request so the pool "
+            "serves it as an any-repo request"
+        ),
+    )
+    result.add_argument(
+        "--repo-url",
+        default=DEFAULT_REPO_URL,
+        help=f"HTTPS GitHub repository for the request (default: {DEFAULT_REPO_URL})",
+    )
+    result.add_argument(
+        "--repo-ref",
+        default=DEFAULT_REPO_REF,
+        help=f"branch or commit to start from (default: {DEFAULT_REPO_REF})",
     )
     return result
 
@@ -162,24 +181,32 @@ def cancel_cursor_run(api_key: str, agent_id: str, run_id: str) -> None:
         raise
 
 
-def is_not_found(error: BaseException) -> bool:
+def _error_status_codes(error: BaseException) -> set[int]:
+    codes: set[int] = set()
     current: BaseException | None = error
     while current is not None:
         for status_code in (
             getattr(current, "status_code", None),
             getattr(getattr(current, "response", None), "status_code", None),
         ):
-            if status_code is None:
-                continue
             try:
-                if int(status_code) == 404:
-                    return True
+                if status_code is not None:
+                    codes.add(int(status_code))
             except (TypeError, ValueError):
                 pass
-        if "404 Not Found" in str(current) or "HTTP 404" in str(current):
-            return True
+        for match in re.finditer(r"(?:HTTP |error ')(\d{3})\b", str(current)):
+            codes.add(int(match.group(1)))
         current = current.__cause__ or current.__context__
-    return False
+    return codes
+
+
+def is_not_found(error: BaseException) -> bool:
+    return 404 in _error_status_codes(error)
+
+
+def is_guest_unreachable(error: BaseException) -> bool:
+    """The Daytona toolbox proxy answers 502-504 until a VM guest finishes booting."""
+    return bool({502, 503, 504} & _error_status_codes(error))
 
 
 def decode_text(content: object) -> str:
@@ -208,7 +235,12 @@ def marker_path(sandbox_class: str) -> str:
     return WINDOWS_MARKER_PATH if sandbox_class == "windows" else LINUX_MARKER_PATH
 
 
-def read_marker(sandbox: Any, sandbox_class: str) -> str | None:
+def read_marker(
+    sandbox: Any,
+    sandbox_class: str,
+    *,
+    guest_may_be_booting: bool = False,
+) -> str | None:
     path = marker_path(sandbox_class)
     if sandbox_class == "windows":
         path = path.replace("\\", "/")
@@ -216,6 +248,8 @@ def read_marker(sandbox: Any, sandbox_class: str) -> str | None:
         return decode_text(sandbox.fs.download_file(path)).strip()
     except Exception as error:
         if is_not_found(error) or isinstance(error, FileNotFoundError):
+            return None
+        if guest_may_be_booting and is_guest_unreachable(error):
             return None
         raise
 
@@ -356,7 +390,7 @@ def linux_machine_launch_command(command: list[str]) -> str:
     log_path = shlex.quote(LINUX_WORKER_LOG_PATH)
     inner = " && ".join(
         (
-            "mkdir -p /tmp/cursor-byom",
+            "mkdir -p /tmp/cursor-self-hosted",
             f"rm -f {pid_path}",
             f"(nohup {worker} > {log_path} 2>&1 < /dev/null & echo $! > {pid_path})",
             "sleep 1",
@@ -398,16 +432,47 @@ def worker_diagnostics(
     return output[-4000:]
 
 
-def prepare_machine_workspace(sandbox: Any, sandbox_class: str) -> None:
+def cloned_repositories(sandbox: Any, sandbox_class: str) -> list[str]:
+    """Return workspace subdirectories that contain a Git checkout."""
+    if sandbox_class == "windows":
+        script = (
+            f"Get-ChildItem -LiteralPath '{WINDOWS_WORKSPACE_PATH}' -Directory "
+            "| Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '.git') } "
+            "| ForEach-Object { $_.Name }"
+        )
+        response = sandbox.process.exec(powershell_encoded(script), timeout=60)
+    else:
+        response = sandbox.process.exec(
+            "find /home/daytona/workspace -mindepth 2 -maxdepth 2 -name .git "
+            "-exec dirname {} \\; | xargs -r -n1 basename",
+            timeout=60,
+        )
+    if getattr(response, "exit_code", 1) != 0:
+        detail = str(getattr(response, "result", ""))[-2000:]
+        raise RuntimeError(f"Failed to list cloned repositories: {detail}")
+    return sorted(
+        line.strip()
+        for line in decode_text(getattr(response, "result", "")).splitlines()
+        if line.strip()
+    )
+
+
+def prepare_machine_workspace(
+    sandbox: Any,
+    sandbox_class: str,
+    *,
+    repo_url: str,
+    repo_ref: str,
+) -> None:
     if sandbox_class == "windows":
         script = (
             "$ErrorActionPreference = 'Stop'; "
             f"Set-Location -LiteralPath '{WINDOWS_WORKSPACE_PATH}'; "
             f"& '{WINDOWS_GIT_PATH}' clone --depth 1 --branch "
-            f"'{MACHINE_REPO_REF}' '{MACHINE_REPO_URL}' .; "
+            f"'{repo_ref}' '{repo_url}' .; "
             "if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }; "
             "Add-Content -LiteralPath '.git\\info\\exclude' "
-            "-Value '.cursor-byom-live-marker.txt'"
+            "-Value '.cursor-self-hosted-live-marker.txt'"
         )
         response = sandbox.process.exec(powershell_encoded(script), timeout=180)
     else:
@@ -418,13 +483,13 @@ def prepare_machine_workspace(sandbox: Any, sandbox_class: str) -> None:
                 "--depth",
                 "1",
                 "--branch",
-                MACHINE_REPO_REF,
-                MACHINE_REPO_URL,
+                repo_ref,
+                repo_url,
                 ".",
             ]
         )
         exclude_command = (
-            f"printf '%s\\n' {shlex.quote('.cursor-byom-live-marker.txt')} "
+            f"printf '%s\\n' {shlex.quote('.cursor-self-hosted-live-marker.txt')} "
             ">> .git/info/exclude"
         )
         response = sandbox.process.exec(
@@ -506,6 +571,8 @@ def start_direct_worker(
     sandbox_class: str,
     snapshot: str,
     target: str,
+    repo_url: str,
+    repo_ref: str,
 ) -> tuple[Any, Config]:
     config = Config(
         daytona_api_key=daytona_key,
@@ -541,7 +608,12 @@ def start_direct_worker(
     )
     stage = "machine workspace preparation"
     try:
-        prepare_machine_workspace(sandbox, sandbox_class)
+        prepare_machine_workspace(
+            sandbox,
+            sandbox_class,
+            repo_url=repo_url,
+            repo_ref=repo_ref,
+        )
         stage = "machine worker launch"
         start_machine_worker_process(
             sandbox,
@@ -577,7 +649,9 @@ def main(argv: list[str] | None = None) -> int:
         if not args.agent or not Path(args.agent).is_file():
             parser().error("--agent must name the Cursor Agent executable")
         if not Path(args.spawn).is_file():
-            parser().error("--spawn must name spawn-cursor-byom-worker")
+            parser().error("--spawn must name spawn-cursor-self-hosted-worker")
+    elif args.any_repo:
+        parser().error("--any-repo requires --cursor-mode team-pool")
 
     daytona_key = required_secret("DAYTONA_API_KEY")
     cursor_key = required_secret("CURSOR_API_KEY")
@@ -594,7 +668,7 @@ def main(argv: list[str] | None = None) -> int:
     exit_status = 1
     deadline = time.monotonic() + args.timeout
 
-    with tempfile.TemporaryDirectory(prefix="cursor-byom-live-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="cursor-self-hosted-live-") as temp_dir:
         stdout_path = Path(temp_dir, "controller.stdout.log")
         stderr_path = Path(temp_dir, "controller.stderr.log")
         stdout_file = stdout_path.open("w")
@@ -612,6 +686,8 @@ def main(argv: list[str] | None = None) -> int:
                     sandbox_class=args.sandbox_class,
                     snapshot=args.snapshot,
                     target=args.target,
+                    repo_url=args.repo_url,
+                    repo_ref=args.repo_ref,
                 )
             else:
                 cursor_request(
@@ -666,13 +742,11 @@ def main(argv: list[str] | None = None) -> int:
                     "name": route_name,
                 },
             }
-            if args.cursor_mode == "machine":
+            if not args.any_repo:
                 agent_request["repos"] = [
-                    {
-                        "url": MACHINE_REPO_URL,
-                        "startingRef": MACHINE_REPO_REF,
-                    }
+                    {"url": args.repo_url, "startingRef": args.repo_ref}
                 ]
+            if args.cursor_mode == "machine":
                 agent_request["workOnCurrentBranch"] = True
             route_deadline = min(deadline, time.monotonic() + 120)
             while True:
@@ -715,18 +789,28 @@ def main(argv: list[str] | None = None) -> int:
                     raise RuntimeError(
                         f"Controller exited with status {controller.returncode}"
                     )
-                run = cursor_request(
-                    cursor_key,
-                    "GET",
-                    f"/v1/agents/{urllib.parse.quote(agent_id)}/runs/"
-                    f"{urllib.parse.quote(run_id)}",
-                )
+                try:
+                    run = cursor_request(
+                        cursor_key,
+                        "GET",
+                        f"/v1/agents/{urllib.parse.quote(agent_id)}/runs/"
+                        f"{urllib.parse.quote(run_id)}",
+                    )
+                except (TimeoutError, urllib.error.URLError) as error:
+                    # Cursor's API occasionally stalls a poll; the deadline bounds retries.
+                    print(f"cursor poll retry: {error}", file=sys.stderr)
+                    time.sleep(POLL_SECONDS)
+                    continue
                 if not isinstance(run, dict):
                     raise RuntimeError("Cursor run response is not an object")
                 run_payload = run
                 sandbox = sandbox or find_sandbox(daytona, route_name)
                 if sandbox is not None:
-                    marker_value = read_marker(sandbox, args.sandbox_class)
+                    marker_value = read_marker(
+                        sandbox,
+                        args.sandbox_class,
+                        guest_may_be_booting=True,
+                    )
                 status = str(run.get("status", ""))
                 if status in TERMINAL_RUN_STATES:
                     if status != "FINISHED":
@@ -753,6 +837,14 @@ def main(argv: list[str] | None = None) -> int:
                     )
             if read_marker(sandbox, args.sandbox_class) != token:
                 raise RuntimeError("Cursor run did not write the exact marker token")
+            cloned: list[str] = []
+            if args.cursor_mode == "team-pool" and not args.any_repo:
+                cloned = cloned_repositories(sandbox, args.sandbox_class)
+                if not cloned:
+                    raise RuntimeError(
+                        "The session-start hook did not clone the requested "
+                        f"repository {args.repo_url} into the workspace"
+                    )
 
             pid = read_pid(sandbox, args.sandbox_class)
             worker_check_deadline = min(deadline, time.monotonic() + 30)
@@ -783,7 +875,9 @@ def main(argv: list[str] | None = None) -> int:
 
             result_payload = {
                 "agent_id": agent_id,
+                "cloned_repositories": cloned,
                 "cursor_mode": args.cursor_mode,
+                "repo_url": None if args.any_repo else args.repo_url,
                 "route_name": route_name,
                 "run_id": run_id,
                 "run_status": run_payload["status"] if run_payload else None,

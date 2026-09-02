@@ -18,10 +18,10 @@ from daytona import (
     SandboxClass,
 )
 
-WINDOWS_PROVISIONER = resources.files("cursor_byom").joinpath("provision_windows.ps1")
-WINDOWS_CLONE_HOOK = resources.files("cursor_byom").joinpath("clone_repos_windows.ps1")
-WINDOWS_CLONE_WRAPPER = resources.files("cursor_byom").joinpath("clone_repos_windows.cmd")
-WINDOWS_BOOTSTRAP = resources.files("cursor_byom").joinpath("windows_bootstrap.ps1")
+WINDOWS_PROVISIONER = resources.files("cursor_self_hosted").joinpath("provision_windows.ps1")
+WINDOWS_CLONE_HOOK = resources.files("cursor_self_hosted").joinpath("clone_repos_windows.ps1")
+WINDOWS_CLONE_WRAPPER = resources.files("cursor_self_hosted").joinpath("clone_repos_windows.cmd")
+WINDOWS_BOOTSTRAP = resources.files("cursor_self_hosted").joinpath("windows_bootstrap.ps1")
 
 WINDOWS_SNAPSHOT_INPUTS = (
     WINDOWS_PROVISIONER,
@@ -70,7 +70,7 @@ def windows_snapshot_name_for(
         digest.update(snapshot_input.read_bytes())
         digest.update(b"\0")
     digest.update(source_snapshot.encode("utf-8"))
-    return f"cursor-byom-windows-{digest.hexdigest()[:8]}"
+    return f"cursor-self-hosted-windows-{digest.hexdigest()[:8]}"
 
 
 def _iter_snapshots(daytona: Any) -> Iterator[object]:
@@ -159,8 +159,8 @@ def run_windows_provisioner(
 ) -> ExecuteResponse:
     """Run the provisioner detached and poll its log and exit marker."""
     run_id = uuid.uuid4().hex
-    log_path = f"C:/Windows/Temp/cursor-byom-provision-{run_id}.log"
-    exit_path = f"C:/Windows/Temp/cursor-byom-provision-{run_id}.exitcode"
+    log_path = f"C:/Windows/Temp/cursor-self-hosted-provision-{run_id}.log"
+    exit_path = f"C:/Windows/Temp/cursor-self-hosted-provision-{run_id}.exitcode"
 
     provision_arguments = (
         f"& '{WINDOWS_POWERSHELL}' -NoLogo -NoProfile -NonInteractive "
@@ -212,7 +212,7 @@ def run_windows_provisioner(
 
 
 def _unique_sandbox_name(purpose: str) -> str:
-    return f"cursor-byom-windows-{purpose}-{uuid.uuid4().hex[:12]}"
+    return f"cursor-self-hosted-windows-{purpose}-{uuid.uuid4().hex[:12]}"
 
 
 def _upload_snapshot_inputs(sandbox: Any, *, timeout: int) -> None:

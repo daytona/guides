@@ -12,8 +12,8 @@ from typing import Any
 
 import pytest
 
-from cursor_byom import clone_repos as clone_repos_module
-from cursor_byom.clone_repos import (
+from cursor_self_hosted import clone_repos as clone_repos_module
+from cursor_self_hosted.clone_repos import (
     HookError,
     Repo,
     clone_repositories,

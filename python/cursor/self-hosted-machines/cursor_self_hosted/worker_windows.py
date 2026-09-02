@@ -21,9 +21,9 @@ WINDOWS_AGENT_ROOT = (
 WINDOWS_AGENT_NODE_PATH = rf"{WINDOWS_AGENT_ROOT}\node.exe"
 WINDOWS_AGENT_INDEX_PATH = rf"{WINDOWS_AGENT_ROOT}\index.js"
 WINDOWS_WORKSPACE_PATH = r"C:\cursor\workspace"
-WINDOWS_RUNTIME_ROOT = r"C:\ProgramData\cursor-byom"
+WINDOWS_RUNTIME_ROOT = r"C:\ProgramData\cursor-self-hosted"
 WINDOWS_CLONE_HOOK_PATH = (
-    rf"{WINDOWS_RUNTIME_ROOT}\clone-cursor-byom-repos.cmd"
+    rf"{WINDOWS_RUNTIME_ROOT}\clone-cursor-self-hosted-repos.cmd"
 )
 WINDOWS_BOOTSTRAP_PATH = rf"{WINDOWS_RUNTIME_ROOT}\windows-bootstrap.ps1"
 WINDOWS_LAUNCH_CONFIG_PATH = rf"{WINDOWS_RUNTIME_ROOT}\launch.json"

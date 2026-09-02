@@ -36,8 +36,8 @@ from .worker_windows import start_windows_worker_process
 
 _CURSOR_API_BASE = "https://api.cursor.com"
 _PROC_ROOT = "/proc"
-_WORKER_PID_PATH = "/tmp/cursor-byom/worker.pid"
-_WORKER_LOG_PATH = "/tmp/cursor-byom/worker.log"
+_WORKER_PID_PATH = "/tmp/cursor-self-hosted/worker.pid"
+_WORKER_LOG_PATH = "/tmp/cursor-self-hosted/worker.log"
 _WORKER_STARTUP_DELAY_SECONDS = 0.1
 _SANDBOX_DELETION_POLL_SECONDS = 0.1
 
@@ -69,7 +69,7 @@ def _worker_launch_command(config: Config) -> str:
     proc_root = shlex.quote(_PROC_ROOT)
     inner = " && ".join(
         (
-            "mkdir -p /tmp/cursor-byom",
+            "mkdir -p /tmp/cursor-self-hosted",
             (
                 f"(nohup {command} > {shlex.quote(_WORKER_LOG_PATH)} 2>&1 "
                 f"< /dev/null & echo $! > {pid_path})"
@@ -144,7 +144,7 @@ def start_monitor(
     if config.daytona_target is not None:
         monitor_environment["DAYTONA_TARGET"] = config.daytona_target
     subprocess.Popen(
-        [sys.executable, "-m", "cursor_byom.monitor"],
+        [sys.executable, "-m", "cursor_self_hosted.monitor"],
         env=monitor_environment,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
@@ -262,11 +262,11 @@ def main(argv: list[str] | None = None) -> int:
     """Run the non-interactive worker spawn command."""
 
     parser = argparse.ArgumentParser(
-        prog="spawn-cursor-byom-worker",
+        prog="spawn-cursor-self-hosted-worker",
         description="Start or reuse a Cursor worker in a Daytona sandbox.",
         epilog=(
             "Example value for the controller --spawn option:\n"
-            "  spawn-cursor-byom-worker"
+            "  spawn-cursor-self-hosted-worker"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -292,7 +292,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     except Exception as error:
         print(
-            "spawn-cursor-byom-worker: failed to start worker: "
+            "spawn-cursor-self-hosted-worker: failed to start worker: "
             f"{_error_message(error, config)}",
             file=sys.stderr,
         )

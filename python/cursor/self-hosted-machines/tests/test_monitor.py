@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, cast
 from unittest.mock import patch
 
-from cursor_byom import monitor as monitor_module
+from cursor_self_hosted import monitor as monitor_module
 
 
 @dataclass(frozen=True)
