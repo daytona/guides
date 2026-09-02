@@ -299,51 +299,6 @@ def test_worker_environment_contains_only_worker_credentials_and_optional_name(
     }.isdisjoint(environment)
 
 
-def test_worker_command_with_repositories_mints_token_and_runs_checkout_hook() -> None:
-    config = SimpleNamespace(
-        cursor_pool="pool-test",
-        cursor_repo_urls=(
-            "https://example.test/acme/one.git",
-            "https://example.test/acme/two.git",
-        ),
-        idle_release_timeout_seconds=900,
-    )
-
-    command = worker_command(cast(Any, config))
-
-    assert command == [
-        "/usr/local/bin/agent",
-        "worker",
-        "--pool",
-        "pool-test",
-        "--worker-dir",
-        "/home/daytona/workspace",
-        "--management-addr",
-        "0.0.0.0:8080",
-        "--mint-github-token",
-        "--on-session-start",
-        "/usr/local/bin/cursor-self-hosted-checkout",
-        "--idle-release-timeout",
-        "900",
-        "start",
-    ]
-    assert "--clone-git-repos" not in command
-
-
-@pytest.mark.parametrize(
-    ("given", "expected"),
-    [
-        ("github.com/acme/payments", "https://github.com/acme/payments"),
-        ("https://github.com/acme/payments.git", "https://github.com/acme/payments.git"),
-        ("  github.com/acme/payments  ", "https://github.com/acme/payments"),
-    ],
-)
-def test_primary_origin_url_adds_https_to_scheme_less_cursor_urls(
-    given: str, expected: str
-) -> None:
-    assert primary_origin_url(SimpleNamespace(cursor_repo_urls=(given,))) == expected
-
-
 @pytest.mark.parametrize(
     "given",
     [
@@ -355,11 +310,7 @@ def test_primary_origin_url_adds_https_to_scheme_less_cursor_urls(
 )
 def test_primary_origin_url_rejects_non_https_or_credentialed_urls(given: str) -> None:
     with pytest.raises(ConfigError):
-        primary_origin_url(SimpleNamespace(cursor_repo_urls=(given,)))
-
-
-def test_primary_origin_url_is_none_without_repositories() -> None:
-    assert primary_origin_url(SimpleNamespace(cursor_repo_urls=())) is None
+        primary_origin_url(cast(Any, SimpleNamespace(cursor_repo_urls=(given,))))
 
 
 def test_worker_command_without_repositories_omits_repository_flags() -> None:

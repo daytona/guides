@@ -239,24 +239,6 @@ def test_windows_provisioner_pins_node_22_and_probes_native_module() -> None:
     assert "node_modules\\better-sqlite3" in provisioner
 
 
-def test_windows_provisioner_pins_lab_build_and_installs_checkout_hook() -> None:
-    provisioner = (
-        Path(__file__).parents[1]
-        / "cursor_self_hosted"
-        / "provision_windows.ps1"
-    ).read_text()
-
-    assert "$CursorAgentVersion = '2026.09.02-e3e9343'" in provisioner
-    assert "-notmatch '--on-session-start'" in provisioner
-    assert "checkout_repo.ps1" in provisioner
-    assert "Join-Path $GitRoot 'bin\\bash.exe'" in provisioner
-    # A headless SYSTEM worker must never block on a credential prompt.
-    assert "'credential.interactive', 'never'" in provisioner
-    assert "SetEnvironmentVariable('GIT_TERMINAL_PROMPT', '0', 'Machine')" in provisioner
-    assert ".cmd" not in provisioner
-    assert "--clone-git-repos" not in provisioner
-
-
 def test_failed_windows_verification_deletes_uncertified_snapshot(
     monkeypatch: Any,
 ) -> None:

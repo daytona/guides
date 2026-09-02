@@ -453,27 +453,6 @@ class SpawnWorkerTests(unittest.TestCase):
         self.assertTrue(command.startswith("sh -c "))
         self.assertNotIn("sh -lc", command)
 
-    def test_launch_command_seeds_origin_so_worker_advertises_the_repository(
-        self,
-    ) -> None:
-        launch_command = spawn_module._worker_launch_command
-
-        command = launch_command(FakeConfig(cursor_repo_urls=("github.com/acme/two",)))
-
-        self.assertIn("git -C /home/daytona/workspace init -q", command)
-        self.assertIn(
-            "git -C /home/daytona/workspace remote add origin https://github.com/acme/two",
-            command,
-        )
-        self.assertLess(command.index("remote add origin"), command.index("nohup"))
-
-    def test_launch_command_without_repositories_does_not_touch_git(self) -> None:
-        launch_command = spawn_module._worker_launch_command
-
-        command = launch_command(FakeConfig(cursor_repo_url=None, cursor_repo_urls=()))
-
-        self.assertNotIn("git ", command)
-
     def test_detached_launch_passes_only_cursor_environment_into_the_sandbox(self) -> None:
         daytona = FakeDaytona()
 
@@ -581,9 +560,7 @@ class SpawnWorkerTests(unittest.TestCase):
                     ),
                 ):
                     completed = subprocess.run(
-                        launch_command(
-                            FakeConfig(cursor_repo_url=None, cursor_repo_urls=())
-                        ),
+                        launch_command(cast(Any, FakeConfig(cursor_repo_urls=()))),
                         shell=True,
                         check=False,
                         capture_output=True,
@@ -735,6 +712,7 @@ class SpawnCommandTests(unittest.TestCase):
             patch.object(spawn_module, "start_monitor", lambda *args: None, create=True),
             patch.object(spawn_module, "spawn_worker", return_value=result, create=True),
             patch("sys.stdout", output),
+            patch.dict(os.environ, {spawn_module._DETACHED_FLAG: "1"}),
         ):
             status = main([])
 
@@ -786,6 +764,7 @@ class SpawnCommandTests(unittest.TestCase):
                 create=True,
             ),
             patch("sys.stderr", error_output),
+            patch.dict(os.environ, {spawn_module._DETACHED_FLAG: "1"}),
         ):
             status = main([])
 

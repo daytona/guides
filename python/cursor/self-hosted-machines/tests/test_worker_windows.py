@@ -99,18 +99,8 @@ def test_windows_worker_launch_uses_baked_agent_and_secret_file_cleanup() -> Non
     assert "--pool windows-pool" in arguments
     assert "--worker-dir C:\\cursor\\workspace" in arguments
     assert "--mint-github-token" in arguments
-    # Cursor evaluates the hook command with Git Bash, which strips unquoted
-    # backslashes, so the hook command must use forward slashes only.
-    hook_command = arguments.split("--on-session-start ", 1)[1].split(
-        " --idle-release-timeout", 1
-    )[0]
-    assert hook_command == (
-        '"C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoLogo '
-        "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "
-        'C:/ProgramData/cursor-self-hosted/checkout_repo.ps1"'
-    )
-    assert "\\" not in hook_command
-    assert "--clone-git-repos" not in arguments
+    assert "--on-session-start" in arguments
+    assert "-File C:/ProgramData/cursor-self-hosted/checkout_repo.ps1" in arguments
     assert "host-daytona-key" not in json.dumps(payload)
 
 

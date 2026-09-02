@@ -269,6 +269,9 @@ def _error_message(error: BaseException, config: Config | None) -> str:
     return redact(str(error), secrets)
 
 
+_DETACHED_FLAG = "CURSOR_SELF_HOSTED_SPAWN_DETACHED"
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the non-interactive worker spawn command."""
 
@@ -282,6 +285,27 @@ def main(argv: list[str] | None = None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.parse_args(argv)
+
+    if os.environ.get(_DETACHED_FLAG) != "1":
+        # The Cursor controller SIGKILLs the spawn hook's process group after
+        # 60 seconds; a Windows sandbox can take longer to boot. Provision in a
+        # detached copy that shares this stderr/stdout, and relay its exit
+        # status only if it finishes inside the window.
+        child = subprocess.Popen(
+            [sys.executable, "-m", "cursor_self_hosted.spawn"],
+            env={**os.environ, _DETACHED_FLAG: "1"},
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+            close_fds=True,
+        )
+        try:
+            return child.wait(timeout=45)
+        except subprocess.TimeoutExpired:
+            print(
+                f"spawn-cursor-self-hosted-worker: still provisioning as PID {child.pid}",
+                file=sys.stderr,
+            )
+            return 0
 
     config: Config | None = None
     try:

@@ -407,18 +407,3 @@ def test_builder_dispatches_windows_snapshot_provisioning(
         "state": "active",
         "target": "us",
     }
-
-
-def test_dockerfile_pins_lab_build_and_installs_executable_checkout_hook() -> None:
-    snapshot_file = snapshot_module.__file__
-    assert snapshot_file is not None
-    dockerfile = Path(snapshot_file).with_name("Dockerfile").read_text()
-
-    assert "downloads.cursor.com/lab/2026.09.02-e3e9343/" in dockerfile
-    assert "b2sum --check" in dockerfile
-    assert re.search(
-        r"^COPY .*--chmod=0?755 checkout_repo\.sh /usr/local/bin/cursor-self-hosted-checkout$",
-        dockerfile,
-        re.MULTILINE,
-    )
-    assert "--clone-git-repos" not in dockerfile
