@@ -1010,9 +1010,13 @@ def main(argv: list[str] | None = None) -> int:
                     (daytona_key, cursor_key),
                 )
             if args.cursor_mode == "team-pool":
-                query = urllib.parse.urlencode(
-                    {"scope": "team", "pool_name": route_name}
-                )
+                # A pool whose worker advertised a repository is recorded as
+                # repo-backed and only deregisters with the repo identity.
+                pool_identity = {"scope": "team", "pool_name": route_name}
+                if not args.any_repo:
+                    owner, name = strip_url_credentials(args.repo_url).rsplit("/", 2)[-2:]
+                    pool_identity.update(repo_owner=owner, repo_name=name)
+                query = urllib.parse.urlencode(pool_identity)
                 cleanup_with_retries(
                     "Cursor pool deletion",
                     lambda: cursor_request(
