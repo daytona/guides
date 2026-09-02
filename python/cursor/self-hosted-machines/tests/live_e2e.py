@@ -475,6 +475,7 @@ def cloned_repository_origins(sandbox: Any, sandbox_class: str) -> list[str]:
     """
     if sandbox_class == "windows":
         script = (
+            "$ProgressPreference = 'SilentlyContinue'; "
             f"$roots = @(Get-Item -LiteralPath '{WINDOWS_WORKSPACE_PATH}') + "
             f"@(Get-ChildItem -LiteralPath '{WINDOWS_WORKSPACE_PATH}' -Directory); "
             "foreach ($root in $roots) { "
