@@ -35,16 +35,13 @@ try {
         throw 'CURSOR_WORKER_WORKSPACE_DIR is required'
     }
 
-    # Cursor writes the payload as UTF-8. [Console]::In would decode it with
-    # the OEM code page and keep a leading byte-order mark, which breaks
-    # ConvertFrom-Json; a UTF-8 StreamReader strips the mark.
+    # [Console]::In decodes stdin with the OEM code page and corrupted the
+    # leading bytes of the payload; Cursor writes it as UTF-8.
     $reader = New-Object IO.StreamReader(
         [Console]::OpenStandardInput(),
-        (New-Object Text.UTF8Encoding $false),
-        $true
+        (New-Object Text.UTF8Encoding $false)
     )
-    $raw = $reader.ReadToEnd().TrimStart([char]0xFEFF)
-    $payload = ConvertFrom-Json -InputObject $raw
+    $payload = ConvertFrom-Json -InputObject $reader.ReadToEnd()
     $repos = @($payload.repos)
     $primary = @($repos | Where-Object { $_.PSObject.Properties['primary'] -and $_.primary })
     if ($primary.Count -eq 0) { $primary = $repos }
