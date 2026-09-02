@@ -59,16 +59,15 @@ try {
         exit 0
     }
 
-    # The minted token can arrive moments after the session starts.
-    $delay = 1
-    for ($attempt = 1; $attempt -le 5; $attempt++) {
+    # Cursor writes the minted token to git config in parallel with this hook
+    # and kills the hook after 60 seconds, so keep trying for most of that window.
+    for ($attempt = 1; $attempt -le 25; $attempt++) {
         if ((Invoke-Git -Arguments @('-C', $workspace, 'fetch', '--quiet', 'origin', $ref)) -and
             (Invoke-Git -Arguments @('-C', $workspace, 'checkout', '--quiet', '-B', $ref, 'FETCH_HEAD'))) {
             [Console]::Out.WriteLine('{"status":"ok"}')
             exit 0
         }
-        Start-Sleep -Seconds $delay
-        $delay *= 2
+        Start-Sleep -Seconds 2
     }
     throw "could not fetch '$ref' from origin; confirm GitHub token minting and repository access: $script:LastGitOutput"
 }

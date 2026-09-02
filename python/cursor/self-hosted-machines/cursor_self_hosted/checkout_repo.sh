@@ -33,16 +33,15 @@ if git -C "$workspace" rev-parse --verify --quiet HEAD >/dev/null; then
     exit 0
 fi
 
-# The minted token can arrive moments after the session starts.
-delay=1
-for attempt in 1 2 3 4 5; do
+# Cursor writes the minted token to git config in parallel with this hook and
+# kills the hook after 60 seconds, so keep trying for most of that window.
+for attempt in $(seq 1 25); do
     if git -C "$workspace" fetch --quiet origin "$ref" \
         && git -C "$workspace" checkout --quiet -B "$ref" FETCH_HEAD; then
         printf '{"status":"ok"}\n'
         exit 0
     fi
-    sleep "$delay"
-    delay=$((delay * 2))
+    sleep 2
 done
 
 echo "error: could not fetch '$ref' from origin; confirm GitHub token minting and repository access" >&2
