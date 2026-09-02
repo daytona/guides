@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cursor-self-hosted-daytona"
+version = "0.1.0"
+description = "Run claimed Cursor self-hosted workers in Daytona sandboxes"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "daytona>=0.196.0",
+  "python-dotenv",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+spawn-cursor-self-hosted-worker = "cursor_self_hosted.spawn:main"
+monitor-cursor-self-hosted-worker = "cursor_self_hosted.monitor:main"
+build-cursor-self-hosted-snapshot = "cursor_self_hosted.build_snapshot:main"
+
+[tool.setuptools]
+packages = ["cursor_self_hosted"]
+
+[tool.setuptools.package-data]
+cursor_self_hosted = ["Dockerfile", "*.ps1", "*.sh"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
