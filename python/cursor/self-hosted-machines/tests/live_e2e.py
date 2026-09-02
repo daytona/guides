@@ -486,12 +486,12 @@ def cloned_repository_origins(sandbox: Any, sandbox_class: str) -> list[str]:
         )
         response = sandbox.process.exec(powershell_encoded(script), timeout=60)
     else:
-        response = sandbox.process.exec(
+        listing = (
             "for d in /home/daytona/workspace /home/daytona/workspace/*/; do "
-            "git -C \"$d\" rev-parse --verify --quiet HEAD >/dev/null 2>&1 "
-            "&& git -C \"$d\" remote get-url origin; done; true",
-            timeout=60,
+            'git -C "$d" rev-parse --verify --quiet HEAD >/dev/null 2>&1 '
+            '&& git -C "$d" remote get-url origin; done; true'
         )
+        response = sandbox.process.exec(f"sh -c {shlex.quote(listing)}", timeout=60)
     if getattr(response, "exit_code", 1) != 0:
         detail = str(getattr(response, "result", ""))[-2000:]
         raise RuntimeError(f"Failed to list cloned repositories: {detail}")
