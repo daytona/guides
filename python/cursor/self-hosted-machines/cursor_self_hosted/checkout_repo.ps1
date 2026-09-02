@@ -13,10 +13,19 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 $GitExe = 'C:\Program Files\Git\cmd\git.exe'
+$script:LastGitOutput = ''
+
+# The hook has no terminal; a missing token must fail fast instead of prompting.
+$env:GIT_TERMINAL_PROMPT = '0'
+$env:GCM_INTERACTIVE = 'Never'
 
 function Invoke-Git {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
-    & $GitExe @Arguments 2>&1 | Out-Null
+    # Windows PowerShell turns redirected native stderr into a terminating error
+    # under $ErrorActionPreference = 'Stop', and git reports progress on stderr.
+    $ErrorActionPreference = 'Continue'
+    $output = @(& $GitExe @Arguments 2>&1 | ForEach-Object { [string]$_ })
+    $script:LastGitOutput = $output -join [Environment]::NewLine
     return $LASTEXITCODE -eq 0
 }
 
@@ -26,7 +35,16 @@ try {
         throw 'CURSOR_WORKER_WORKSPACE_DIR is required'
     }
 
-    $payload = ConvertFrom-Json -InputObject ([Console]::In.ReadToEnd())
+    # Cursor writes the payload as UTF-8. [Console]::In would decode it with
+    # the OEM code page and keep a leading byte-order mark, which breaks
+    # ConvertFrom-Json; a UTF-8 StreamReader strips the mark.
+    $reader = New-Object IO.StreamReader(
+        [Console]::OpenStandardInput(),
+        (New-Object Text.UTF8Encoding $false),
+        $true
+    )
+    $raw = $reader.ReadToEnd().TrimStart([char]0xFEFF)
+    $payload = ConvertFrom-Json -InputObject $raw
     $repos = @($payload.repos)
     $primary = @($repos | Where-Object { $_.PSObject.Properties['primary'] -and $_.primary })
     if ($primary.Count -eq 0) { $primary = $repos }
@@ -55,7 +73,7 @@ try {
         Start-Sleep -Seconds $delay
         $delay *= 2
     }
-    throw "could not fetch '$ref' from origin; confirm GitHub token minting and repository access"
+    throw "could not fetch '$ref' from origin; confirm GitHub token minting and repository access: $script:LastGitOutput"
 }
 catch {
     [Console]::Error.WriteLine("error: $($_.Exception.Message)")

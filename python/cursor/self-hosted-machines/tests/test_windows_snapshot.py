@@ -248,8 +248,9 @@ def test_windows_provisioner_pins_lab_build_and_installs_checkout_hook() -> None
 
     assert "$CursorAgentVersion = '2026.09.02-e3e9343'" in provisioner
     assert "-notmatch '--on-session-start'" in provisioner
-    assert "'cursor-self-hosted-checkout.cmd'" in provisioner
     assert "checkout_repo.ps1" in provisioner
+    assert "Join-Path $GitRoot 'bin\\bash.exe'" in provisioner
+    assert ".cmd" not in provisioner
     assert "--clone-git-repos" not in provisioner
 
 

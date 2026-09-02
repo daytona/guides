@@ -25,7 +25,7 @@ build-cursor-self-hosted-snapshot = "cursor_self_hosted.build_snapshot:main"
 packages = ["cursor_self_hosted"]
 
 [tool.setuptools.package-data]
-cursor_self_hosted = ["Dockerfile", "*.ps1", "*.cmd", "*.sh"]
+cursor_self_hosted = ["Dockerfile", "*.ps1", "*.sh"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

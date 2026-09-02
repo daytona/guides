@@ -23,7 +23,15 @@ WINDOWS_AGENT_INDEX_PATH = rf"{WINDOWS_AGENT_ROOT}\index.js"
 WINDOWS_WORKSPACE_PATH = r"C:\cursor\workspace"
 WINDOWS_RUNTIME_ROOT = r"C:\ProgramData\cursor-self-hosted"
 WINDOWS_GIT_PATH = r"C:\Program Files\Git\cmd\git.exe"
-WINDOWS_CHECKOUT_HOOK_PATH = rf"{WINDOWS_RUNTIME_ROOT}\cursor-self-hosted-checkout.cmd"
+WINDOWS_CHECKOUT_HOOK_PATH = rf"{WINDOWS_RUNTIME_ROOT}\checkout_repo.ps1"
+# Cursor evaluates hook commands with bash (Git Bash on Windows) and feeds the
+# payload through a heredoc, so the command must survive bash word splitting:
+# forward slashes only, because bash strips unquoted backslashes.
+WINDOWS_CHECKOUT_HOOK_COMMAND = (
+    f"{WINDOWS_POWERSHELL_PATH.replace(chr(92), '/')} -NoLogo -NoProfile "
+    "-NonInteractive -ExecutionPolicy Bypass -File "
+    f"{WINDOWS_CHECKOUT_HOOK_PATH.replace(chr(92), '/')}"
+)
 WINDOWS_BOOTSTRAP_PATH = rf"{WINDOWS_RUNTIME_ROOT}\windows-bootstrap.ps1"
 WINDOWS_LAUNCH_CONFIG_PATH = rf"{WINDOWS_RUNTIME_ROOT}\launch.json"
 WINDOWS_WORKER_PID_PATH = rf"{WINDOWS_RUNTIME_ROOT}\worker.pid"
@@ -70,7 +78,7 @@ def _worker_arguments(config: Config) -> str:
             (
                 "--mint-github-token",
                 "--on-session-start",
-                WINDOWS_CHECKOUT_HOOK_PATH,
+                WINDOWS_CHECKOUT_HOOK_COMMAND,
             )
         )
     arguments.extend(

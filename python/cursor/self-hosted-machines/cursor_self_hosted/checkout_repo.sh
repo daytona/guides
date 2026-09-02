@@ -9,6 +9,8 @@
 set -eu
 
 workspace="${CURSOR_WORKER_WORKSPACE_DIR:?CURSOR_WORKER_WORKSPACE_DIR is required}"
+# The hook has no terminal; a missing token must fail fast instead of prompting.
+export GIT_TERMINAL_PROMPT=0
 
 ref="$(python3 -c '
 import json, sys

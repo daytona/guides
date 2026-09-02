@@ -450,7 +450,7 @@ def worker_diagnostics(
         if sandbox_class == "windows"
         else (LINUX_WORKER_LOG_PATH,)
     )
-    output = ""
+    tails: list[str] = []
     for path in paths:
         if sandbox_class == "windows":
             path = path.replace("\\", "/")
@@ -459,13 +459,11 @@ def worker_diagnostics(
         except Exception:
             continue
         if candidate.strip():
-            output = candidate
-            break
-    if not output:
-        output = "worker produced no readable log"
+            tails.append(f"--- {path} ---\n{candidate[-4000:]}")
+    output = "\n".join(tails) or "worker produced no readable log"
     for secret_value in secrets_to_redact:
         output = output.replace(secret_value, "<redacted>")
-    return output[-4000:]
+    return output
 
 
 def cloned_repository_origins(sandbox: Any, sandbox_class: str) -> list[str]:
@@ -482,7 +480,8 @@ def cloned_repository_origins(sandbox: Any, sandbox_class: str) -> list[str]:
             "foreach ($root in $roots) { "
             f"& '{WINDOWS_GIT_PATH}' -C $root.FullName rev-parse --verify --quiet HEAD *> $null; "
             "if ($LASTEXITCODE -eq 0) { "
-            f"& '{WINDOWS_GIT_PATH}' -C $root.FullName remote get-url origin }} }}"
+            f"& '{WINDOWS_GIT_PATH}' -C $root.FullName remote get-url origin }} }}; "
+            "exit 0"
         )
         response = sandbox.process.exec(powershell_encoded(script), timeout=60)
     else:
