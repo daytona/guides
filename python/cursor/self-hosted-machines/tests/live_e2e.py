@@ -474,9 +474,13 @@ def worker_diagnostics(
     secrets_to_redact: tuple[str, ...],
 ) -> str:
     paths = (
-        (WINDOWS_WORKER_STDERR_PATH, WINDOWS_WORKER_STDOUT_PATH)
+        (
+            WINDOWS_WORKER_STDERR_PATH,
+            WINDOWS_WORKER_STDOUT_PATH,
+            r"C:\ProgramData\cursor-self-hosted\checkout.log",
+        )
         if sandbox_class == "windows"
-        else (LINUX_WORKER_LOG_PATH,)
+        else (LINUX_WORKER_LOG_PATH, "/tmp/cursor-self-hosted/checkout.log")
     )
     tails: list[str] = []
     for path in paths:

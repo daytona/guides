@@ -8,6 +8,10 @@
 # writes to the worker's git configuration (--mint-github-token).
 set -eu
 
+# Cursor discards the stderr of a failed hook, so keep it next to the worker
+# log; the worker launcher creates this directory.
+exec 2>>/tmp/cursor-self-hosted/checkout.log
+
 workspace="${CURSOR_WORKER_WORKSPACE_DIR:?CURSOR_WORKER_WORKSPACE_DIR is required}"
 # The hook has no terminal; a missing token must fail fast instead of prompting.
 export GIT_TERMINAL_PROMPT=0

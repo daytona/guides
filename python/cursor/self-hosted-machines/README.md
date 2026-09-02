@@ -212,7 +212,7 @@ Use a dedicated, least-privilege service account for each customer. Rotate the k
 
 Cursor sends short-lived GitHub credentials to the claimed worker. This guide stores no GitHub token. Cursor receives file chunks for inference and uploaded artifacts. Review [Cursor's security and network model](https://cursor.com/docs/cloud-agent/security-network).
 
-Cursor clones with a short-lived token only. It stores no long-lived credential in the sandbox.
+The checkout hook fetches with that short-lived token only. Nothing stores a long-lived credential in the sandbox.
 
 ## Validation
 
@@ -223,7 +223,7 @@ Run the deterministic checks:
 .venv/bin/python tests/live_e2e.py --help
 ```
 
-The live verifier spends real Daytona and Cursor credits. It creates an agent and sandbox, asks Cursor to write an exact marker, checks the native worker process, stops that process, verifies monitor cleanup, and deletes the Cursor agent.
+The live verifier spends real Daytona and Cursor credits. It creates an agent and sandbox, asks Cursor to write an exact marker, checks the native worker process, stops that process, verifies monitor cleanup, and deletes the Cursor agent. In `team-pool` mode it also confirms that the requested repository is checked out in the workspace.
 
 The default `machine` mode needs a personal Cursor user key. It uses Cursor My Machines so that any Cloud Agents account can verify the snapshot:
 
@@ -237,14 +237,15 @@ set -a; . ./.env; set +a
 
 Personal My Machines proves real Cursor execution in the selected snapshot. It does not prove the Enterprise pool claim path.
 
-Use an Enterprise service-account key to test the complete controller and claim path:
+Use an Enterprise service-account key to test the complete controller and claim path. Pass a repository that the team's Cursor GitHub App can access:
 
 ```bash
 .venv/bin/python tests/live_e2e.py \
   --sandbox-class windows \
   --target us \
   --snapshot "$SNAPSHOT_NAME" \
-  --cursor-mode team-pool
+  --cursor-mode team-pool \
+  --repo-url https://github.com/your-org/your-repo
 ```
 
 Run the live command once for each class and its matching target.
@@ -257,7 +258,7 @@ Run the live command once for each class and its matching target.
 - **The request stays queued.** Confirm the controller and request use the same pool. Confirm **Allow Self-Hosted Agents** is enabled.
 - **Daytona cannot find the snapshot.** Confirm `DAYTONA_TARGET` matches the target used for the build.
 - **A VM build cannot find its source snapshot.** Select a source in the same target with `--source-snapshot`.
-- **Linux repository cloning fails.** Inspect `/tmp/cursor-self-hosted/worker.log`. Confirm GitHub token minting is enabled for the team and the Cursor GitHub App can access the repository.
-- **Windows repository cloning fails.** Inspect `C:\ProgramData\cursor-self-hosted\worker.stderr.log`. Confirm GitHub token minting is enabled, Git is installed, and the Cursor GitHub App can access the repository.
+- **The workspace is empty after a Linux run.** Inspect `/tmp/cursor-self-hosted/checkout.log` in the sandbox. Confirm GitHub token minting is enabled for the team and the Cursor GitHub App can access the repository.
+- **The workspace is empty after a Windows run.** Inspect `C:\ProgramData\cursor-self-hosted\checkout.log`. Confirm GitHub token minting is enabled and the Cursor GitHub App can access the repository.
 - **A sandbox remains after worker exit.** Confirm the controller computer retained Daytona access. Delete the sandbox only when no worker uses it.
 - **A failed startup leaves a claimed request.** Use the [release-claim endpoint](https://cursor.com/docs/cloud-agent/api/endpoints#release-a-claim). Release only the failed request ID.

@@ -73,6 +73,7 @@ try {
     throw "could not fetch '$ref' from origin; confirm GitHub token minting and repository access: $script:LastGitOutput"
 }
 catch {
-    [Console]::Error.WriteLine("error: $($_.Exception.Message)")
+    # Cursor discards the stderr of a failed hook, so keep it next to the worker logs.
+    Add-Content -LiteralPath (Join-Path $PSScriptRoot 'checkout.log') -Value "error: $($_.Exception.Message)"
     exit 1
 }
