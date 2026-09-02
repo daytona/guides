@@ -469,24 +469,27 @@ def worker_diagnostics(
 
 
 def cloned_repository_origins(sandbox: Any, sandbox_class: str) -> list[str]:
-    """Return credential-free origin URLs of Git checkouts in the workspace.
+    """Return credential-free origin URLs of checked-out repositories.
 
-    Checks the workspace root and its direct children, so the result does not
-    depend on where the Cursor CLI places the clone.
+    Only repositories with a resolvable HEAD count: the spawn command seeds
+    `origin` before the worker starts, so an origin alone does not prove that
+    the sessionStart hook fetched and checked out the requested ref.
     """
     if sandbox_class == "windows":
         script = (
             f"$roots = @(Get-Item -LiteralPath '{WINDOWS_WORKSPACE_PATH}') + "
             f"@(Get-ChildItem -LiteralPath '{WINDOWS_WORKSPACE_PATH}' -Directory); "
             "foreach ($root in $roots) { "
-            "if (Test-Path -LiteralPath (Join-Path $root.FullName '.git')) { "
+            f"& '{WINDOWS_GIT_PATH}' -C $root.FullName rev-parse --verify --quiet HEAD *> $null; "
+            "if ($LASTEXITCODE -eq 0) { "
             f"& '{WINDOWS_GIT_PATH}' -C $root.FullName remote get-url origin }} }}"
         )
         response = sandbox.process.exec(powershell_encoded(script), timeout=60)
     else:
         response = sandbox.process.exec(
             "for d in /home/daytona/workspace /home/daytona/workspace/*/; do "
-            "[ -d \"$d/.git\" ] && git -C \"$d\" remote get-url origin; done; true",
+            "git -C \"$d\" rev-parse --verify --quiet HEAD >/dev/null 2>&1 "
+            "&& git -C \"$d\" remote get-url origin; done; true",
             timeout=60,
         )
     if getattr(response, "exit_code", 1) != 0:
