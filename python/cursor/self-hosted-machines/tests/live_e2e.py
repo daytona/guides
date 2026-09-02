@@ -194,6 +194,34 @@ def cancel_cursor_run(api_key: str, agent_id: str, run_id: str) -> None:
         raise
 
 
+def deregister_cursor_pool(api_key: str, pool_name: str) -> None:
+    """Deregister a team pool with the identity Cursor recorded for it.
+
+    The DELETE endpoint answers 200 with ``{"deregistered": false}`` when the
+    identity does not match, so the pool is looked up first and the response
+    body is checked instead of trusting the status code.
+    """
+    listing = cursor_request(api_key, "GET", "/v0/private-workers/pools?scope=team_pool")
+    pools = listing.get("pools", []) if isinstance(listing, dict) else []
+    matching = [pool for pool in pools if pool.get("poolName") == pool_name]
+    if not matching:
+        return
+    for pool in matching:
+        identity = {"scope": "team", "pool_name": pool_name}
+        if pool.get("repoOwner"):
+            identity.update(repo_owner=pool["repoOwner"], repo_name=pool["repoName"])
+        response = cursor_request(
+            api_key,
+            "DELETE",
+            f"/v0/private-workers/pools?{urllib.parse.urlencode(identity)}",
+        )
+        if not (isinstance(response, dict) and response.get("deregistered") is True):
+            raise RuntimeError(
+                f"Cursor did not deregister pool {pool_name!r} "
+                f"with identity {identity!r}: {response!r}"
+            )
+
+
 def cursor_run_conversation(api_key: str, agent_id: str, run_id: str) -> str:
     """Return the agent conversation as compact text; never raise."""
     try:
@@ -1010,20 +1038,9 @@ def main(argv: list[str] | None = None) -> int:
                     (daytona_key, cursor_key),
                 )
             if args.cursor_mode == "team-pool":
-                # A pool whose worker advertised a repository is recorded as
-                # repo-backed and only deregisters with the repo identity.
-                pool_identity = {"scope": "team", "pool_name": route_name}
-                if not args.any_repo:
-                    owner, name = strip_url_credentials(args.repo_url).rsplit("/", 2)[-2:]
-                    pool_identity.update(repo_owner=owner, repo_name=name)
-                query = urllib.parse.urlencode(pool_identity)
                 cleanup_with_retries(
                     "Cursor pool deletion",
-                    lambda: cursor_request(
-                        cursor_key,
-                        "DELETE",
-                        f"/v0/private-workers/pools?{query}",
-                    ),
+                    lambda: deregister_cursor_pool(cursor_key, route_name),
                     cleanup_failures,
                     (daytona_key, cursor_key),
                 )
