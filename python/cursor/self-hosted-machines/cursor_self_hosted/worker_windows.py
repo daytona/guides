@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from .config import Config, redact, worker_environment
+from .config import Config, primary_origin_url, redact, worker_environment
 
 WINDOWS_POWERSHELL_PATH = (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -22,6 +22,8 @@ WINDOWS_AGENT_NODE_PATH = rf"{WINDOWS_AGENT_ROOT}\node.exe"
 WINDOWS_AGENT_INDEX_PATH = rf"{WINDOWS_AGENT_ROOT}\index.js"
 WINDOWS_WORKSPACE_PATH = r"C:\cursor\workspace"
 WINDOWS_RUNTIME_ROOT = r"C:\ProgramData\cursor-self-hosted"
+WINDOWS_GIT_PATH = r"C:\Program Files\Git\cmd\git.exe"
+WINDOWS_CHECKOUT_HOOK_PATH = rf"{WINDOWS_RUNTIME_ROOT}\cursor-self-hosted-checkout.cmd"
 WINDOWS_BOOTSTRAP_PATH = rf"{WINDOWS_RUNTIME_ROOT}\windows-bootstrap.ps1"
 WINDOWS_LAUNCH_CONFIG_PATH = rf"{WINDOWS_RUNTIME_ROOT}\launch.json"
 WINDOWS_WORKER_PID_PATH = rf"{WINDOWS_RUNTIME_ROOT}\worker.pid"
@@ -64,7 +66,13 @@ def _worker_arguments(config: Config) -> str:
         "0.0.0.0:8080",
     ]
     if config.cursor_repo_urls:
-        arguments.append("--clone-git-repos")
+        arguments.extend(
+            (
+                "--mint-github-token",
+                "--on-session-start",
+                WINDOWS_CHECKOUT_HOOK_PATH,
+            )
+        )
     arguments.extend(
         (
             "--idle-release-timeout",
@@ -179,6 +187,27 @@ def start_windows_worker_process(
     sleep: Callable[[float], object] = time.sleep,
 ) -> str:
     """Start the baked Cursor worker and return its positive process ID."""
+
+    origin = primary_origin_url(config)
+    if origin is not None:
+        seed = powershell_encoded(
+            "$ErrorActionPreference = 'Stop'; "
+            f"& {_powershell_quote(WINDOWS_GIT_PATH)} -C "
+            f"{_powershell_quote(WINDOWS_WORKSPACE_PATH)} init -q; "
+            "if ($LASTEXITCODE -ne 0) { exit 1 }; "
+            f"& {_powershell_quote(WINDOWS_GIT_PATH)} -C "
+            f"{_powershell_quote(WINDOWS_WORKSPACE_PATH)} remote add origin "
+            f"{_powershell_quote(origin)}; "
+            "exit $LASTEXITCODE"
+        )
+        response = sandbox.process.exec(
+            seed,
+            timeout=min(60, config.sandbox_launch_timeout_seconds),
+        )
+        if getattr(response, "exit_code", 1) != 0:
+            raise RuntimeError(
+                "Failed to configure the repository origin in the Windows workspace"
+            )
 
     launch_config = {
         "environment": worker_environment(config),

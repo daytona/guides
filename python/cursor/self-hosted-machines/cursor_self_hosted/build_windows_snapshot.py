@@ -19,14 +19,20 @@ from daytona import (
 )
 
 WINDOWS_PROVISIONER = resources.files("cursor_self_hosted").joinpath("provision_windows.ps1")
+WINDOWS_CHECKOUT_HOOK = resources.files("cursor_self_hosted").joinpath("checkout_repo.ps1")
+WINDOWS_CHECKOUT_WRAPPER = resources.files("cursor_self_hosted").joinpath("checkout_repo.cmd")
 WINDOWS_BOOTSTRAP = resources.files("cursor_self_hosted").joinpath("windows_bootstrap.ps1")
 
 WINDOWS_SNAPSHOT_INPUTS = (
     WINDOWS_PROVISIONER,
+    WINDOWS_CHECKOUT_HOOK,
+    WINDOWS_CHECKOUT_WRAPPER,
     WINDOWS_BOOTSTRAP,
 )
 WINDOWS_SNAPSHOT_UPLOADS = (
     (WINDOWS_PROVISIONER, "C:/Windows/Temp/provision_windows.ps1"),
+    (WINDOWS_CHECKOUT_HOOK, "C:/Windows/Temp/checkout_repo.ps1"),
+    (WINDOWS_CHECKOUT_WRAPPER, "C:/Windows/Temp/checkout_repo.cmd"),
     (WINDOWS_BOOTSTRAP, "C:/Windows/Temp/windows_bootstrap.ps1"),
 )
 

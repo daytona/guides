@@ -10,6 +10,7 @@ import pytest
 from cursor_self_hosted.config import (
     Config,
     ConfigError,
+    primary_origin_url,
     redact,
     sandbox_labels,
     sandbox_name_for,
@@ -298,7 +299,7 @@ def test_worker_environment_contains_only_worker_credentials_and_optional_name(
     }.isdisjoint(environment)
 
 
-def test_worker_command_with_repositories_clones_them_with_the_cursor_cli() -> None:
+def test_worker_command_with_repositories_mints_token_and_runs_checkout_hook() -> None:
     config = SimpleNamespace(
         cursor_pool="pool-test",
         cursor_repo_urls=(
@@ -319,12 +320,46 @@ def test_worker_command_with_repositories_clones_them_with_the_cursor_cli() -> N
         "/home/daytona/workspace",
         "--management-addr",
         "0.0.0.0:8080",
-        "--clone-git-repos",
+        "--mint-github-token",
+        "--on-session-start",
+        "/usr/local/bin/cursor-self-hosted-checkout",
         "--idle-release-timeout",
         "900",
         "start",
     ]
-    assert "--on-session-start" not in command
+    assert "--clone-git-repos" not in command
+
+
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    [
+        ("github.com/acme/payments", "https://github.com/acme/payments"),
+        ("https://github.com/acme/payments.git", "https://github.com/acme/payments.git"),
+        ("  github.com/acme/payments  ", "https://github.com/acme/payments"),
+    ],
+)
+def test_primary_origin_url_adds_https_to_scheme_less_cursor_urls(
+    given: str, expected: str
+) -> None:
+    assert primary_origin_url(SimpleNamespace(cursor_repo_urls=(given,))) == expected
+
+
+@pytest.mark.parametrize(
+    "given",
+    [
+        "http://github.com/acme/payments",
+        "https://user:token@github.com/acme/payments",
+        "ssh://git@github.com/acme/payments.git",
+        "https://github.com/acme/payments?token=x",
+    ],
+)
+def test_primary_origin_url_rejects_non_https_or_credentialed_urls(given: str) -> None:
+    with pytest.raises(ConfigError):
+        primary_origin_url(SimpleNamespace(cursor_repo_urls=(given,)))
+
+
+def test_primary_origin_url_is_none_without_repositories() -> None:
+    assert primary_origin_url(SimpleNamespace(cursor_repo_urls=())) is None
 
 
 def test_worker_command_without_repositories_omits_repository_flags() -> None:

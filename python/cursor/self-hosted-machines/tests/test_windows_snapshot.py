@@ -239,7 +239,7 @@ def test_windows_provisioner_pins_node_22_and_probes_native_module() -> None:
     assert "node_modules\\better-sqlite3" in provisioner
 
 
-def test_windows_provisioner_pins_cursor_build_with_native_repository_cloning() -> None:
+def test_windows_provisioner_pins_lab_build_and_installs_checkout_hook() -> None:
     provisioner = (
         Path(__file__).parents[1]
         / "cursor_self_hosted"
@@ -247,8 +247,10 @@ def test_windows_provisioner_pins_cursor_build_with_native_repository_cloning() 
     ).read_text()
 
     assert "$CursorAgentVersion = '2026.09.02-e3e9343'" in provisioner
-    assert "-notmatch '--clone-git-repos'" in provisioner
-    assert "clone_repos" not in provisioner
+    assert "-notmatch '--on-session-start'" in provisioner
+    assert "'cursor-self-hosted-checkout.cmd'" in provisioner
+    assert "checkout_repo.ps1" in provisioner
+    assert "--clone-git-repos" not in provisioner
 
 
 def test_failed_windows_verification_deletes_uncertified_snapshot(

@@ -40,6 +40,7 @@ from .build_windows_snapshot import (
 )
 
 CONTAINER_DOCKERFILE = resources.files("cursor_self_hosted").joinpath("Dockerfile")
+CHECKOUT_HOOK = resources.files("cursor_self_hosted").joinpath("checkout_repo.sh")
 DEFAULT_CPU = 2
 DEFAULT_MEMORY_GB = 8
 DEFAULT_DISK_GB = 10
@@ -66,7 +67,7 @@ def snapshot_inputs_for(
     """Return the exact recipe files for a container snapshot."""
 
     if sandbox_class == SandboxClass.CONTAINER:
-        return (CONTAINER_DOCKERFILE,)
+        return (CONTAINER_DOCKERFILE, CHECKOUT_HOOK)
     raise ValueError(
         f"{sandbox_class.value} snapshots need a platform-specific builder"
     )

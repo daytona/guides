@@ -2,6 +2,8 @@ FROM daytonaio/sandbox:0.6.0
 
 USER root
 
+COPY --chown=root:root --chmod=0755 checkout_repo.sh /usr/local/bin/cursor-self-hosted-checkout
+
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates curl git \
     && rm -rf /var/lib/apt/lists/* \

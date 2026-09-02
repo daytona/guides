@@ -28,7 +28,11 @@ $GitRoot = 'C:\Program Files\Git'
 $GitExe = Join-Path $GitRoot 'cmd\git.exe'
 $ProgramRoot = 'C:\ProgramData\cursor-self-hosted'
 $BootstrapSource = Join-Path $PSScriptRoot 'windows_bootstrap.ps1'
+$CheckoutHookSource = Join-Path $PSScriptRoot 'checkout_repo.ps1'
+$CheckoutWrapperSource = Join-Path $PSScriptRoot 'checkout_repo.cmd'
 $Bootstrap = Join-Path $ProgramRoot 'windows-bootstrap.ps1'
+$CheckoutHook = Join-Path $ProgramRoot 'checkout_repo.ps1'
+$CheckoutWrapper = Join-Path $ProgramRoot 'cursor-self-hosted-checkout.cmd'
 $Workspace = 'C:\cursor\workspace'
 $SuccessMarker = 'CURSOR_SELF_HOSTED_WINDOWS_PREFLIGHT_OK'
 
@@ -189,8 +193,8 @@ function Test-Provisioning {
 
     Write-Host '[preflight] Checking Cursor worker help'
     $workerHelp = Invoke-CheckedCommand -Executable $CursorNode -Arguments @($CursorIndex, 'worker', '--help') -Description 'Cursor Agent worker --help'
-    if (($workerHelp -join ' ') -notmatch '--clone-git-repos') {
-        throw 'Cursor Agent worker --help does not list --clone-git-repos.'
+    if (($workerHelp -join ' ') -notmatch '--on-session-start') {
+        throw 'Cursor Agent worker --help does not list --on-session-start.'
     }
 
     Write-Host '[preflight] Checking Git for Windows'
@@ -200,8 +204,10 @@ function Test-Provisioning {
     }
 
     Write-Host '[preflight] Checking runtime files'
-    if (-not (Test-Path -LiteralPath $Bootstrap -PathType Leaf)) {
-        throw "Required Cursor Self-Hosted Machines runtime file is missing: $Bootstrap"
+    foreach ($requiredFile in @($Bootstrap, $CheckoutHook, $CheckoutWrapper)) {
+        if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
+            throw "Required Cursor Self-Hosted Machines runtime file is missing: $requiredFile"
+        }
     }
 
     Write-Host '[preflight] Checking repository workspace'
@@ -337,10 +343,14 @@ try {
 
 
     New-Item -ItemType Directory -Path $ProgramRoot -Force | Out-Null
-    if (-not (Test-Path -LiteralPath $BootstrapSource -PathType Leaf)) {
-        throw "Provisioning input is missing: $BootstrapSource"
+    foreach ($sourceFile in @($BootstrapSource, $CheckoutHookSource, $CheckoutWrapperSource)) {
+        if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
+            throw "Provisioning input is missing: $sourceFile"
+        }
     }
     Copy-Item -LiteralPath $BootstrapSource -Destination $Bootstrap -Force
+    Copy-Item -LiteralPath $CheckoutHookSource -Destination $CheckoutHook -Force
+    Copy-Item -LiteralPath $CheckoutWrapperSource -Destination $CheckoutWrapper -Force
     New-Item -ItemType Directory -Path $Workspace -Force | Out-Null
 
     Ensure-MachinePathEntry -Entry (Join-Path $GitRoot 'cmd')

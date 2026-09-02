@@ -24,7 +24,9 @@ from daytona import (
     SandboxClass,
 )
 from .config import (
+    WORKER_DIRECTORY,
     Config,
+    primary_origin_url,
     redact,
     sandbox_labels,
     sandbox_name_for,
@@ -67,9 +69,18 @@ def _worker_launch_command(config: Config) -> str:
     command = shlex.join(worker_command(config))
     pid_path = shlex.quote(_WORKER_PID_PATH)
     proc_root = shlex.quote(_PROC_ROOT)
-    inner = " && ".join(
+    steps: list[str] = ["mkdir -p /tmp/cursor-self-hosted"]
+    origin = primary_origin_url(config)
+    if origin is not None:
+        workspace = shlex.quote(WORKER_DIRECTORY)
+        steps.extend(
+            (
+                f"git -C {workspace} init -q",
+                f"git -C {workspace} remote add origin {shlex.quote(origin)}",
+            )
+        )
+    steps.extend(
         (
-            "mkdir -p /tmp/cursor-self-hosted",
             (
                 f"(nohup {command} > {shlex.quote(_WORKER_LOG_PATH)} 2>&1 "
                 f"< /dev/null & echo $! > {pid_path})"
@@ -86,7 +97,7 @@ def _worker_launch_command(config: Config) -> str:
             'printf \'%s\\n\' "$pid"',
         )
     )
-    return f"sh -c {shlex.quote(inner)}"
+    return f"sh -c {shlex.quote(' && '.join(steps))}"
 
 
 def _parse_worker_pid(value: object) -> str:

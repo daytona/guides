@@ -9,12 +9,14 @@ import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import cast
+from urllib.parse import urlsplit
 
 DEFAULT_IDLE_RELEASE_TIMEOUT_SECONDS = 900
 DEFAULT_MONITOR_POLL_SECONDS = 5.0
 DEFAULT_SANDBOX_CREATE_TIMEOUT_SECONDS = 120
 DEFAULT_SANDBOX_LAUNCH_TIMEOUT_SECONDS = 60
 WORKER_DIRECTORY = "/home/daytona/workspace"
+LINUX_CHECKOUT_HOOK_PATH = "/usr/local/bin/cursor-self-hosted-checkout"
 
 
 class ConfigError(RuntimeError):
@@ -150,7 +152,13 @@ def worker_command(config: Config) -> list[str]:
         "0.0.0.0:8080",
     ]
     if config.cursor_repo_urls:
-        command.append("--clone-git-repos")
+        command.extend(
+            [
+                "--mint-github-token",
+                "--on-session-start",
+                LINUX_CHECKOUT_HOOK_PATH,
+            ]
+        )
     command.extend(
         [
             "--idle-release-timeout",
@@ -159,6 +167,33 @@ def worker_command(config: Config) -> list[str]:
         ]
     )
     return command
+
+
+def primary_origin_url(config: Config) -> str | None:
+    """Return the HTTPS origin the worker workspace advertises to Cursor.
+
+    Cursor only routes a repository request to a worker whose workspace has
+    that repository as `origin`, so the spawn command seeds it before the
+    worker starts. Cursor sends repository URLs without a scheme.
+    """
+    if not config.cursor_repo_urls:
+        return None
+    url = config.cursor_repo_urls[0].strip()
+    if "://" not in url:
+        url = f"https://{url}"
+    parts = urlsplit(url)
+    if (
+        parts.scheme != "https"
+        or not parts.hostname
+        or parts.username is not None
+        or parts.password is not None
+        or parts.query
+        or parts.fragment
+    ):
+        raise ConfigError(
+            "CURSOR_REPO_URL must be a credential-free HTTPS repository URL"
+        )
+    return url
 
 
 def redact(text: str, secrets: Iterable[str]) -> str:

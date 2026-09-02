@@ -15,12 +15,18 @@ from daytona import CreateSandboxFromSnapshotParams, SandboxClass
 _LINUX_VM_PROVISIONER = resources.files("cursor_self_hosted").joinpath(
     "provision_linux_vm.sh"
 )
+_CHECKOUT_HOOK = resources.files("cursor_self_hosted").joinpath("checkout_repo.sh")
 _PROVISIONER_REMOTE_PATH = "/tmp/provision_linux_vm.sh"
+_CHECKOUT_HOOK_REMOTE_PATH = "/tmp/checkout_repo.sh"
 _SNAPSHOT_PAGE_LIMIT = 100
 
-LINUX_VM_SNAPSHOT_INPUTS: tuple[Traversable, ...] = (_LINUX_VM_PROVISIONER,)
+LINUX_VM_SNAPSHOT_INPUTS: tuple[Traversable, ...] = (
+    _LINUX_VM_PROVISIONER,
+    _CHECKOUT_HOOK,
+)
 LINUX_VM_SNAPSHOT_UPLOADS: tuple[tuple[Traversable, str], ...] = (
     (_LINUX_VM_PROVISIONER, _PROVISIONER_REMOTE_PATH),
+    (_CHECKOUT_HOOK, _CHECKOUT_HOOK_REMOTE_PATH),
 )
 LINUX_VM_SOURCE_SNAPSHOT = "daytona-vm-medium"
 

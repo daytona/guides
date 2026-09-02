@@ -6,6 +6,7 @@ readonly CURSOR_AGENT_URL="https://downloads.cursor.com/lab/2026.09.02-e3e9343/l
 readonly CURSOR_AGENT_BLAKE2="a29694895b3b5d90e7d751eddfd2682e4872c9db6c2a3dee9eb3940a74d58c1cd498be3cc5ddf22bc7a22f2e8011e7430e5392149d1704ce952b368fa105d484"
 readonly CURSOR_AGENT_ROOT="/opt/cursor-agent"
 readonly WORKSPACE="/home/daytona/workspace"
+readonly CHECKOUT_HOOK_DESTINATION="/usr/local/bin/cursor-self-hosted-checkout"
 temporary_directory=""
 
 cleanup() {
@@ -30,18 +31,23 @@ else
 fi
 
 
+readonly SCRIPT_DIRECTORY="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+readonly CHECKOUT_HOOK_SOURCE="${SCRIPT_DIRECTORY}/checkout_repo.sh"
+
 [[ $(uname -s) == "Linux" ]] || fail "requires Linux"
 [[ $(uname -m) == "x86_64" ]] || fail "requires x86_64; found $(uname -m)"
 [[ $(id -un) == "daytona" ]] || fail "must run as the daytona user"
 command -v sudo >/dev/null 2>&1 || fail "sudo is not installed"
 sudo -n true >/dev/null 2>&1 || fail "daytona does not have passwordless sudo"
+[[ -r "$CHECKOUT_HOOK_SOURCE" && -f "$CHECKOUT_HOOK_SOURCE" ]] || \
+    fail "missing uploaded checkout_repo.sh"
 
 install_snapshot_contents() {
     command -v apt-get >/dev/null 2>&1 || fail "apt-get is not available"
 
     sudo -n env DEBIAN_FRONTEND=noninteractive apt-get update
     sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install \
-        --yes --no-install-recommends ca-certificates curl git
+        --yes --no-install-recommends ca-certificates curl git python3
     sudo -n rm -rf /var/lib/apt/lists/*
 
     local archive staging_root downloaded_version
@@ -89,6 +95,8 @@ install_snapshot_contents() {
         "${CURSOR_AGENT_ROOT}/cursor-agent" /usr/local/bin/agent
     sudo -n ln --symbolic --force \
         "${CURSOR_AGENT_ROOT}/cursor-agent" /usr/local/bin/cursor-agent
+    sudo -n install --owner=root --group=root --mode=0755 \
+        "$CHECKOUT_HOOK_SOURCE" "$CHECKOUT_HOOK_DESTINATION"
     sudo -n install -d --owner=daytona --group=daytona --mode=0755 "$WORKSPACE"
     rm -rf -- "$temporary_directory"
     temporary_directory=""
@@ -97,7 +105,7 @@ install_snapshot_contents() {
 verify_snapshot_contents() {
     local package status agent_version worker_help write_probe
 
-    for package in ca-certificates curl git; do
+    for package in ca-certificates curl git python3; do
         status="$(dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null || true)"
         [[ $status == "install ok installed" ]] \
             || fail "required package '${package}' is not installed"
@@ -120,10 +128,15 @@ verify_snapshot_contents() {
         || fail "Cursor worker CLI is unavailable"
     grep --quiet --fixed-strings -- '--pool' <<<"$worker_help" \
         || fail "Cursor worker CLI does not expose --pool"
-    grep --quiet --fixed-strings -- '--clone-git-repos' <<<"$worker_help" \
-        || fail "Cursor worker CLI does not expose --clone-git-repos"
+    grep --quiet --fixed-strings -- '--on-session-start' <<<"$worker_help" \
+        || fail "Cursor worker CLI does not expose --on-session-start"
 
     git --version >/dev/null 2>&1 || fail "git is unavailable"
+    python3 --version >/dev/null 2>&1 || fail "python3 is unavailable"
+    cmp --silent "$CHECKOUT_HOOK_SOURCE" "$CHECKOUT_HOOK_DESTINATION" \
+        || fail "installed checkout hook does not match the uploaded recipe"
+    [[ -x "$CHECKOUT_HOOK_DESTINATION" ]] \
+        || fail "installed checkout hook is not executable"
 
     [[ -d "$WORKSPACE" && -w "$WORKSPACE" ]] \
         || fail "workspace is not writable by daytona"
