@@ -83,6 +83,12 @@ The script has several configurable parameters in `config.yaml`:
 - `max_iterations`: Maximum iterations per agent before timeout (default: 50)
 - `result_truncation_limit`: Maximum characters for sub-agent results (default: 20000)
 
+### Inference Capacity
+
+Parallel agents increase demand on the model endpoint as well as on Daytona sandboxes. Before increasing the sandbox budget, check your inference provider's request and token limits, and measure model response time separately from code execution time.
+
+For sustained workloads, providers such as Morph offer [dedicated inference capacity](https://www.morphllm.com/dedicated-inference) to serve LLMs on reserved compute. The LLMs generate code and interpret results, while Daytona sandboxes execute the generated code. Evaluate reserved capacity against your actual usage, including idle periods; it is not required to run this example.
+
 ## How It Works
 
 The system runs a recursive agent architecture where each agent operates in its own sandbox.
