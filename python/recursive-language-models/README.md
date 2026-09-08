@@ -83,6 +83,14 @@ The script has several configurable parameters in `config.yaml`:
 - `max_iterations`: Maximum iterations per agent before timeout (default: 50)
 - `result_truncation_limit`: Maximum characters for sub-agent results (default: 20000)
 
+## Scaling
+
+### Sandbox Budget
+
+- Increase `max_sandboxes` for tasks requiring more parallel exploration
+- The sandbox budget tracks total sandboxes created over the lifetime of the rollout
+- Sub-agent sandboxes are deleted immediately after completion
+
 ### Inference Capacity
 
 Parallel agents increase demand on the model endpoint as well as on Daytona sandboxes. Before increasing the sandbox budget, check your inference provider's request and token limits, and measure model response time separately from code execution time.
