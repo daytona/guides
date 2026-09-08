@@ -87,9 +87,13 @@ The script has several configurable parameters in `config.yaml`:
 
 ### Sandbox Budget
 
-- Increase `max_sandboxes` for tasks requiring more parallel exploration
+- Increase `max_sandboxes` to allow more total child agents over the lifetime of the rollout
 - The sandbox budget tracks total sandboxes created over the lifetime of the rollout
 - Sub-agent sandboxes are deleted immediately after completion
+
+### Parallel Execution
+
+`rlm_query_batched(tasks)` uses up to 10 concurrent workers per batch, with additional tasks queued. This cap is set by `ThreadPoolExecutor(max_workers=min(len(tasks), 10))` in [`rlm/agent.py`](rlm/agent.py), not by `max_sandboxes` or a separate YAML setting. Increasing concurrency beyond 10 workers per batch requires changing that cap. Nested agents can each start their own batch, so this is not a global concurrency limit. The full batch must also fit within the remaining lifetime sandbox budget when submitted.
 
 ### Inference Capacity
 
