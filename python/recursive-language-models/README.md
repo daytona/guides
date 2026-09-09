@@ -93,7 +93,7 @@ The script has several configurable parameters in `config.yaml`:
 
 ### Parallel Execution
 
-`rlm_query_batched(tasks)` uses up to 10 concurrent workers per batch, with additional tasks queued. This cap is set by `ThreadPoolExecutor(max_workers=min(len(tasks), 10))` in [`rlm/agent.py`](rlm/agent.py), not by `max_sandboxes` or a separate YAML setting. Increasing concurrency beyond 10 workers per batch requires changing that cap. Nested agents can each start their own batch, so this is not a global concurrency limit. The full batch must also fit within the remaining lifetime sandbox budget when submitted.
+`rlm_query_batched(tasks)` uses up to 10 concurrent workers per batch, with additional tasks queued. This cap is set by `ThreadPoolExecutor(max_workers=min(len(tasks), 10))` in [`rlm/agent.py`](rlm/agent.py), not by `max_sandboxes` or a separate YAML setting. Increasing concurrency beyond 10 workers per batch requires changing that cap. Nested agents can each start their own batch, so this is not a global concurrency limit. The full batch is also checked against the remaining lifetime sandbox budget before it is submitted.
 
 ### Inference Capacity
 
