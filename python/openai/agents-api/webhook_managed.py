@@ -64,9 +64,9 @@ async def connect_worker(
 ) -> None:
     """Start or reconnect the session's sandbox and (re)launch the executor.
 
-    Idempotent: repeated calls reuse the same named sandbox, and `flock` guards
-    the executor, so retried or concurrent webhook deliveries cannot create
-    duplicate sandboxes or executors.
+    A retried delivery reuses the same named sandbox, and `flock` prevents a
+    duplicate executor. Concurrent deliveries can still race the sandbox
+    get/create; serialize those with the durable work queue noted above.
     """
     name = sandbox_name(session_id)
     try:
