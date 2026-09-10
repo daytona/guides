@@ -1,0 +1,4 @@
+Migrate a synchronous Python service to an async API while preserving behavior.
+
+The service currently makes blocking database and HTTP calls. Keep the public
+API and business logic unchanged.
