@@ -158,7 +158,6 @@ Desktop.ini
 *.csv
 *.xlsx
 *.xls
-*.json
 *.parquet
 *.png
 *.jpg

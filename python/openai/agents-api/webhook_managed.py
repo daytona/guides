@@ -64,8 +64,9 @@ async def connect_worker(
 ) -> None:
     """Start or reconnect the session's sandbox and (re)launch the executor.
 
-    Idempotent: repeated calls reuse the same named sandbox, so retried webhook
-    deliveries cannot create duplicates.
+    Idempotent: repeated calls reuse the same named sandbox, and `flock` guards
+    the executor, so retried or concurrent webhook deliveries cannot create
+    duplicate sandboxes or executors.
     """
     name = sandbox_name(session_id)
     try:
@@ -82,6 +83,9 @@ async def connect_worker(
                 env_vars={"CODEX_API_KEY": os.environ["OPENAI_EXECUTOR_API_KEY"]},
                 labels={"agents-api-session-id": session_id},
                 auto_stop_interval=0,
+                # ttl_minutes caps an abandoned sandbox's lifetime. Raise or renew
+                # it for sessions that stay active longer, so a later reconnect
+                # does not find the sandbox expired and lose the workspace.
                 ttl_minutes=30,
             ),
             timeout=0,
@@ -96,9 +100,14 @@ async def connect_worker(
     except DaytonaNotFoundError:
         await sandbox.process.create_session(EXEC_SESSION)
     # Launch the executor with the environment ID and remote URL from the session.
-    # Reuse the remote URL unchanged, including on reconnect.
+    # Reuse the remote URL unchanged, including on reconnect. `flock --nonblock`
+    # makes provisioning idempotent: a retried or concurrent webhook cannot start
+    # a second executor while one is already running.
     command = shlex.join(
         [
+            "flock",
+            "--nonblock",
+            "/tmp/codex-exec-server.lock",
             "codex",
             "exec-server",
             "--remote",
