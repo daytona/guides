@@ -55,6 +55,7 @@ Then follow the guide's own README to install dependencies and run it.
 | [CopilotKit Generative-UI Agent](typescript/copilotkit/generative-ui-coding-agent) | CopilotKit agent that streams every tool call as generative UI. |
 | [Flue Bug-Fix Agent](typescript/flue) | Autonomous GitHub-issue bug-fix agent built with Flue. |
 | [Gemini CLI Coding Agent](typescript/gemini/gemini-cli) | Headless coding agent powered by the Gemini CLI. |
+| [Goose CLI Coding Agent](typescript/goose/goose-cli) | Headless coding agent powered by Block's open source Goose CLI. |
 | [Kiro CLI Coding Agent](typescript/kiro/kiro-cli) | Coding agent powered by AWS Kiro's CLI. |
 | [Letta Code Agent](typescript/letta-code) | Letta Code agent driven from the CLI. |
 | [Mastra Code Execution Agent](typescript/mastra/coding-agent) | Mastra agent that plans, writes, executes, and iterates on code. |
