@@ -174,6 +174,21 @@ async def reconcile(session_id: str) -> None:
         )
 
 
+async def release(session_id: str) -> None:
+    """Stop the sandbox when the session is still idle, to release compute.
+
+    Re-check the current status first: a delayed idle delivery must not stop a
+    sandbox that a newer turn already started, which would drop the executor.
+    """
+    async with (
+        AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"]) as client,
+        AsyncDaytona() as daytona,
+    ):
+        session = await client.beta.agents.sessions.retrieve(session_id)
+        if session.status == "idle":
+            await stop_worker(daytona, session_id)
+
+
 @app.post("/webhooks/openai")
 async def webhook(request: Request) -> Response:
     body = await request.body()
@@ -194,7 +209,6 @@ async def webhook(request: Request) -> Response:
         await reconcile(session_id)
     elif event_type == "agent.session.idle":
         # Release compute between turns; the next input reconnects the sandbox.
-        async with AsyncDaytona() as daytona:
-            await stop_worker(daytona, session_id)
+        await release(session_id)
 
     return Response(status_code=200)
