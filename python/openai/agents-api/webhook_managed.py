@@ -177,14 +177,20 @@ async def reconcile(session_id: str) -> None:
 async def release(session_id: str) -> None:
     """Stop the sandbox when the session is still idle, to release compute.
 
-    Re-check the current status first: a delayed idle delivery must not stop a
-    sandbox that a newer turn already started, which would drop the executor.
+    Best-effort. Re-checking the status keeps a delayed idle delivery from
+    stopping a sandbox a newer turn just started, and transient errors are
+    swallowed so an idle webhook never becomes a retry loop. A small residual
+    race remains between the status check and the stop; close it entirely by
+    serializing lifecycle events per session with the durable work queue above.
     """
     async with (
         AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"]) as client,
         AsyncDaytona() as daytona,
     ):
-        session = await client.beta.agents.sessions.retrieve(session_id)
+        try:
+            session = await client.beta.agents.sessions.retrieve(session_id)
+        except Exception:  # noqa: BLE001 - idle is best-effort; never force a retry
+            return
         if session.status == "idle":
             await stop_worker(daytona, session_id)
 
