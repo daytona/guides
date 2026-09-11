@@ -3,19 +3,19 @@ from __future__ import annotations
 """Webhook-managed: provision Daytona sandboxes for Agents API sessions on demand.
 
 Deploy this as a public HTTPS endpoint and register the URL as an OpenAI webhook,
-subscribing to `agent.session.action_required` and `agent.session.failed`. When a
-session needs its environment connected, OpenAI calls this handler; it starts or
-reconnects the session's Daytona sandbox and (re)launches the executor. On
-failure, it deletes the sandbox.
+subscribing to `agent.session.action_required`, `agent.session.idle`, and
+`agent.session.failed`. When a session needs its environment connected, OpenAI
+calls this handler; it starts or reconnects the session's Daytona sandbox and
+(re)launches the executor. When the session goes idle it stops the sandbox to
+release compute, and on failure it deletes the sandbox.
 
-This lets you stop a sandbox when its session goes idle to save compute: the next
-input raises an `environment_connection` action, the webhook fires, and the
-handler wakes the sandbox. Daytona's stop/start preserves the sandbox filesystem
-across turns.
+Stopping on idle is what saves compute between turns: the next input raises an
+`environment_connection` action, the webhook fires, and the handler wakes the
+sandbox. Daytona's stop/start preserves the sandbox filesystem across turns.
 
 The handler is intentionally single-process and minimal. For production, add a
-durable work queue and idempotent, retried provisioning. See OpenAI's
-webhook-managed guidance:
+durable work queue, idempotent and retried provisioning, and an idle grace period
+before stopping. See OpenAI's webhook-managed guidance:
 https://developers.openai.com/api/docs/guides/agents-api/environments/lifecycle
 
 Run it with: uvicorn webhook_managed:app --host 0.0.0.0 --port 8000
@@ -132,6 +132,16 @@ async def delete_worker(daytona: AsyncDaytona, session_id: str) -> None:
         pass
 
 
+async def stop_worker(daytona: AsyncDaytona, session_id: str) -> None:
+    """Stop the session's sandbox to release compute; the filesystem is preserved."""
+    try:
+        sandbox = await daytona.get(sandbox_name(session_id))
+    except DaytonaNotFoundError:
+        return
+    if sandbox.state == "started":
+        await sandbox.stop()
+
+
 async def reconcile(session_id: str) -> None:
     """Fetch the session, then provision or release its sandbox accordingly.
 
@@ -177,11 +187,14 @@ async def webhook(request: Request) -> Response:
     event_type = event["type"]
     session_id = event["data"]["id"]
 
-    should_reconcile = event_type == "agent.session.failed" or (
+    if event_type == "agent.session.failed" or (
         event_type == "agent.session.action_required"
         and event["data"]["required_action"]["type"] == "environment_connection"
-    )
-    if should_reconcile:
+    ):
         await reconcile(session_id)
+    elif event_type == "agent.session.idle":
+        # Release compute between turns; the next input reconnects the sandbox.
+        async with AsyncDaytona() as daytona:
+            await stop_worker(daytona, session_id)
 
     return Response(status_code=200)

@@ -163,10 +163,13 @@ def main() -> None:
             print()
         finally:
             # Delete the session while its environment is still connected, then
-            # remove the sandbox. Both are server-side resources.
-            client.beta.agents.sessions.delete(session.id)
-            if sandbox is not None:
-                sandbox.delete()
+            # remove the sandbox. The inner try/finally guarantees the sandbox is
+            # deleted even if session deletion raises.
+            try:
+                client.beta.agents.sessions.delete(session.id)
+            finally:
+                if sandbox is not None:
+                    sandbox.delete()
 
 
 if __name__ == "__main__":
