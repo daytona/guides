@@ -25,6 +25,7 @@ The Agents API uses two OpenAI keys so the credential exposed to sandbox code is
 - `OPENAI_API_KEY` — **application key.** Creates and streams sessions and runs model inference. Stays on your machine. Grant it `api.agents.read`, `api.agents.write`, and `api.responses.write`.
 - `OPENAI_EXECUTOR_API_KEY` — **executor key.** The only credential passed into the sandbox, where agent-generated code can read it. Create it as a restricted **environment key** with `api.agents.environments.connect`; set every other permission to **None**.
 - `DAYTONA_API_KEY` — access to Daytona sandboxes. Get it from the [Daytona Dashboard](https://app.daytona.io/dashboard/keys).
+- `OPENAI_WEBHOOK_SECRET` — **webhook-managed example only.** The signing secret for your OpenAI webhook endpoint; `webhook_managed.py` uses it to verify that deliveries came from OpenAI.
 
 Create the application key from the [OpenAI Developer Platform](https://platform.openai.com/api-keys) and the executor key on the [Agents tab](https://platform.openai.com/agents?tab=environments&environment_view=keys), both for the same organization, project, and user or service account that owns the session. Copy `.env.example` to `.env` and fill in the values.
 
@@ -36,6 +37,12 @@ Create the application key from the [OpenAI Developer Platform](https://platform
 
 ```bash
 pip install openai daytona python-dotenv
+```
+
+The webhook-managed example additionally needs FastAPI and Uvicorn:
+
+```bash
+pip install fastapi uvicorn
 ```
 
 ### Run the example
@@ -74,7 +81,7 @@ This example is **application-managed**: one process owns the whole session and 
 
 For long-running or many-session workloads, use the **webhook-managed** pattern: stop the sandbox when the session goes idle to save compute, and start or reconnect it on the next turn. When new input arrives for a disconnected environment, OpenAI emits an `agent.session.action_required` (`environment_connection`) webhook; a handler starts or resumes the sandbox and relaunches the executor with the same environment ID and remote URL. Daytona's stop/start preserves the sandbox filesystem across turns.
 
-`webhook_managed.py` in this directory implements the core of that handler — `connect_worker(...)` (create-or-wake the sandbox by label, then relaunch the executor) and `delete_worker(session_id)` — so you can wire it into your own webhook endpoint. See OpenAI's [Daytona provider guide](https://developers.openai.com/api/docs/guides/agents-api/environments/providers/daytona) and [environment lifecycle](https://developers.openai.com/api/docs/guides/agents-api/environments/lifecycle) for the full webhook-managed flow.
+`webhook_managed.py` in this directory implements the core of that handler — `connect_worker(...)` (create-or-wake the sandbox by label, then relaunch the executor), `stop_worker(...)` (stop the sandbox on `agent.session.idle` to release compute), and `delete_worker(...)` — so you can wire it into your own webhook endpoint. It subscribes to `agent.session.action_required`, `agent.session.idle`, and `agent.session.failed`. See OpenAI's [Daytona provider guide](https://developers.openai.com/api/docs/guides/agents-api/environments/providers/daytona) and [environment lifecycle](https://developers.openai.com/api/docs/guides/agents-api/environments/lifecycle) for the full webhook-managed flow.
 
 ## A note on Daytona Secrets
 
