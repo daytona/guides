@@ -68,6 +68,10 @@ Then follow the guide's own README to install dependencies and run it.
 
 Each guide is self-contained — keep changes scoped to a single guide's folder, include a clear README, and provide a `.env.example` for any required keys. Every commit needs a [DCO](https://developercertificate.org/) sign-off (`git commit -s`), and first-time contributors sign the [CLA](CLA.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for the full process.
 
+## Security
+
+Security policy and vulnerability reporting are maintained in the organization-wide [Daytona security policy](https://github.com/daytona/.github/blob/main/SECURITY.md). Please report vulnerabilities through the channels described there — not through public issues.
+
 ## License
 
 [Apache-2.0](LICENSE) © Daytona Platforms Inc.
