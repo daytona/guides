@@ -1,0 +1,11 @@
+{
+  "name": "anchor-in-daytona",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "anchorbrowser": "^1.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
