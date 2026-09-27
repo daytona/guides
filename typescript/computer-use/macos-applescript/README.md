@@ -23,7 +23,7 @@ In this example, the script asks Claude to write an AppleScript that opens TextE
 To run this example, you need to set the following environment variables:
 
 - `USE_COMPUTER_API_KEY`: Required to control macOS sandboxes. Get it from [use.computer](https://use.computer)
-- `USE_COMPUTER_RESERVATION_ID`: Required. The id of an active Mac Mini reservation to create the sandbox on — see [Reserving a Mac Mini](#reserving-a-mac-mini) below
+- `USE_COMPUTER_RESERVATION_ID`: Required. The id of an active Mac Mini reservation to create the sandbox on — reserve one from the [use.computer dashboard](https://use.computer) (see [Reserving a Mac Mini](#reserving-a-mac-mini) below)
 - `ANTHROPIC_API_KEY`: Required for Anthropic API access. Get it from the [Anthropic Console](https://console.anthropic.com/)
 
 Create a `.env` file in the project directory with these variables (see `.env.example`).
@@ -32,18 +32,19 @@ Create a `.env` file in the project directory with these variables (see `.env.ex
 
 ### Reserving a Mac Mini
 
-macOS sandboxes run on Mac Minis reserved through use.computer. A reservation is billed for its full duration and can host up to 2 macOS sandboxes at once, so this script expects one to already exist rather than creating (and re-billing) a new one on every run. Reserve one once, then reuse its id for as many runs as you like within the reservation window:
+macOS sandboxes run on dedicated Mac Minis reserved through use.computer — reservations run 24 hours or more and each Mac can host up to 2 macOS sandboxes at once. A reservation is billed for its full duration, so this script expects one to already exist rather than creating (and re-billing) a new one on every run.
 
-```bash
-USE_COMPUTER_API_KEY=your-key node --input-type=module -e "
-import { Computer } from 'use-computer-sdk';
-const computer = new Computer();
-const reservation = await computer.reserve({ hours: 24 });
-console.log(reservation.id);
-"
+1. Sign up at [use.computer](https://use.computer) (a starter credit is included, no card required) and grab your API key from **Settings**.
+2. From the [use.computer dashboard](https://use.computer), reserve a Mac Mini and copy its reservation id.
+3. Put both values in your `.env` file as `USE_COMPUTER_API_KEY` and `USE_COMPUTER_RESERVATION_ID`.
+
+Reserving is also possible directly from code instead of the dashboard — it's a single SDK call:
+
+```typescript
+const reservation = await computer.reserve({ hours: 24 })
 ```
 
-Copy the printed id into `USE_COMPUTER_RESERVATION_ID` in your `.env` file.
+See the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) for the full snippet and reservation options.
 
 ### Setup and Run
 
@@ -145,5 +146,6 @@ See the main project LICENSE file for details.
 ## References
 
 - [use.computer Documentation](https://docs.use.computer)
+- [use.computer Quick Start](https://docs.use.computer/docs/quickstart)
 - [Anthropic API Documentation](https://docs.anthropic.com/)
 - [Daytona Documentation](https://www.daytona.io/docs)
