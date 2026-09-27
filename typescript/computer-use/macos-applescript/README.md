@@ -146,4 +146,3 @@ See the main project LICENSE file for details.
 - [use.computer Documentation](https://docs.use.computer)
 - [use.computer Quick Start](https://docs.use.computer/docs/quickstart)
 - [Anthropic API Documentation](https://docs.anthropic.com/)
-- [Daytona Documentation](https://www.daytona.io/docs)
