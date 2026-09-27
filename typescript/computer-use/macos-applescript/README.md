@@ -2,7 +2,7 @@
 
 ## Overview
 
-This example demonstrates how to control a real macOS sandbox with an LLM and record the whole run as a video you can watch afterward. It uses use.computer to provision a macOS sandbox, and the Anthropic API to generate AppleScript code which is run in the sandbox.
+This example demonstrates how to control a real macOS sandbox with an LLM and record the whole run as a video you can watch afterward. It uses [use.computer](https://use.computer) to provision a macOS sandbox, and the [Anthropic API](https://www.anthropic.com/api) to generate AppleScript code which is run in the sandbox.
 
 In this example, the script asks Claude to write an AppleScript that opens TextEdit and types a haiku, runs it in a fresh macOS sandbox, and saves a video of the session to your machine.
 
