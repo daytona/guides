@@ -46,7 +46,7 @@ const reservation = await computer.reserve({ hours: 24 })
 
 See the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) for the full snippet and reservation options.
 
-Reserving a Mac Mini and running a macOS sandbox on use.computer incurs cost on your account — see [use.computer pricing](https://use.computer) before running this repeatedly.
+Reserving a Mac Mini incurs cost on your account for its full duration, regardless of how many sandboxes you create with it — see [use.computer pricing](https://use.computer) before reserving.
 
 ### Setup and Run
 
