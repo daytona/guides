@@ -8,7 +8,7 @@ In this example, the script asks Claude to write an AppleScript that opens TextE
 
 ## Features
 
-- **Real macOS sandbox:** Provisioned on demand via use.computer, torn down when the script finishes
+- **Real macOS sandbox:** Created on your use.computer reservation, torn down when the script finishes
 - **Natural language interface:** Describe the task in plain English; Claude writes the AppleScript
 - **Screen recording:** The entire session is recorded and downloaded as an MP4 so you can see exactly what happened
 - **No agent loop:** One script, one LLM call, one script execution — nothing more
@@ -22,12 +22,28 @@ In this example, the script asks Claude to write an AppleScript that opens TextE
 
 To run this example, you need to set the following environment variables:
 
-- `USE_COMPUTER_API_KEY`: Required to reserve and control macOS sandboxes. Get it from [use.computer](https://use.computer)
+- `USE_COMPUTER_API_KEY`: Required to control macOS sandboxes. Get it from [use.computer](https://use.computer)
+- `USE_COMPUTER_RESERVATION_ID`: Required. The id of an active Mac Mini reservation to create the sandbox on — see [Reserving a Mac Mini](#reserving-a-mac-mini) below
 - `ANTHROPIC_API_KEY`: Required for Anthropic API access. Get it from the [Anthropic Console](https://console.anthropic.com/)
 
 Create a `.env` file in the project directory with these variables (see `.env.example`).
 
 ## Getting Started
+
+### Reserving a Mac Mini
+
+macOS sandboxes run on Mac Minis reserved through use.computer. A reservation is billed for its full duration and can host up to 2 macOS sandboxes at once, so this script expects one to already exist rather than creating (and re-billing) a new one on every run. Reserve one once, then reuse its id for as many runs as you like within the reservation window:
+
+```bash
+USE_COMPUTER_API_KEY=your-key node --input-type=module -e "
+import { Computer } from 'use-computer-sdk';
+const computer = new Computer();
+const reservation = await computer.reserve({ hours: 24 });
+console.log(reservation.id);
+"
+```
+
+Copy the printed id into `USE_COMPUTER_RESERVATION_ID` in your `.env` file.
 
 ### Setup and Run
 
@@ -47,7 +63,7 @@ Reserving a Mac Mini and running a macOS sandbox on use.computer incurs cost on 
 
 ## How It Works
 
-1. A Mac Mini is reserved and a macOS sandbox is created on it via `use-computer-sdk`
+1. A macOS sandbox is created on your existing reservation via `use-computer-sdk`
 2. Screen recording is started on the sandbox
 3. An LLM call generates an AppleScript based on the task description
 4. The AppleScript is uploaded to the sandbox and run with `osascript`
@@ -81,16 +97,38 @@ See [Models](https://docs.anthropic.com/en/docs/about-claude/models) for all sup
 When the script completes, you'll see output similar to:
 
 ```
-Reserving a macOS sandbox...
-Sandbox ready. Watch it live at: https://vnc.use.computer/...
-Recording started: rec_abc123
+Creating a macOS sandbox...
+Sandbox ready. Watch it live at: https://api.use.computer/vnc?sandbox=sb-59278e445d893dcb2a4510e62b3b0e6b&token=***
+Recording started: rec-94865f9d65a94aa4
 Task: Open TextEdit, create a new document, and type a haiku about cloud computing.
 Generating AppleScript...
+-- Open TextEdit, create a new document, and type a haiku about cloud computing
+
 tell application "TextEdit"
-    activate
-    make new document
-    delay 1
-    set text of front document to "Data drifts up high" & return & "Somewhere a server hums on" & return & "No rain in that sky"
+	activate
+	delay 1.5
+end tell
+
+tell application "System Events"
+	tell process "TextEdit"
+		-- Create a new document (Cmd+N)
+		keystroke "n" using command down
+		delay 1.5
+
+		-- Type the haiku, line by line
+		keystroke "Servers in the mist,"
+		delay 0.5
+		key code 36 -- Return
+		delay 0.3
+
+		keystroke "my data drifts far from home—"
+		delay 0.5
+		key code 36 -- Return
+		delay 0.3
+
+		keystroke "the sky holds my files."
+		delay 0.5
+	end tell
 end tell
 Running AppleScript...
 Output: (no output)

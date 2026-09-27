@@ -18,19 +18,27 @@ function extractAppleScript(text: string): string {
   return (m ? m[1] : text).trim()
 }
 
-// Make sure you have the USE_COMPUTER_API_KEY and ANTHROPIC_API_KEY environment variables set
+// Make sure you have the USE_COMPUTER_API_KEY, USE_COMPUTER_RESERVATION_ID, and ANTHROPIC_API_KEY environment variables set
 const computer = new Computer()
 const anthropic = new Anthropic()
 
 async function run() {
+  // A reservation is billed for its full duration, so this script expects one to already exist
+  // rather than creating (and re-billing) a new one on every run. See the README for how to reserve one.
+  const reservationId = process.env.USE_COMPUTER_RESERVATION_ID
+  if (!reservationId) {
+    console.error('Error: USE_COMPUTER_RESERVATION_ID environment variable is not set')
+    console.error('Reserve a Mac Mini (see README) and put its id in your .env file')
+    process.exit(1)
+  }
+
   let mac: MacOSSandbox | null = null
   let recordingId: string | null = null
 
   try {
-    // Reserve a Mac Mini and create a macOS sandbox on it
-    console.log('Reserving a macOS sandbox...')
-    const reservation = await computer.reserve({ hours: 1 })
-    mac = await computer.create({ type: 'macos', reservationId: reservation.id })
+    // Create a macOS sandbox on the existing reservation
+    console.log('Creating a macOS sandbox...')
+    mac = await computer.create({ type: 'macos', reservationId })
     console.log('Sandbox ready. Watch it live at:', mac.vncUrl)
 
     // Start recording the screen before doing anything, so the whole run is captured
