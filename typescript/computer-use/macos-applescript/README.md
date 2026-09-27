@@ -46,6 +46,8 @@ const reservation = await computer.reserve({ hours: 24 })
 
 See the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) for the full snippet and reservation options.
 
+Reserving a Mac Mini and running a macOS sandbox on use.computer incurs cost on your account — see [use.computer pricing](https://use.computer) before running this repeatedly.
+
 ### Setup and Run
 
 1. Install dependencies:
@@ -59,8 +61,6 @@ See the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) fo
    ```bash
    npm run start
    ```
-
-Reserving a Mac Mini and running a macOS sandbox on use.computer incurs cost on your account — see [use.computer pricing](https://use.computer) before running this repeatedly.
 
 ## How It Works
 
