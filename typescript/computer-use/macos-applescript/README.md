@@ -32,7 +32,7 @@ Create a `.env` file in the project directory with these variables (see `.env.ex
 
 ### Reserving a Mac Mini
 
-macOS sandboxes run on dedicated Mac Minis reserved through use.computer — reservations run 24 hours or more and each Mac can host up to 2 macOS sandboxes at once. A reservation is billed for its full duration, so this script expects one to already exist rather than creating (and re-billing) a new one on every run.
+macOS sandboxes run on dedicated Mac Minis reserved through use.computer — reservations run 24 hours or more at $1.91/hour per Mac, billed for the full duration regardless of how many sandboxes you create with it, and each Mac can host up to 2 macOS sandboxes at once. This script expects a reservation to already exist rather than creating (and re-billing) a new one on every run.
 
 1. Sign up at [use.computer](https://use.computer) (a starter credit is included, no card required) and grab your API key from **Settings**.
 2. From the [use.computer dashboard](https://use.computer), reserve a Mac Mini and copy its reservation id.
@@ -45,8 +45,6 @@ const reservation = await computer.reserve({ hours: 24 })
 ```
 
 See the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) for the full snippet and reservation options.
-
-Reserving a Mac Mini incurs cost on your account for its full duration, regardless of how many sandboxes you create with it — see [use.computer pricing](https://use.computer) before reserving.
 
 ### Setup and Run
 
