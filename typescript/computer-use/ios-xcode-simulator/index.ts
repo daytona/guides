@@ -385,14 +385,26 @@ async function run() {
     console.log('Launching app on simulator...')
     await runRemote(mac, `xcrun simctl launch ${simulator.udid} ${BUNDLE_ID}`)
 
-    // Give the UI a moment to settle, then capture a screenshot. xcodebuild test (below)
-    // proves the app's *logic* is correct; this screenshot is what actually confirms the
-    // SwiftUI view rendered as intended, for manual review.
+    // Give the UI a moment to settle, then capture screenshots. xcodebuild test (below)
+    // proves the app's *logic* is correct; these screenshots are what actually confirm the
+    // SwiftUI view rendered as intended, for manual review. Two are taken:
     await new Promise((resolve) => setTimeout(resolve, 2000))
-    console.log('Capturing screenshot...')
+
+    // 1. The full macOS desktop (via the SDK), showing the Simulator window and all -- proves
+    // the app is really running inside this sandbox, not just that some pixels exist somewhere.
+    console.log('Capturing full-screen screenshot...')
     const screenshot = await mac.screenshot.takeFullScreen()
     fs.writeFileSync('screenshot.png', screenshot)
     console.log('✓ Screenshot saved to screenshot.png')
+
+    // 2. The simulated device's own framebuffer only (via `simctl io screenshot`), with no
+    // window chrome or desktop around it -- a clean, pixel-perfect look at just the app itself.
+    console.log('Capturing simulator-only screenshot...')
+    const remoteDeviceScreenshotPath = `${REMOTE_ROOT}/simulator-screenshot.png`
+    await runRemote(mac, `xcrun simctl io ${simulator.udid} screenshot ${remoteDeviceScreenshotPath}`)
+    const deviceScreenshot = await mac.download(remoteDeviceScreenshotPath)
+    fs.writeFileSync('simulator-screenshot.png', deviceScreenshot)
+    console.log('✓ Simulator screenshot saved to simulator-screenshot.png')
 
     // Terminate and fully uninstall the app before testing: xcodebuild test does its own
     // install/launch of the app as the test host, and leaving the manually-installed/launched copy

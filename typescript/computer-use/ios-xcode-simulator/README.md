@@ -10,7 +10,7 @@ This example demonstrates building, running, and testing a real iOS app end-to-e
 - **Real Xcode project, built from scratch:** [XcodeGen](https://github.com/yonaskolb/XcodeGen) turns a project spec into an `.xcodeproj` at runtime — nothing is checked into this repo
 - **Runs on the actual iOS Simulator:** Installed and launched with `xcrun simctl`, not just compiled
 - **Automated test run with parsed results:** `xcodebuild test` output is parsed into a clean pass/fail summary, with a non-zero exit code on failure
-- **Screenshot for manual verification:** A full-screen screenshot of the sandbox is downloaded after launch, since the test suite proves the app's logic but not that its UI actually renders correctly
+- **Screenshots for manual verification:** After launch, both a full-screen screenshot of the sandbox (proving the app is really running in this session) and a clean device-only screenshot of just the simulator's framebuffer are downloaded, since the test suite proves the app's logic but not that its UI actually renders correctly
 - **Optional full session recording:** Set `RECORD_SESSION=true` to record the whole run and download it as `recording.mp4`
 
 ## Prerequisites
@@ -65,7 +65,7 @@ This example also assumes the Mac Mini image already has a full Xcode install (n
 5. An available iOS Simulator device is selected and booted with `xcrun simctl`, and the Simulator app is opened so its window is visible (`simctl boot` alone runs headlessly)
 6. `xcodebuild` builds the app against that simulator
 7. The built app is installed and launched on the simulator with `xcrun simctl install`/`launch`
-8. A full-screen screenshot is captured and downloaded for manual visual verification
+8. Two screenshots are captured and downloaded for manual visual verification: a full-screen shot of the sandbox (via the SDK's `mac.screenshot.takeFullScreen()`) and a device-only shot of just the simulator's framebuffer (via `xcrun simctl io screenshot`)
 9. The app is terminated and uninstalled so it doesn't conflict with the test run below, then `xcodebuild test` runs the XCTest suite against the same simulator, writing a `.xcresult` bundle
 10. The `.xcresult` bundle is zipped and downloaded, and the test output is parsed into a pass/fail summary printed to the console
 11. If recording was started, it's stopped, downloaded, and saved as `recording.mp4`
@@ -95,12 +95,11 @@ Set `RECORD_SESSION=true` in your `.env` file to record the entire sandbox sessi
 
 ## Example Output
 
-This is the actual console output from a real run against a use.computer Mac Mini reservation, with `RECORD_SESSION=true` (raw `xcodebuild`/`brew`/`simctl` output in between is trimmed for readability — the script itself doesn't suppress it):
+This is the actual console output from a real run against a use.computer Mac Mini reservation (raw `xcodebuild`/`brew`/`simctl` output in between is trimmed for readability — the script itself doesn't suppress it):
 
 ```
 Creating a macOS sandbox...
-Sandbox ready. Watch it live at: https://api.use.computer/vnc?sandbox=sb-17bc8d4cf0edc626528de8e54d729085&token=***
-Recording started: rec-c87703a616b2655a
+Sandbox ready. Watch it live at: https://api.use.computer/vnc?sandbox=sb-879c09b30d9b08ceed7dee02498adc2b&token=***
 Xcode 26.4.1
 Build version 17E202
 Uploading project files...
@@ -114,8 +113,10 @@ Building app...
 ** BUILD SUCCEEDED **
 Installing app on simulator...
 Launching app on simulator...
-Capturing screenshot...
+Capturing full-screen screenshot...
 ✓ Screenshot saved to screenshot.png
+Capturing simulator-only screenshot...
+✓ Simulator screenshot saved to simulator-screenshot.png
 Running tests...
 ** TEST SUCCEEDED **
 Archiving test results...
@@ -128,22 +129,26 @@ Test Results
 [PASS] CounterAppTests.testIncrementThenDecrement (0.001s)
 ------------
 SUCCEEDED: executed 3, 0 failures (0 unexpected), 0.003s
-Stopping recording...
-✓ Recording saved to recording.mp4
 Closing sandbox...
 ```
 
-Open `screenshot.png` to see the app running on the simulator, and unzip `TestResults.xcresult.zip` (or open it directly in Xcode) to inspect the full test report. If `RECORD_SESSION=true`, `recording.mp4` captures the whole sandbox session from boot to teardown.
+Open `screenshot.png`/`simulator-screenshot.png` to see the app running on the simulator, and unzip `TestResults.xcresult.zip` (or open it directly in Xcode) to inspect the full test report. If `RECORD_SESSION=true`, `recording.mp4` captures the whole sandbox session from boot to teardown.
 
-### Screenshot
+### Screenshots
 
-`example-screenshot.png` below is the actual `screenshot.png` this run produced — the CounterApp running in the iPhone 16 Pro simulator, counter at `0` with the +/- buttons, inside the full macOS desktop (Simulator window and all):
+Two screenshots are captured after launch — `example-screenshot.png` and `example-simulator-screenshot.png` below are the actual files a run produced.
 
-![CounterApp running in the iOS Simulator](example-screenshot.png)
+The full-screen shot (`mac.screenshot.takeFullScreen()`) shows the whole macOS desktop, Simulator window and all — proof the app is really running inside this sandbox, not just that some pixels exist somewhere:
+
+![CounterApp running in the iOS Simulator, full desktop](example-screenshot.png)
+
+The device-only shot (`xcrun simctl io screenshot`) is just the simulator's own framebuffer at the device's native resolution — no window chrome or desktop, a clean look at just the app itself:
+
+<img src="example-simulator-screenshot.png" alt="CounterApp running in the iOS Simulator, device only" width="300">
 
 ### Recording
 
-[`example-recording.mp4`](example-recording.mp4) is the actual `recording.mp4` from that same run, capturing the entire sandbox session — Xcode project generation, the simulator booting and opening, the build, the app launching, and the test run — useful for a full visual audit beyond the single screenshot above. (These `example-*` files are checked into the repo purely to illustrate output; the script itself always writes to `screenshot.png`/`recording.mp4`, which are gitignored.)
+[`example-recording.mp4`](example-recording.mp4) is the actual `recording.mp4` from a run with `RECORD_SESSION=true`, capturing the entire sandbox session — Xcode project generation, the simulator booting and opening, the build, the app launching, and the test run — useful for a full visual audit beyond the screenshots above. (These `example-*` files are checked into the repo purely to illustrate output; the script itself always writes to `screenshot.png`/`simulator-screenshot.png`/`recording.mp4`, which are gitignored.)
 
 ## License
 
