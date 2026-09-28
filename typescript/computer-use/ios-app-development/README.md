@@ -137,7 +137,7 @@ SUCCEEDED: executed 3, 0 failures (0 unexpected), 0.003s
 Closing sandbox...
 ```
 
-Open `screenshot.png`/`simulator-screenshot.png` to see the app running on the simulator, and unzip `TestResults.xcresult.zip` (or open it directly in Xcode) to inspect the full test report. If `RECORD_SESSION=true`, `recording.mp4` captures the whole sandbox session from boot to teardown.
+Open [`screenshot.png`](example-screenshot.png)/[`simulator-screenshot.png`](example-simulator-screenshot.png) to see the app running on the simulator, and unzip `TestResults.xcresult.zip` (or open it directly in Xcode) to inspect the full test report. If `RECORD_SESSION=true`, `recording.mp4` captures the whole sandbox session from boot to teardown.
 
 ### Recording
 
