@@ -1,21 +1,20 @@
-# iOS Code Signing (Anthropic + use.computer)
+# iOS Code Signing (use.computer)
 
 ## Overview
 
-This example demonstrates how to generate a real Xcode project on a macOS sandbox, sign it with your own Apple Developer Program credentials, and export a signed `.ipa` you can download to your machine. It uses [use.computer](https://use.computer) to provision a macOS sandbox, and the [Anthropic API](https://www.anthropic.com/api) to generate the Swift source for a tiny app.
+This example demonstrates how to generate a real Xcode project on a macOS sandbox, sign it with your own Apple Developer Program credentials, and export a signed `.ipa` you can download to your machine. It uses [use.computer](https://use.computer) to provision a macOS sandbox.
 
-In this example, the script asks Claude to write the SwiftUI view for a small counter app, turns it into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), archives and signs it for a real device using an **App Store Connect API key** (no Apple ID login, no 2FA — the standard non-interactive signing approach used by CI systems), exports a signed `.ipa`, and downloads it to your machine.
+In this example, the script uploads the hardcoded Swift source for a small counter app, turns it into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), archives and signs it for a real device using an **App Store Connect API key** (no Apple ID login, no 2FA — the standard non-interactive signing approach used by CI systems), exports a signed `.ipa`, and downloads it to your machine.
 
 This guide is specifically about the code signing step — it does not run the app in the Simulator or on a device, and does not run tests.
 
 ## Features
 
 - **Real macOS sandbox:** Created on your use.computer reservation, torn down when the script finishes
-- **Natural language interface:** Describe the app in plain English; Claude writes the SwiftUI source
-- **Real Xcode project:** [XcodeGen](https://github.com/yonaskolb/XcodeGen) turns the generated source into an actual `.xcodeproj`
+- **Real Xcode project:** [XcodeGen](https://github.com/yonaskolb/XcodeGen) turns hardcoded Swift source into an actual `.xcodeproj`
 - **Non-interactive code signing:** Signs with an App Store Connect API key — no Apple ID login, no 2FA, fully scriptable
 - **Signed artifact:** The exported, signed `.ipa` is downloaded to your machine, and its signature is verified in the sandbox before download
-- **No agent loop:** One script, one LLM call, one signing pipeline — nothing more
+- **No LLM, no agent loop:** Every file uploaded to the sandbox is a hardcoded string in `index.ts` — one script, one signing pipeline, nothing more
 
 ## Prerequisites
 
@@ -29,7 +28,6 @@ To run this example, you need to set the following environment variables:
 
 - `USE_COMPUTER_API_KEY`: Required to control macOS sandboxes. Get it from [use.computer](https://use.computer)
 - `USE_COMPUTER_RESERVATION_ID`: Required. The id of an active Mac Mini reservation to create the sandbox on — reserve one from the [use.computer dashboard](https://use.computer) (see [Reserving a Mac Mini](#reserving-a-mac-mini) below)
-- `ANTHROPIC_API_KEY`: Required for Anthropic API access. Get it from the [Anthropic Console](https://console.anthropic.com/)
 - `APPLE_TEAM_ID`: Required. Your Apple Developer Program Team ID (see [Getting your Apple credentials](#getting-your-apple-credentials) below)
 - `APPLE_BUNDLE_ID`: Required. The bundle identifier to sign the app as, e.g. `com.yourteam.SignDemo`
 - `APPLE_API_KEY_ID`: Required. The Key ID of your App Store Connect API key
@@ -83,27 +81,32 @@ See the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) fo
 ## How It Works
 
 1. A macOS sandbox is created on your existing reservation via `use-computer-sdk`
-2. An LLM call generates the SwiftUI source for `ContentView.swift` based on the task description
-3. That file, plus static boilerplate (an XcodeGen `project.yml` spec and the `@main` app entry file — never touched by the LLM), are uploaded to the sandbox
-4. `xcodegen generate` turns those files into a real `.xcodeproj`
-5. The App Store Connect API key (`.p8`) is uploaded to the sandbox — this is what lets `xcodebuild` sign non-interactively
-6. `xcodebuild archive` builds the app for a real device (`generic/platform=iOS`) with automatic signing, using `-allowProvisioningUpdates` plus the API key so Xcode fetches or creates the needed certificate and provisioning profile from Apple on the fly
-7. `xcodebuild -exportArchive` exports a signed `.ipa` from the archive, using the same API key
-8. The signature is verified in the sandbox with `codesign --display --verbose=4` and printed, so you can see the signing identity and team before downloading anything
-9. The signed `.ipa` is downloaded to your machine as `SignDemo.ipa`
-10. The sandbox is closed
+2. The hardcoded project files — an XcodeGen `project.yml` spec, the `@main` app entry file, and `ContentView.swift` — are uploaded to the sandbox
+3. `xcodegen generate` turns those files into a real `.xcodeproj`
+4. The App Store Connect API key (`.p8`) is uploaded to the sandbox — this is what lets `xcodebuild` sign non-interactively
+5. `xcodebuild archive` builds the app for a real device (`generic/platform=iOS`) with automatic signing, using `-allowProvisioningUpdates` plus the API key so Xcode fetches or creates the needed certificate and provisioning profile from Apple on the fly
+6. `xcodebuild -exportArchive` exports a signed `.ipa` from the archive, using the same API key
+7. The signature is verified in the sandbox with `codesign --display --verbose=4` and printed, so you can see the signing identity and team before downloading anything
+8. The signed `.ipa` is downloaded to your machine as `SignDemo.ipa`
+9. The sandbox is closed
 
 ## Configuration
 
-### Task Customization
+### App Customization
 
-The app is described in the `task` variable in `index.ts`:
+The app's source is hardcoded in `index.ts` as the `CONTENT_VIEW_SWIFT` constant:
 
 ```typescript
-const task = 'A minimal SwiftUI view showing a counter with + and - buttons, clamped so it never goes below zero.'
+const CONTENT_VIEW_SWIFT = `import SwiftUI
+
+struct ContentView: View {
+    @State private var count = 0
+    ...
+}
+`
 ```
 
-You can change this to describe any single-view SwiftUI app.
+Edit this string directly to change the app — it's uploaded to the sandbox verbatim as `ContentView.swift`. The same applies to `PROJECT_YML` (the XcodeGen spec) and `APP_ENTRY_SWIFT` (the `@main` entry point) if you need more targets, sources, or capabilities.
 
 ### Export method
 
@@ -112,16 +115,6 @@ Set via `APPLE_EXPORT_METHOD` in `.env`:
 - `development` (default): signs with a development certificate/profile. Works with any Apple Developer Program team; doesn't require registering any devices to produce the signed `.ipa` itself (you'd only need a registered device to actually install it).
 - `ad-hoc`: signs for distribution to a fixed list of registered test devices. Requires those devices' UDIDs to already be registered with your team.
 
-### Anthropic Model Configuration
-
-By default, the example uses the following model, as specified in `index.ts`:
-
-```typescript
-const MODEL = 'claude-opus-5'
-```
-
-See [Models](https://docs.anthropic.com/en/docs/about-claude/models) for all supported models.
-
 ## Example Output
 
 When the script completes, you'll see output similar to:
@@ -129,25 +122,6 @@ When the script completes, you'll see output similar to:
 ```
 Creating a macOS sandbox...
 Sandbox ready. Watch it live at: https://api.use.computer/vnc?sandbox=sb-59278e445d893dcb2a4510e62b3b0e6b&token=***
-Task: A minimal SwiftUI view showing a counter with + and - buttons, clamped so it never goes below zero.
-Generating Swift source...
-import SwiftUI
-
-struct ContentView: View {
-    @State private var count = 0
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("\(count)")
-                .font(.largeTitle)
-            HStack(spacing: 20) {
-                Button("-") { count = max(0, count - 1) }
-                Button("+") { count += 1 }
-            }
-        }
-        .padding()
-    }
-}
 Uploading project files...
 Generating Xcode project with xcodegen...
 Generated project at SignDemo.xcodeproj
@@ -177,6 +151,5 @@ See the main project LICENSE file for details.
 
 - [use.computer Documentation](https://docs.use.computer)
 - [use.computer Quick Start](https://docs.use.computer/docs/quickstart)
-- [Anthropic API Documentation](https://docs.anthropic.com/)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 - [Apple: Distributing your app using the App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi)

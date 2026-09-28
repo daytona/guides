@@ -4,16 +4,14 @@
  */
 
 import { Computer, MacOSSandbox } from 'use-computer-sdk'
-import Anthropic from '@anthropic-ai/sdk'
 import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 
 dotenv.config()
 
-const MODEL = 'claude-opus-5'
 const REMOTE_DIR = '/tmp/SignDemo'
 
-// ---- Static project boilerplate. Never touched by the LLM. ----
+// ---- Static project files. Everything below is hardcoded — nothing is generated. ----
 
 // xcodegen spec: turns the uploaded Swift files into a real .xcodeproj.
 // PRODUCT_BUNDLE_IDENTIFIER and DEVELOPMENT_TEAM here are placeholders —
@@ -39,7 +37,7 @@ targets:
         SWIFT_VERSION: "5.0"
 `
 
-// @main entry point. Static — only ContentView.swift is LLM-generated.
+// @main entry point
 const APP_ENTRY_SWIFT = `import SwiftUI
 
 @main
@@ -48,6 +46,26 @@ struct SignDemoApp: App {
         WindowGroup {
             ContentView()
         }
+    }
+}
+`
+
+// The app's single view — a counter with + and - buttons, clamped so it never goes below zero
+const CONTENT_VIEW_SWIFT = `import SwiftUI
+
+struct ContentView: View {
+    @State private var count = 0
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("\\(count)")
+                .font(.largeTitle)
+            HStack(spacing: 20) {
+                Button("-") { count = max(0, count - 1) }
+                Button("+") { count += 1 }
+            }
+        }
+        .padding()
     }
 }
 `
@@ -68,12 +86,6 @@ function exportOptionsPlist(teamId: string, method: string): string {
 `
 }
 
-// Helper function to extract Swift source from a given string
-function extractSwiftCode(text: string): string {
-  const m = text.match(/```(?:swift)?([\s\S]*?)```/)
-  return (m ? m[1] : text).trim()
-}
-
 // Runs a command over SSH, streams its stdout, and throws on a non-zero exit code
 async function sh(mac: MacOSSandbox, label: string, command: string, timeoutMs = 5 * 60 * 1000) {
   console.log(label)
@@ -85,9 +97,8 @@ async function sh(mac: MacOSSandbox, label: string, command: string, timeoutMs =
   return exec
 }
 
-// Make sure you have the USE_COMPUTER_API_KEY, USE_COMPUTER_RESERVATION_ID, and ANTHROPIC_API_KEY environment variables set
+// Make sure you have the USE_COMPUTER_API_KEY and USE_COMPUTER_RESERVATION_ID environment variables set
 const computer = new Computer()
-const anthropic = new Anthropic()
 
 async function run() {
   // A reservation is billed for its full duration, so this script expects one to already exist
@@ -125,35 +136,12 @@ async function run() {
     mac = await computer.create({ type: 'macos', reservationId })
     console.log('Sandbox ready. Watch it live at:', mac.vncUrl)
 
-    // Define the app in plain English
-    const task = 'A minimal SwiftUI view showing a counter with + and - buttons, clamped so it never goes below zero.'
-    console.log('Task:', task)
-
-    // Generate the SwiftUI view with the LLM
-    console.log('Generating Swift source...')
-    const systemPrompt = `You are an iOS engineer.
-Given a task, respond with a single Swift code block (\`\`\`swift ... \`\`\`) containing one SwiftUI file that implements it.
-The file must import only SwiftUI and define exactly one top-level struct named ContentView conforming to View.
-Only output the code block, nothing else.`
-    const llmResponse = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: task }],
-    })
-    const llmText = llmResponse.content
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('\n')
-    const contentView = extractSwiftCode(llmText)
-    console.log(contentView)
-
     // Upload the project sources and turn them into a real Xcode project
     console.log('Uploading project files...')
     await mac.execSsh(`mkdir -p ${REMOTE_DIR}/SignDemo`)
     await mac.upload(Buffer.from(PROJECT_YML), `${REMOTE_DIR}/project.yml`)
     await mac.upload(Buffer.from(APP_ENTRY_SWIFT), `${REMOTE_DIR}/SignDemo/SignDemoApp.swift`)
-    await mac.upload(Buffer.from(contentView + '\n'), `${REMOTE_DIR}/SignDemo/ContentView.swift`)
+    await mac.upload(Buffer.from(CONTENT_VIEW_SWIFT), `${REMOTE_DIR}/SignDemo/ContentView.swift`)
 
     await sh(mac, 'Generating Xcode project with xcodegen...', `cd ${REMOTE_DIR} && xcodegen generate`)
 
