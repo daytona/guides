@@ -1,5 +1,6 @@
 # Signed app output
 *.ipa
+recording.mp4
 
 # Apple API key — never commit this
 *.p8

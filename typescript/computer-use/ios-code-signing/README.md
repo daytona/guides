@@ -14,6 +14,7 @@ This guide is specifically about the code signing step — it does not run the a
 - **Real Xcode project:** [XcodeGen](https://github.com/yonaskolb/XcodeGen) turns hardcoded Swift source into an actual `.xcodeproj`
 - **Non-interactive code signing:** Signs with an App Store Connect API key — no Apple ID login, no 2FA, fully scriptable
 - **Signed artifact:** The exported, signed `.ipa` is downloaded to your machine, and its signature is verified in the sandbox before download
+- **Optional full session recording:** Set `RECORD_SESSION=true` to record the whole run and download it as `recording.mp4`
 - **No LLM, no agent loop:** Every file uploaded to the sandbox is a hardcoded string in `index.ts` — one script, one signing pipeline, nothing more
 
 ## Prerequisites
@@ -28,6 +29,7 @@ To run this example, you need to set the following environment variables:
 
 - `USE_COMPUTER_API_KEY`: Required to control macOS sandboxes. Get it from [use.computer](https://use.computer)
 - `USE_COMPUTER_RESERVATION_ID`: Required. The id of an active Mac Mini reservation to create the sandbox on — reserve one from the [use.computer dashboard](https://use.computer) (see [Reserving a Mac Mini](#reserving-a-mac-mini) below)
+- `RECORD_SESSION`: Optional. Set to `true` to record the whole sandbox session and save it to `recording.mp4` when the script finishes
 - `APPLE_TEAM_ID`: Required. Your Apple Developer Program Team ID (see [Getting your Apple credentials](#getting-your-apple-credentials) below)
 - `APPLE_BUNDLE_ID`: Required. The bundle identifier to sign the app as, e.g. `com.yourteam.SignDemo`
 - `APPLE_API_KEY_ID`: Required. The Key ID of your App Store Connect API key
@@ -75,14 +77,16 @@ Reserving is also possible directly from code instead of the dashboard — see t
 ## How It Works
 
 1. A macOS sandbox is created on your existing reservation via `use-computer-sdk`
-2. The hardcoded project files — an XcodeGen `project.yml` spec, the `@main` app entry file, and `ContentView.swift` — are uploaded to the sandbox
-3. `xcodegen generate` turns those files into a real `.xcodeproj`
-4. The App Store Connect API key (`.p8`) is uploaded to the sandbox — this is what lets `xcodebuild` sign non-interactively
-5. `xcodebuild archive` builds the app for a real device (`generic/platform=iOS`) with automatic signing, using `-allowProvisioningUpdates` plus the API key so Xcode fetches or creates the needed certificate and provisioning profile from Apple on the fly
-6. `xcodebuild -exportArchive` exports a signed `.ipa` from the archive, using the same API key
-7. The signature is verified in the sandbox with `codesign --display --verbose=4` and printed, so you can see the signing identity and team before downloading anything
-8. The signed `.ipa` is downloaded to your machine as `SignDemo.ipa`
-9. The sandbox is closed
+2. If `RECORD_SESSION=true`, screen recording is started on the sandbox
+3. The hardcoded project files — an XcodeGen `project.yml` spec, the `@main` app entry file, and `ContentView.swift` — are uploaded to the sandbox
+4. `xcodegen generate` turns those files into a real `.xcodeproj`
+5. The App Store Connect API key (`.p8`) is uploaded to the sandbox — this is what lets `xcodebuild` sign non-interactively
+6. `xcodebuild archive` builds the app for a real device (`generic/platform=iOS`) with automatic signing, using `-allowProvisioningUpdates` plus the API key so Xcode fetches or creates the needed certificate and provisioning profile from Apple on the fly
+7. `xcodebuild -exportArchive` exports a signed `.ipa` from the archive, using the same API key
+8. The signature is verified in the sandbox with `codesign --display --verbose=4` and printed, so you can see the signing identity and team before downloading anything
+9. The signed `.ipa` is downloaded to your machine as `SignDemo.ipa`
+10. If recording was started, it's stopped, downloaded, and saved as `recording.mp4`
+11. The sandbox is closed
 
 ## Configuration
 
@@ -108,6 +112,10 @@ Set via `APPLE_EXPORT_METHOD` in `.env`:
 
 - `development` (default): signs with a development certificate/profile. Works with any Apple Developer Program team; doesn't require registering any devices to produce the signed `.ipa` itself (you'd only need a registered device to actually install it).
 - `ad-hoc`: signs for distribution to a fixed list of registered test devices. Requires those devices' UDIDs to already be registered with your team.
+
+### Recording the Session
+
+Set `RECORD_SESSION=true` in your `.env` file to record the entire sandbox session and save it to `recording.mp4` when the script finishes (whether it succeeds or fails). This is off by default since most runs only need the signed `.ipa`.
 
 ## Example Output
 
