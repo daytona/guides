@@ -22,6 +22,7 @@ This guide is specifically about the code signing step — it does not run the a
 - **Node.js:** Version 18 or higher is required
 - **npm:** Included with Node.js installation
 - **Apple Developer Program membership:** App Store Connect API keys require a paid membership — a free Apple ID account cannot generate one
+- **Passwordless `sudo` on the sandbox:** The archive/export steps run via `launchctl asuser` (see [How It Works](#how-it-works)), which needs `sudo`. This is already the case on the standard use.computer Mac Mini image
 
 ## Environment Variables
 
@@ -79,14 +80,15 @@ Reserving is also possible directly from code instead of the dashboard — see t
 1. A macOS sandbox is created on your existing reservation via `use-computer-sdk`
 2. If `RECORD_SESSION=true`, screen recording is started on the sandbox
 3. The hardcoded project files — an XcodeGen `project.yml` spec, the `@main` app entry file, and `ContentView.swift` — are uploaded to the sandbox
-4. `xcodegen generate` turns those files into a real `.xcodeproj`
-5. The App Store Connect API key (`.p8`) is uploaded to the sandbox — this is what lets `xcodebuild` sign non-interactively
-6. `xcodebuild archive` builds the app for a real device (`generic/platform=iOS`) with automatic signing, using `-allowProvisioningUpdates` plus the API key so Xcode fetches or creates the needed certificate and provisioning profile from Apple on the fly
-7. `xcodebuild -exportArchive` exports a signed `.ipa` from the archive, using the same API key
-8. The signature is verified in the sandbox with `codesign --display --verbose=4` and printed, so you can see the signing identity and team before downloading anything
-9. The signed `.ipa` is downloaded to your machine as `SignDemo.ipa`
-10. If recording was started, it's stopped, downloaded, and saved as `recording.mp4`
-11. The sandbox is closed
+4. A prebuilt [XcodeGen](https://github.com/yonaskolb/XcodeGen) release binary is downloaded directly from GitHub — the sandbox image has Xcode but not Homebrew, so this avoids a `brew install` dependency
+5. `xcodegen generate` turns the uploaded files into a real `.xcodeproj`
+6. The App Store Connect API key (`.p8`) is uploaded to the sandbox — this is what lets `xcodebuild` sign non-interactively
+7. `xcodebuild archive` builds the app for a real device (`-sdk iphoneos`) with automatic signing, using `-allowProvisioningUpdates` plus the API key so Xcode fetches or creates the needed certificate and provisioning profile from Apple on the fly. The command runs via `launchctl asuser` rather than directly over SSH — SSH sessions live in a separate macOS security session from the sandbox's console/GUI login, so a plain SSH command can't reach the unlocked login keychain and fails with "User interaction is not allowed"; `launchctl asuser` re-binds the command into that GUI session
+8. `xcodebuild -exportArchive` exports a signed `.ipa` from the archive, using the same API key and the same `launchctl asuser` wrapping
+9. The signature is verified in the sandbox with `codesign --display --verbose=4` and printed, so you can see the signing identity and team before downloading anything
+10. The signed `.ipa` is downloaded to your machine as `SignDemo.ipa`
+11. If recording was started, it's stopped, downloaded, and saved as `recording.mp4`
+12. The sandbox is closed
 
 ## Configuration
 
@@ -125,17 +127,18 @@ When the script completes, you'll see output similar to:
 Creating a macOS sandbox...
 Sandbox ready. Watch it live at: https://api.use.computer/vnc?sandbox=sb-59278e445d893dcb2a4510e62b3b0e6b&token=***
 Uploading project files...
+Installing xcodegen...
 Generating Xcode project with xcodegen...
-Generated project at SignDemo.xcodeproj
+Created project at /tmp/SignDemo/SignDemo.xcodeproj
 Uploading App Store Connect API key...
 Archiving and signing (this can take a minute)...
 ** ARCHIVE SUCCEEDED **
 Exporting signed .ipa...
-Exported SignDemo.ipa to build/export
+** EXPORT SUCCEEDED **
 Verifying code signature...
-Executable=/private/var/.../unzipped/Payload/SignDemo.app/SignDemo
+Executable=/private/tmp/SignDemo/build/export/unzipped/Payload/SignDemo.app/SignDemo
 Identifier=com.yourteam.SignDemo
-Authority=Apple Development: Jane Doe (ABCDE12345)
+Authority=Apple Development: Created via API (ABCDE12345)
 Authority=Apple Worldwide Developer Relations Certification Authority
 Authority=Apple Root CA
 TeamIdentifier=ABCDE12345

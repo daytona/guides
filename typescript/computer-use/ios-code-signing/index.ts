@@ -10,6 +10,11 @@ import * as fs from 'fs'
 dotenv.config()
 
 const REMOTE_DIR = '/tmp/SignDemo'
+// XcodeGen isn't preinstalled on the sandbox image (and neither is Homebrew), so a prebuilt
+// release binary is downloaded straight from GitHub instead of relying on `brew install xcodegen`
+const XCODEGEN_DIR = '/tmp/xcodegen_bin'
+const XCODEGEN_BIN = `${XCODEGEN_DIR}/xcodegen/bin/xcodegen`
+const XCODEGEN_URL = 'https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip'
 
 // ---- Static project files. Everything below is hardcoded — nothing is generated. ----
 
@@ -97,6 +102,14 @@ async function sh(mac: MacOSSandbox, label: string, command: string, timeoutMs =
   return exec
 }
 
+// An SSH connection is a separate macOS security session from the sandbox's console/GUI login,
+// so it can't unlock or use the login keychain — any codesign/provisioning-profile step run
+// directly over SSH fails with "User interaction is not allowed". Routing the command through
+// `launchctl asuser` re-binds it to the GUI session, which already has that keychain unlocked.
+function asGuiUser(command: string): string {
+  return `sudo launchctl asuser $(id -u) su $(whoami) -c '${command.replace(/'/g, `'\\''`)}'`
+}
+
 // Make sure you have the USE_COMPUTER_API_KEY and USE_COMPUTER_RESERVATION_ID environment variables set
 const computer = new Computer()
 
@@ -152,7 +165,13 @@ async function run() {
     await mac.upload(Buffer.from(APP_ENTRY_SWIFT), `${REMOTE_DIR}/SignDemo/SignDemoApp.swift`)
     await mac.upload(Buffer.from(CONTENT_VIEW_SWIFT), `${REMOTE_DIR}/SignDemo/ContentView.swift`)
 
-    await sh(mac, 'Generating Xcode project with xcodegen...', `cd ${REMOTE_DIR} && xcodegen generate`)
+    // XcodeGen ships as a prebuilt binary release, so it can be fetched with no Homebrew dependency
+    await sh(
+      mac,
+      'Installing xcodegen...',
+      `curl -fsSL ${XCODEGEN_URL} -o /tmp/xcodegen.zip && rm -rf ${XCODEGEN_DIR} && unzip -q -o /tmp/xcodegen.zip -d ${XCODEGEN_DIR}`,
+    )
+    await sh(mac, 'Generating Xcode project with xcodegen...', `cd ${REMOTE_DIR} && ${XCODEGEN_BIN} generate`)
 
     // Upload the App Store Connect API key used to authenticate xcodebuild — no Apple ID login, no 2FA
     console.log('Uploading App Store Connect API key...')
@@ -160,14 +179,17 @@ async function run() {
     await mac.upload(fs.readFileSync(apiKeyPath), remoteKeyPath)
     const authFlags = `-allowProvisioningUpdates -authenticationKeyPath ${remoteKeyPath} -authenticationKeyID ${keyId} -authenticationKeyIssuerID ${issuerId}`
 
-    // Archive the app for a real device, signing it automatically via the API key
+    // Archive the app for a real device, signing it automatically via the API key.
+    // Wrapped with asGuiUser() so the new certificate/profile can actually be written to the keychain.
     await sh(
       mac,
       'Archiving and signing (this can take a minute)...',
-      `cd ${REMOTE_DIR} && xcodebuild archive ` +
-        `-project SignDemo.xcodeproj -scheme SignDemo -destination "generic/platform=iOS" ` +
-        `-archivePath build/SignDemo.xcarchive ${authFlags} ` +
-        `CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=${teamId} PRODUCT_BUNDLE_IDENTIFIER=${bundleId}`,
+      asGuiUser(
+        `cd ${REMOTE_DIR} && xcodebuild archive ` +
+          `-project SignDemo.xcodeproj -scheme SignDemo -sdk iphoneos ` +
+          `-archivePath build/SignDemo.xcarchive ${authFlags} ` +
+          `CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=${teamId} PRODUCT_BUNDLE_IDENTIFIER=${bundleId}`,
+      ),
       10 * 60 * 1000,
     )
 
@@ -176,9 +198,11 @@ async function run() {
     await sh(
       mac,
       'Exporting signed .ipa...',
-      `cd ${REMOTE_DIR} && xcodebuild -exportArchive ` +
-        `-archivePath build/SignDemo.xcarchive -exportPath build/export ` +
-        `-exportOptionsPlist ExportOptions.plist ${authFlags}`,
+      asGuiUser(
+        `cd ${REMOTE_DIR} && xcodebuild -exportArchive ` +
+          `-archivePath build/SignDemo.xcarchive -exportPath build/export ` +
+          `-exportOptionsPlist ExportOptions.plist ${authFlags}`,
+      ),
       5 * 60 * 1000,
     )
 
