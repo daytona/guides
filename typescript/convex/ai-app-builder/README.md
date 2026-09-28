@@ -88,6 +88,10 @@ ai-app-builder/
 | `daytona.run` | `npm install`, start the dev server (backgrounded with `nohup … &`), readiness poll |
 | `daytona.getPreviewUrl` | signed URL for port 3000, rendered in the iframe |
 
+## Security note
+
+This is a development example: its Convex functions are unauthenticated, and anyone with your deployment URL could trigger LLM generations and sandbox usage on your keys. Run it against a local/dev deployment. Before deploying anything like this publicly, add authentication in the Convex functions and scope sandboxes per user with the component's `userKey` (see the [component's authorization docs](https://github.com/daytona/integrations/tree/main/packages/convex#authorization)).
+
 ## Sandbox lifecycle & cost notes
 
 Generated sandboxes are labeled `created-by: convex-ai-app-builder`, pause after 15 idle minutes, and auto-delete after 2 hours — so experiments clean themselves up. Delete one immediately from the [Daytona dashboard](https://app.daytona.io) or with `daytona.deleteSandbox`.

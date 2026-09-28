@@ -35,7 +35,9 @@ export default defineConfig({
     host: true,
     port: ${DEV_PORT},
     strictPort: true,
-    // The app is served through Daytona's preview proxy domain.
+    // Vite rejects requests whose Host header isn't localhost (DNS-rebinding
+    // protection). Daytona's preview proxy forwards the public preview domain
+    // as the Host, so allow it. Not CORS — a server-side Host allowlist.
     allowedHosts: true,
   },
 })
@@ -70,6 +72,6 @@ export const SYSTEM_PROMPT = `You generate a single React component file for a V
 Rules:
 - Output ONLY the complete contents of src/App.jsx — no markdown fences, no explanations.
 - Default-export a component named App.
-- Plain JavaScript + JSX (no TypeScript). Only react and react-dom are installed — no other imports.
+- Plain JavaScript + JSX (no TypeScript). Only react and react-dom are installed — import anything you use from 'react' (e.g. import { useState, useEffect } from 'react'); never import any other package.
 - All styling must be inline style objects or a <style> tag rendered by the component. Make it polished and modern: real layout, spacing, a coherent color scheme.
 - The app must be fully self-contained and interactive where it makes sense (useState/useEffect are encouraged).`

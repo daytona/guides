@@ -15,6 +15,23 @@ export const getInternal = internalQuery({
   },
 })
 
+/**
+ * Atomically claim an app for iteration. Mutations are serializable, so two
+ * concurrent follow-ups can't both pass the status check — the loser throws
+ * instead of silently overwriting the winner's generation.
+ */
+export const beginIterate = internalMutation({
+  args: { appId: v.id('apps') },
+  handler: async (ctx, args) => {
+    const app = await ctx.db.get(args.appId)
+    if (!app?.sandboxId || !app.code) throw new Error('App is not ready yet')
+    const canIterate = app.status === 'ready' || app.status === 'error'
+    if (!canIterate) throw new Error(`App is busy (status: ${app.status})`)
+    await ctx.db.patch(args.appId, { status: 'generating code' })
+    return app
+  },
+})
+
 export const create = internalMutation({
   args: { prompt: v.string() },
   handler: async (ctx, args) => {

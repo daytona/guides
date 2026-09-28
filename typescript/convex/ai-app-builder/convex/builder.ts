@@ -19,12 +19,14 @@ async function generateAppCode(
   ctx: ActionCtx,
   appId: Id<'apps'>,
   prompt: string,
+  abortSignal?: AbortSignal,
 ): Promise<string> {
   const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
   const result = streamText({
     model: openai('gpt-5.4'),
     system: SYSTEM_PROMPT,
     prompt,
+    abortSignal,
   })
 
   let draft = ''
@@ -63,16 +65,24 @@ export const build = action({
     })
     try {
       // Kick off sandbox creation and code generation in parallel — the UI
-      // shows each step live because every setStatus patch is reactive.
-      const sandboxPromise = daytona.createSandbox(ctx, {
-        labels: { 'created-by': 'convex-ai-app-builder' },
-        autoStopInterval: 15,
-        autoDeleteInterval: 120,
-      })
+      // shows each step live because every setStatus patch is reactive. If
+      // sandbox creation fails, abort the LLM stream so tokens stop flowing
+      // into an app that's already doomed.
+      const abort = new AbortController()
+      const sandboxPromise = daytona
+        .createSandbox(ctx, {
+          labels: { 'created-by': 'convex-ai-app-builder' },
+          autoStopInterval: 15,
+          autoDeleteInterval: 120,
+        })
+        .catch((error) => {
+          abort.abort()
+          throw error
+        })
       await setStatus(ctx, appId, { status: 'generating code' })
       const [{ sandboxId }, code] = await Promise.all([
         sandboxPromise,
-        generateAppCode(ctx, appId, args.prompt),
+        generateAppCode(ctx, appId, args.prompt, abort.signal),
       ])
       await setStatus(ctx, appId, {
         sandboxId,
@@ -143,18 +153,22 @@ export const build = action({
 export const iterate = action({
   args: { appId: v.id('apps'), instruction: v.string() },
   handler: async (ctx, args) => {
-    const app = await ctx.runQuery(internal.apps.getInternal, { appId: args.appId })
-    if (!app?.sandboxId || !app.code) throw new Error('App is not ready yet')
-
-    await setStatus(ctx, args.appId, { status: 'generating code' })
+    // Atomic claim: checks readiness and flips status in one transaction, so
+    // concurrent follow-ups can't generate from the same base code.
+    const app = await ctx.runMutation(internal.apps.beginIterate, {
+      appId: args.appId,
+    })
     try {
       const code = await generateAppCode(
         ctx,
         args.appId,
         `Here is the current src/App.jsx:\n\n${app.code}\n\nApply this change and output the complete updated file:\n${args.instruction}`,
       )
+      // The sandbox pauses after 15 idle minutes; restart it if needed before
+      // writing (writeFile doesn't auto-start the way run does).
+      await daytona.startSandbox(ctx, { sandboxId: app.sandboxId! })
       await daytona.writeFile(ctx, {
-        sandboxId: app.sandboxId,
+        sandboxId: app.sandboxId!,
         path: `${APP_DIR}/src/App.jsx`,
         content: code,
       })

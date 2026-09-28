@@ -49,6 +49,7 @@ export default function App() {
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           placeholder="e.g. a pomodoro timer with a circular progress ring"
+          aria-label="Describe the app to build"
           autoFocus
         />
         <button type="submit" disabled={building || !prompt.trim()}>
@@ -82,14 +83,26 @@ function CodeStream({ code }: { code: string }) {
 function AppCard({ app }: { app: Doc<'apps'> }) {
   const iterate = useAction(api.builder.iterate)
   const [instruction, setInstruction] = useState('')
+  const [updating, setUpdating] = useState(false)
   const currentStep = BUILD_STEPS.indexOf(app.status as (typeof BUILD_STEPS)[number])
+  // Allow updates when ready — and retries when a follow-up failed but the
+  // app is still running (previewUrl exists).
+  const canIterate =
+    !updating && (app.status === 'ready' || (app.status === 'error' && Boolean(app.previewUrl)))
 
   async function onIterate(event: React.FormEvent) {
     event.preventDefault()
-    if (!instruction.trim()) return
+    if (!instruction.trim() || !canIterate) return
     const value = instruction.trim()
     setInstruction('')
-    await iterate({ appId: app._id, instruction: value }).catch(() => {})
+    setUpdating(true)
+    try {
+      await iterate({ appId: app._id, instruction: value })
+    } catch {
+      // The card shows the error state reactively.
+    } finally {
+      setUpdating(false)
+    }
   }
 
   return (
@@ -122,16 +135,22 @@ function AppCard({ app }: { app: Doc<'apps'> }) {
 
       {app.previewUrl && (
         <>
-          <iframe src={app.previewUrl} title={app.prompt} />
+          <iframe
+            src={app.previewUrl}
+            title={app.prompt}
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
           <div className="card-foot">
             <form onSubmit={onIterate}>
               <input
                 value={instruction}
                 onChange={(event) => setInstruction(event.target.value)}
                 placeholder="Change something… e.g. make it dark mode"
+                aria-label="Describe a change to this app"
               />
-              <button type="submit" disabled={app.status !== 'ready' || !instruction.trim()}>
-                Update
+              <button type="submit" disabled={!canIterate || !instruction.trim()}>
+                {updating ? 'Updating…' : 'Update'}
               </button>
             </form>
             <a href={app.previewUrl} target="_blank" rel="noreferrer">
