@@ -4,8 +4,6 @@
 
 This example demonstrates building, running, and testing a real iOS app end-to-end inside a real macOS sandbox. It uses [use.computer](https://use.computer) to provision a macOS sandbox, then assembles a small SwiftUI counter app into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), builds it, installs and runs it on the iOS Simulator via `simctl`, runs its XCTest suite, and prints a parsed pass/fail summary.
 
-All app, test, and project files are hardcoded in `index.ts` — there's no LLM call involved. Swap in your own Swift source and tests to build and run something else the same way.
-
 ## Features
 
 - **Real macOS sandbox:** Created on your use.computer reservation, torn down when the script finishes
@@ -14,8 +12,6 @@ All app, test, and project files are hardcoded in `index.ts` — there's no LLM 
 - **Automated test run with parsed results:** `xcodebuild test` output is parsed into a clean pass/fail summary, with a non-zero exit code on failure
 - **Screenshot for manual verification:** A full-screen screenshot of the sandbox is downloaded after launch, since the test suite proves the app's logic but not that its UI actually renders correctly
 - **Optional full session recording:** Set `RECORD_SESSION=true` to record the whole run and download it as `recording.mp4`
-- **No agent loop, no LLM:** One script, one build/test pipeline — nothing more
-- **Real example artifacts included:** [`example-screenshot.png`](example-screenshot.png) and [`example-recording.mp4`](example-recording.mp4) from an actual run are checked into this folder (see [Example Output](#example-output))
 
 ## Prerequisites
 
