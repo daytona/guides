@@ -1,20 +1,19 @@
-# iOS Xcode Simulator Builder (Anthropic + use.computer)
+# iOS Xcode Simulator Builder (use.computer)
 
 ## Overview
 
-This example demonstrates using an LLM to write both the source and the tests for a small iOS app, then building and verifying it end-to-end inside a real macOS sandbox. It uses [use.computer](https://use.computer) to provision a macOS sandbox, and the [Anthropic API](https://www.anthropic.com/api) to generate a SwiftUI view and its XCTest unit tests from a plain-English description.
+This example demonstrates building, running, and testing a real iOS app end-to-end inside a real macOS sandbox. It uses [use.computer](https://use.computer) to provision a macOS sandbox, then assembles a small SwiftUI counter app into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), builds it, installs and runs it on the iOS Simulator via `simctl`, runs its XCTest suite, and prints a parsed pass/fail summary.
 
-In this example, the script asks Claude to write a simple counter app (and a test for its counting logic), assembles a real Xcode project around that code with [XcodeGen](https://github.com/yonaskolb/XcodeGen), builds it, installs and runs it on the iOS Simulator via `simctl`, runs the test suite, and prints a parsed pass/fail summary.
+All app, test, and project files are hardcoded in `index.ts` — there's no LLM call involved. Swap in your own Swift source and tests to build and run something else the same way.
 
 ## Features
 
 - **Real macOS sandbox:** Created on your use.computer reservation, torn down when the script finishes
-- **Natural language interface:** Describe the app in plain English; Claude writes the SwiftUI view and its unit tests
 - **Real Xcode project, built from scratch:** [XcodeGen](https://github.com/yonaskolb/XcodeGen) turns a project spec into an `.xcodeproj` at runtime — nothing is checked into this repo
 - **Runs on the actual iOS Simulator:** Installed and launched with `xcrun simctl`, not just compiled
 - **Automated test run with parsed results:** `xcodebuild test` output is parsed into a clean pass/fail summary, with a non-zero exit code on failure
 - **Screenshot for manual verification:** A full-screen screenshot of the sandbox is downloaded after launch, since the test suite proves the app's logic but not that its UI actually renders correctly
-- **No agent loop:** One script, one LLM call, one build/test pipeline — nothing more
+- **No agent loop, no LLM:** One script, one build/test pipeline — nothing more
 
 ## Prerequisites
 
@@ -27,7 +26,6 @@ To run this example, you need to set the following environment variables:
 
 - `USE_COMPUTER_API_KEY`: Required to control macOS sandboxes. Get it from [use.computer](https://use.computer)
 - `USE_COMPUTER_RESERVATION_ID`: Required. The id of an active Mac Mini reservation to create the sandbox on — reserve one from the [use.computer dashboard](https://use.computer) (see [Reserving a Mac Mini](#reserving-a-mac-mini) below)
-- `ANTHROPIC_API_KEY`: Required for Anthropic API access. Get it from the [Anthropic Console](https://console.anthropic.com/)
 
 Create a `.env` file in the project directory with these variables (see `.env.example`).
 
@@ -68,45 +66,31 @@ This example also assumes the Mac Mini image already has a full Xcode install (n
 ## How It Works
 
 1. A macOS sandbox is created on your existing reservation via `use-computer-sdk`
-2. An LLM call generates a SwiftUI `ContentView` and an XCTest case for the task description
-3. The generated files, plus a static XcodeGen spec (`project.yml`) and app entry point, are uploaded to the sandbox
-4. `xcodegen generate` turns the spec into a real `.xcodeproj`
-5. An available iOS Simulator device is selected and booted with `xcrun simctl`
-6. `xcodebuild` builds the app against that simulator
-7. The built app is installed and launched on the simulator with `xcrun simctl install`/`launch`
-8. A full-screen screenshot is captured and downloaded for manual visual verification
-9. `xcodebuild test` runs the XCTest suite against the same simulator, writing a `.xcresult` bundle
-10. The `.xcresult` bundle is zipped and downloaded, and the test output is parsed into a pass/fail summary printed to the console
-11. The sandbox is closed
+2. The hardcoded project scaffolding (`project.yml`), app entry point, `ContentView.swift`, and `CounterAppTests.swift` are uploaded to the sandbox
+3. `xcodegen generate` turns the spec into a real `.xcodeproj`
+4. An available iOS Simulator device is selected and booted with `xcrun simctl`
+5. `xcodebuild` builds the app against that simulator
+6. The built app is installed and launched on the simulator with `xcrun simctl install`/`launch`
+7. A full-screen screenshot is captured and downloaded for manual visual verification
+8. `xcodebuild test` runs the XCTest suite against the same simulator, writing a `.xcresult` bundle
+9. The `.xcresult` bundle is zipped and downloaded, and the test output is parsed into a pass/fail summary printed to the console
+10. The sandbox is closed
 
 ## Configuration
 
-### Task Customization
+### App Source
 
-The task is configured in the `task` variable in `index.ts`:
+The app, its entry point, and its tests are hardcoded string constants in `index.ts`:
 
-```typescript
-const task =
-  'Build a simple SwiftUI counter app: a number label in the center of the screen, with "+" and "-" buttons ' +
-  'below it that increment and decrement the count by 1. The count must never go below zero -- the "-" button ' +
-  'should have no effect at zero.'
-```
+- `CONTENT_VIEW_SWIFT` — the SwiftUI view and a plain `Counter` struct implementing the counting logic (clamped at zero)
+- `APP_ENTRY_SWIFT` — the `@main` App entry point
+- `COUNTER_APP_TESTS_SWIFT` — the XCTest case exercising `Counter`
 
-You can change this to describe any small, self-contained SwiftUI app with testable logic — the LLM always outputs a `Sources/ContentView.swift` and a `Tests/CounterAppTests.swift`.
+Edit these to build and test a different app — nothing else in the script depends on what they contain, as long as the app target is still named `CounterApp` (or you also update `APP_NAME`/`BUNDLE_ID`).
 
 ### Xcode Project Configuration
 
 The XcodeGen spec is defined in the `PROJECT_YML` constant in `index.ts`. It configures a `CounterApp` application target and a `CounterAppTests` unit test target, both with code signing disabled (not needed for simulator builds). Edit it to change the deployment target, add resources, or add more targets.
-
-### Anthropic Model Configuration
-
-By default, the example uses the following model, as specified in `index.ts`:
-
-```typescript
-const MODEL = 'claude-opus-5'
-```
-
-See [Models](https://docs.anthropic.com/en/docs/about-claude/models) for all supported models.
 
 ## Example Output
 
@@ -115,8 +99,6 @@ When the script completes, you'll see output similar to:
 ```
 Creating a macOS sandbox...
 Sandbox ready. Watch it live at: https://api.use.computer/vnc?sandbox=sb-59278e445d893dcb2a4510e62b3b0e6b&token=***
-Task: Build a simple SwiftUI counter app: a number label in the center of the screen, with "+" and "-" buttons below it that increment and decrement the count by 1. The count must never go below zero -- the "-" button should have no effect at zero.
-Generating app and test source...
 Uploading project files...
 Ensuring xcodegen is installed...
 Generating Xcode project...
@@ -136,8 +118,9 @@ Test Results
 ============
 [PASS] CounterAppTests.testIncrement (0.001s)
 [PASS] CounterAppTests.testDecrementStopsAtZero (0.001s)
+[PASS] CounterAppTests.testIncrementThenDecrement (0.001s)
 ------------
-SUCCEEDED: executed 2, 0 failures (0 unexpected), 0.003s
+SUCCEEDED: executed 3, 0 failures (0 unexpected), 0.003s
 Closing sandbox...
 ```
 
@@ -151,7 +134,6 @@ See the main project LICENSE file for details.
 
 - [use.computer Documentation](https://docs.use.computer)
 - [use.computer Quick Start](https://docs.use.computer/docs/quickstart)
-- [Anthropic API Documentation](https://docs.anthropic.com/)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 - [xcodebuild documentation](https://developer.apple.com/documentation/xcode/building-and-running-an-app)
 - [simctl documentation](https://developer.apple.com/documentation/xcode/running-your-app-in-simulator-or-on-a-device)
