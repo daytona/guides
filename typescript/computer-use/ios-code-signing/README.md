@@ -47,13 +47,7 @@ macOS sandboxes run on dedicated Mac Minis reserved through use.computer — res
 2. From the [use.computer dashboard](https://use.computer), reserve a Mac Mini and copy its reservation id.
 3. Put both values in your `.env` file as `USE_COMPUTER_API_KEY` and `USE_COMPUTER_RESERVATION_ID`.
 
-Reserving is also possible directly from code instead of the dashboard — it's a single SDK call:
-
-```typescript
-const reservation = await computer.reserve({ hours: 24 })
-```
-
-See the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) for the full snippet and reservation options.
+Reserving is also possible directly from code instead of the dashboard — see the [use.computer Quick Start](https://docs.use.computer/docs/quickstart) for the SDK call and reservation options.
 
 ### Getting your Apple credentials
 
