@@ -4,9 +4,7 @@
 
 This example demonstrates how to generate a real Xcode project on a macOS sandbox, sign it with your own Apple Developer Program credentials, and export a signed `.ipa` you can download to your machine. It uses [use.computer](https://use.computer) to provision a macOS sandbox.
 
-In this example, the script uploads the hardcoded Swift source for a small counter app, turns it into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), archives and signs it for a real device using an **App Store Connect API key** (no Apple ID login, no 2FA — the standard non-interactive signing approach used by CI systems), exports a signed `.ipa`, and downloads it to your machine.
-
-This guide is specifically about the code signing step — it does not run the app in the Simulator or on a device, and does not run tests.
+In this example, the script uploads the hardcoded Swift source for a small counter app, turns it into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), archives and signs it for a real device using an **App Store Connect API key**, exports a signed `.ipa`, and downloads it to your machine.
 
 ## Features
 
