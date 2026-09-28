@@ -156,7 +156,7 @@ interface SimctlListOutput {
 }
 
 // Picks an available iPhone simulator from `simctl list devices`, preferring the newest installed iOS runtime
-function pickSimulator(json: SimctlListOutput): { udid: string; name: string; runtime: string } {
+function pickSimulator(json: SimctlListOutput): { udid: string; name: string; runtime: string; os: string } {
   const runtimeIds = Object.keys(json.devices).filter((id) => id.includes('iOS'))
 
   runtimeIds.sort((a, b) => {
@@ -168,7 +168,13 @@ function pickSimulator(json: SimctlListOutput): { udid: string; name: string; ru
 
   for (const runtimeId of runtimeIds) {
     const iphone = (json.devices[runtimeId] ?? []).find((d) => d.isAvailable && d.name.startsWith('iPhone'))
-    if (iphone) return { udid: iphone.udid, name: iphone.name, runtime: runtimeId }
+    if (iphone) {
+      // Pin the exact OS version (e.g. "18.4") rather than letting xcodebuild resolve "OS=latest"
+      // itself -- that resolution step is what's been flaky against a just-booted simulator.
+      const versionMatch = runtimeId.match(/iOS-(\d+)-(\d+)/)
+      const os = versionMatch ? `${versionMatch[1]}.${versionMatch[2]}` : 'latest'
+      return { udid: iphone.udid, name: iphone.name, runtime: runtimeId, os }
+    }
   }
 
   throw new Error(
@@ -198,15 +204,28 @@ interface TestSummary {
 // and 16, and the sandbox's exact Xcode version isn't pinned.
 function parseTestOutput(output: string): TestSummary {
   const caseRegex = /Test Case '-\[(\S+)\.(\S+) (\S+)\]' (passed|failed) \(([\d.]+) seconds\)\./g
-  const cases: TestCaseResult[] = []
+  // Keyed by class+method+status+seconds: if execSsh output repeats a command's tail (observed in
+  // practice), this collapses exact duplicate lines without dropping a genuinely re-run test case.
+  const caseMap = new Map<string, TestCaseResult>()
   let m: RegExpExecArray | null
   while ((m = caseRegex.exec(output)) !== null) {
     const [, , className, method, status, seconds] = m
-    cases.push({ className, method, status: status as 'passed' | 'failed', seconds: Number(seconds) })
+    const testCase: TestCaseResult = { className, method, status: status as 'passed' | 'failed', seconds: Number(seconds) }
+    caseMap.set(`${className}|${method}|${status}|${seconds}`, testCase)
   }
+  const cases = [...caseMap.values()]
 
-  const summaryMatch = output.match(/Executed (\d+) tests?, with (\d+) failures? \((\d+) unexpected\) in ([\d.]+) seconds/)
-  const overallMatch = output.match(/\*\* TEST (SUCCEEDED|FAILED) \*\*/)
+  // Use the *last* match for both: xcodebuild prints one "Executed ..." line per suite (per test
+  // class, per bundle, then a final "All tests" aggregate) so the last one is the real total, and
+  // execSsh output has been observed to occasionally repeat the whole tail of a command's output,
+  // in which case the last copy is what actually matters. The summary format also varies across
+  // Xcode versions -- some print "in 0.003 seconds", others "in 0.003 (0.005) seconds".
+  const summaryMatches = [
+    ...output.matchAll(/Executed (\d+) tests?, with (\d+) failures? \((\d+) unexpected\) in ([\d.]+)(?: \([\d.]+\))? seconds/g),
+  ]
+  const overallMatches = [...output.matchAll(/\*\* TEST (SUCCEEDED|FAILED) \*\*/g)]
+  const summaryMatch = summaryMatches.at(-1)
+  const overallMatch = overallMatches.at(-1)
 
   if (!summaryMatch || !overallMatch) {
     throw new Error(`Could not parse xcodebuild test output:\n${output.slice(-4000)}`)
@@ -235,20 +254,49 @@ function printSummary(summary: TestSummary) {
   )
 }
 
-// Runs a command over SSH, logging its output, and throws on failure unless `tolerate` says to ignore it
+// execSsh runs a non-login shell, so Homebrew's own PATH setup (normally sourced from
+// /etc/zprofile on login) never runs -- put it on PATH ourselves so `brew` and anything
+// it installs (like xcodegen) are found.
+const REMOTE_PATH_PREFIX = 'export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"; '
+
+// Runs a command over SSH, logging its output, and throws on failure unless `tolerate` says to
+// ignore it. If `retryIf` matches the result, the command is re-run (up to `retries` times total)
+// after a short delay before `tolerate`/failure are considered -- used for xcodebuild's destination
+// resolution, which can be flaky against a simulator that was only just booted.
 async function runRemote(
   mac: MacOSSandbox,
   command: string,
-  opts: { tolerate?: (result: ExecResult) => boolean } = {},
+  opts: {
+    tolerate?: (result: ExecResult) => boolean
+    retryIf?: (result: ExecResult) => boolean
+    retries?: number
+    retryDelayMs?: number
+  } = {},
 ): Promise<ExecResult> {
-  const result = await mac.execSsh(command)
-  if (result.stdout) console.log(result.stdout)
-  if (result.stderr) console.error(result.stderr)
-  if (result.exitCode !== 0 && !opts.tolerate?.(result)) {
-    throw new Error(`Command failed (exit ${result.exitCode}): ${command}`)
+  const retries = opts.retries ?? 1
+  const retryDelayMs = opts.retryDelayMs ?? 5000
+  let result: ExecResult
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    result = await mac.execSsh(REMOTE_PATH_PREFIX + command)
+    if (result.stdout) console.log(result.stdout)
+    if (result.stderr) console.error(result.stderr)
+    if (attempt < retries && opts.retryIf?.(result)) {
+      console.log(`Retrying (attempt ${attempt + 1}/${retries})...`)
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
+      continue
+    }
+    break
   }
-  return result
+  if (result!.exitCode !== 0 && !opts.tolerate?.(result!)) {
+    throw new Error(`Command failed (exit ${result!.exitCode}): ${command}`)
+  }
+  return result!
 }
+
+// xcodebuild can intermittently fail to resolve a simulator destination right after it's booted,
+// with "Unable to find a destination matching the provided destination specifier" -- not a real
+// build/test failure, just the destination cache not being warm yet. Retry on that specific message.
+const DESTINATION_NOT_READY = (r: ExecResult) => /Unable to find a destination matching/.test(r.stdout + r.stderr)
 
 // Make sure you have the USE_COMPUTER_API_KEY and USE_COMPUTER_RESERVATION_ID environment variables set
 const computer = new Computer()
@@ -306,14 +354,29 @@ async function run() {
     })
     await runRemote(mac, `xcrun simctl bootstatus ${simulator.udid} -b`)
 
-    // Build the app against that exact simulator
+    // `simctl boot` runs the simulator headlessly -- it doesn't open the Simulator.app window, so
+    // without this the screenshot below would just show an empty desktop. Opening the app attaches
+    // its GUI to the already-booted device.
+    console.log('Opening Simulator app...')
+    await runRemote(mac, 'open -a Simulator')
+
+    // xcodebuild's simulator destination matching can be flaky against a simulator that was only
+    // just booted -- pinning the exact OS version (rather than letting it resolve "OS=latest")
+    // and matching by name (rather than id=<udid>, which some Xcode versions fail to resolve even
+    // when simctl shows the device booted) both help, and a generous retry covers the rest.
+    const destination = `platform=iOS Simulator,name=${simulator.name},OS=${simulator.os}`
+    const buildOrTest = (action: 'build' | 'test', opts: { extraArgs?: string; tolerate?: (r: ExecResult) => boolean } = {}) =>
+      runRemote(
+        mac,
+        // rm any previous result bundle first: a retried attempt (destination not ready) can leave
+        // a partial one behind, and xcodebuild refuses to write to a path that already exists.
+        `cd ${REMOTE_ROOT} && rm -rf TestResults.xcresult && xcodebuild -project ${APP_NAME}.xcodeproj -scheme ${APP_NAME} ` +
+          `-configuration Debug -derivedDataPath build -destination '${destination}' ${opts.extraArgs ?? ''} ${action}`,
+        { tolerate: opts.tolerate, retryIf: DESTINATION_NOT_READY, retries: 8, retryDelayMs: 10_000 },
+      )
+
     console.log('Building app...')
-    const destination = `platform=iOS Simulator,id=${simulator.udid}`
-    await runRemote(
-      mac,
-      `cd ${REMOTE_ROOT} && xcodebuild -project ${APP_NAME}.xcodeproj -scheme ${APP_NAME} ` +
-        `-configuration Debug -derivedDataPath build -destination '${destination}' build`,
-    )
+    await buildOrTest('build')
 
     // Install and launch it on the simulator via simctl
     const appPath = `${REMOTE_ROOT}/build/Build/Products/Debug-iphonesimulator/${APP_NAME}.app`
@@ -331,15 +394,19 @@ async function run() {
     fs.writeFileSync('screenshot.png', screenshot)
     console.log('✓ Screenshot saved to screenshot.png')
 
-    // Run the XCTest suite against the same, already-booted simulator
+    // Terminate and fully uninstall the app before testing: xcodebuild test does its own
+    // install/launch of the app as the test host, and leaving the manually-installed/launched copy
+    // above in place conflicts with that -- it ends up trying to load the test bundle from a stale,
+    // already-invalidated container path left behind by the earlier install.
+    await runRemote(mac, `xcrun simctl terminate ${simulator.udid} ${BUNDLE_ID}`, { tolerate: () => true })
+    await runRemote(mac, `xcrun simctl uninstall ${simulator.udid} ${BUNDLE_ID}`, { tolerate: () => true })
+
+    // Run the XCTest suite against the same simulator.
     console.log('Running tests...')
-    const testResult = await runRemote(
-      mac,
-      `cd ${REMOTE_ROOT} && xcodebuild -project ${APP_NAME}.xcodeproj -scheme ${APP_NAME} ` +
-        `-configuration Debug -derivedDataPath build -destination '${destination}' ` +
-        `-resultBundlePath TestResults.xcresult test`,
-      { tolerate: () => true }, // xcodebuild exits non-zero when tests fail; we parse pass/fail ourselves below
-    )
+    const testResult = await buildOrTest('test', {
+      extraArgs: '-resultBundlePath TestResults.xcresult',
+      tolerate: () => true, // xcodebuild exits non-zero when tests fail; we parse pass/fail ourselves below
+    })
 
     // Archive and download the .xcresult bundle as a structured artifact alongside the printed summary
     console.log('Archiving test results...')

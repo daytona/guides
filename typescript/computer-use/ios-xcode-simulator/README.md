@@ -65,14 +65,16 @@ This example also assumes the Mac Mini image already has a full Xcode install (n
 2. If `RECORD_SESSION=true`, screen recording is started on the sandbox
 3. The hardcoded project scaffolding (`project.yml`), app entry point, `ContentView.swift`, and `CounterAppTests.swift` are uploaded to the sandbox
 4. `xcodegen generate` turns the spec into a real `.xcodeproj`
-5. An available iOS Simulator device is selected and booted with `xcrun simctl`
+5. An available iOS Simulator device is selected and booted with `xcrun simctl`, and the Simulator app is opened so its window is visible (`simctl boot` alone runs headlessly)
 6. `xcodebuild` builds the app against that simulator
 7. The built app is installed and launched on the simulator with `xcrun simctl install`/`launch`
 8. A full-screen screenshot is captured and downloaded for manual visual verification
-9. `xcodebuild test` runs the XCTest suite against the same simulator, writing a `.xcresult` bundle
+9. The app is terminated and uninstalled so it doesn't conflict with the test run below, then `xcodebuild test` runs the XCTest suite against the same simulator, writing a `.xcresult` bundle
 10. The `.xcresult` bundle is zipped and downloaded, and the test output is parsed into a pass/fail summary printed to the console
 11. If recording was started, it's stopped, downloaded, and saved as `recording.mp4`
 12. The sandbox is closed
+
+Note: `xcodebuild`'s simulator destination matching can be flaky against a simulator that was only just booted, especially right after a fresh boot. The build and test steps pin the destination by device name and exact OS version and retry automatically (up to 8 attempts, 10s apart) if it reports "Unable to find a destination matching..." — this is a wait for the simulator to become ready, not a sign of a real failure.
 
 ## Configuration
 
@@ -105,8 +107,9 @@ Uploading project files...
 Ensuring xcodegen is installed...
 Generating Xcode project...
 Selecting an iOS simulator...
-Using simulator: iPhone 15 (12345678-ABCD-1234-ABCD-1234567890AB)
+Using simulator: iPhone 16 Pro (50F796F3-482C-4E1F-97F6-8A0E191582D7)
 Booting simulator...
+Opening Simulator app...
 Building app...
 Installing app on simulator...
 Launching app on simulator...
@@ -118,11 +121,11 @@ Archiving test results...
 
 Test Results
 ============
-[PASS] CounterAppTests.testIncrement (0.001s)
 [PASS] CounterAppTests.testDecrementStopsAtZero (0.001s)
-[PASS] CounterAppTests.testIncrementThenDecrement (0.001s)
+[PASS] CounterAppTests.testIncrement (0.001s)
+[PASS] CounterAppTests.testIncrementThenDecrement (0s)
 ------------
-SUCCEEDED: executed 3, 0 failures (0 unexpected), 0.003s
+SUCCEEDED: executed 3, 0 failures (0 unexpected), 0.002s
 Closing sandbox...
 ```
 
