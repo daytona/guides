@@ -139,7 +139,7 @@ Closing sandbox...
 
 Open [`screenshot.png`](example-screenshot.png)/[`simulator-screenshot.png`](example-simulator-screenshot.png) to see the app running on the simulator, and unzip `TestResults.xcresult.zip` (or open it directly in Xcode) to inspect the full test report.
 
-If `RECORD_SESSION=true`, `recording.mp4` captures the whole sandbox session from boot to teardown:
+If `RECORD_SESSION=true`, `recording.mp4` captures a screen recording of the session:
 
 https://github.com/user-attachments/assets/4d782740-6fad-4d54-90f7-3f0bd33eeab9
 
