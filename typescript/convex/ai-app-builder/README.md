@@ -86,6 +86,7 @@ ai-app-builder/
 | `daytona.createSandbox` | isolated sandbox per generated app (auto-stops after 15 idle minutes, auto-deletes after 2 hours) |
 | `daytona.writeFile` | write the Vite scaffold and each generated/updated `App.jsx` |
 | `daytona.run` | `npm install`, start the dev server (backgrounded with `nohup … &`), readiness poll |
+| `daytona.startSandbox` | restart a paused sandbox before follow-up edits (`writeFile` doesn't auto-start the way `run` does) |
 | `daytona.getPreviewUrl` | signed URL for port 3000, rendered in the iframe |
 
 ## Security note
