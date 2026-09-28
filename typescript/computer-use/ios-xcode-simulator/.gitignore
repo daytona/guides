@@ -1,6 +1,7 @@
 # Build output
 screenshot.png
 TestResults.xcresult.zip
+recording.mp4
 
 # Node.js
 node_modules/

@@ -253,6 +253,9 @@ async function runRemote(
 // Make sure you have the USE_COMPUTER_API_KEY and USE_COMPUTER_RESERVATION_ID environment variables set
 const computer = new Computer()
 
+// Set RECORD_SESSION=true to record the whole sandbox session and save it to recording.mp4
+const RECORD_SESSION = /^(1|true|yes)$/i.test(process.env.RECORD_SESSION ?? '')
+
 async function run() {
   // A reservation is billed for its full duration, so this script expects one to already exist
   // rather than creating (and re-billing) a new one on every run. See the README for how to reserve one.
@@ -266,6 +269,12 @@ async function run() {
   console.log('Creating a macOS sandbox...')
   const mac = await computer.create({ type: 'macos', reservationId })
   console.log('Sandbox ready. Watch it live at:', mac.vncUrl)
+
+  let recordingId: string | null = null
+  if (RECORD_SESSION) {
+    recordingId = await mac.recording.start()
+    console.log('Recording started:', recordingId)
+  }
 
   try {
     // Fail loudly and early if Xcode isn't on this image, rather than failing confusingly later
@@ -347,6 +356,15 @@ async function run() {
     console.error('Error executing example:', error)
     process.exitCode = 1
   } finally {
+    // Stop the recording and download it, even if something above failed
+    if (recordingId) {
+      console.log('Stopping recording...')
+      const recording = await mac.recording.stop(recordingId)
+      const bytes = await mac.recording.download(recording.recordingId)
+      fs.writeFileSync('recording.mp4', bytes)
+      console.log('✓ Recording saved to recording.mp4')
+    }
+
     // Always tear down the sandbox
     console.log('Closing sandbox...')
     await mac.close()

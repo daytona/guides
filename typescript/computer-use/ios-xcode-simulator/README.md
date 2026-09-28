@@ -13,6 +13,7 @@ All app, test, and project files are hardcoded in `index.ts` — there's no LLM 
 - **Runs on the actual iOS Simulator:** Installed and launched with `xcrun simctl`, not just compiled
 - **Automated test run with parsed results:** `xcodebuild test` output is parsed into a clean pass/fail summary, with a non-zero exit code on failure
 - **Screenshot for manual verification:** A full-screen screenshot of the sandbox is downloaded after launch, since the test suite proves the app's logic but not that its UI actually renders correctly
+- **Optional full session recording:** Set `RECORD_SESSION=true` to record the whole run and download it as `recording.mp4`
 - **No agent loop, no LLM:** One script, one build/test pipeline — nothing more
 
 ## Prerequisites
@@ -26,6 +27,7 @@ To run this example, you need to set the following environment variables:
 
 - `USE_COMPUTER_API_KEY`: Required to control macOS sandboxes. Get it from [use.computer](https://use.computer)
 - `USE_COMPUTER_RESERVATION_ID`: Required. The id of an active Mac Mini reservation to create the sandbox on — reserve one from the [use.computer dashboard](https://use.computer) (see [Reserving a Mac Mini](#reserving-a-mac-mini) below)
+- `RECORD_SESSION`: Optional. Set to `true` to record the whole sandbox session and save it to `recording.mp4` when the script finishes
 
 Create a `.env` file in the project directory with these variables (see `.env.example`).
 
@@ -60,15 +62,17 @@ This example also assumes the Mac Mini image already has a full Xcode install (n
 ## How It Works
 
 1. A macOS sandbox is created on your existing reservation via `use-computer-sdk`
-2. The hardcoded project scaffolding (`project.yml`), app entry point, `ContentView.swift`, and `CounterAppTests.swift` are uploaded to the sandbox
-3. `xcodegen generate` turns the spec into a real `.xcodeproj`
-4. An available iOS Simulator device is selected and booted with `xcrun simctl`
-5. `xcodebuild` builds the app against that simulator
-6. The built app is installed and launched on the simulator with `xcrun simctl install`/`launch`
-7. A full-screen screenshot is captured and downloaded for manual visual verification
-8. `xcodebuild test` runs the XCTest suite against the same simulator, writing a `.xcresult` bundle
-9. The `.xcresult` bundle is zipped and downloaded, and the test output is parsed into a pass/fail summary printed to the console
-10. The sandbox is closed
+2. If `RECORD_SESSION=true`, screen recording is started on the sandbox
+3. The hardcoded project scaffolding (`project.yml`), app entry point, `ContentView.swift`, and `CounterAppTests.swift` are uploaded to the sandbox
+4. `xcodegen generate` turns the spec into a real `.xcodeproj`
+5. An available iOS Simulator device is selected and booted with `xcrun simctl`
+6. `xcodebuild` builds the app against that simulator
+7. The built app is installed and launched on the simulator with `xcrun simctl install`/`launch`
+8. A full-screen screenshot is captured and downloaded for manual visual verification
+9. `xcodebuild test` runs the XCTest suite against the same simulator, writing a `.xcresult` bundle
+10. The `.xcresult` bundle is zipped and downloaded, and the test output is parsed into a pass/fail summary printed to the console
+11. If recording was started, it's stopped, downloaded, and saved as `recording.mp4`
+12. The sandbox is closed
 
 ## Configuration
 
@@ -85,6 +89,10 @@ Edit these to build and test a different app — nothing else in the script depe
 ### Xcode Project Configuration
 
 The XcodeGen spec is defined in the `PROJECT_YML` constant in `index.ts`. It configures a `CounterApp` application target and a `CounterAppTests` unit test target, both with code signing disabled (not needed for simulator builds). Edit it to change the deployment target, add resources, or add more targets.
+
+### Recording the Session
+
+Set `RECORD_SESSION=true` in your `.env` file to record the entire sandbox session and save it to `recording.mp4` when the script finishes (whether it succeeds or fails). This is off by default since most runs only need the screenshot and test results.
 
 ## Example Output
 
