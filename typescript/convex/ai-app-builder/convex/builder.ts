@@ -159,14 +159,15 @@ export const iterate = action({
       appId: args.appId,
     })
     try {
+      // Confirm the sandbox is alive BEFORE spending tokens: it pauses after
+      // 15 idle minutes (restarted here) and auto-deletes after 2 hours (this
+      // fails fast with a clear error instead of wasting a generation).
+      await daytona.startSandbox(ctx, { sandboxId: app.sandboxId! })
       const code = await generateAppCode(
         ctx,
         args.appId,
         `Here is the current src/App.jsx:\n\n${app.code}\n\nApply this change and output the complete updated file:\n${args.instruction}`,
       )
-      // The sandbox pauses after 15 idle minutes; restart it if needed before
-      // writing (writeFile doesn't auto-start the way run does).
-      await daytona.startSandbox(ctx, { sandboxId: app.sandboxId! })
       await daytona.writeFile(ctx, {
         sandboxId: app.sandboxId!,
         path: `${APP_DIR}/src/App.jsx`,
