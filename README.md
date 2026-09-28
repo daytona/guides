@@ -52,6 +52,7 @@ Then follow the guide's own README to install dependencies and run it.
 | [Claude Coding Agent](typescript/anthropic/single-claude-agent-sdk) | Single Claude Code agent you drive from the CLI. |
 | [Brainbase Universal Harness API](typescript/brainbase/universal-harness-api) | Background coding agent on any harness via Brainbase's Universal Harness API, running in Daytona sandboxes. |
 | [Devin CLI Coding Agent](typescript/cognition/devin-cli) | Coding agent powered by Cognition's Devin CLI. |
+| [macOS AppleScript Recorder](typescript/computer-use/macos-applescript) | Generate AppleScript with Claude and run it in a recorded macOS sandbox via use.computer. |
 | [CopilotKit Generative-UI Agent](typescript/copilotkit/generative-ui-coding-agent) | CopilotKit agent that streams every tool call as generative UI. |
 | [Flue Bug-Fix Agent](typescript/flue) | Autonomous GitHub-issue bug-fix agent built with Flue. |
 | [Gemini CLI Coding Agent](typescript/gemini/gemini-cli) | Headless coding agent powered by the Gemini CLI. |
