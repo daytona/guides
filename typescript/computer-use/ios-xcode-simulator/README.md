@@ -5,8 +5,8 @@
 This example demonstrates building, running, and testing a real iOS app end-to-end inside a real macOS sandbox. It uses [use.computer](https://use.computer) to provision a macOS sandbox, then assembles a small SwiftUI counter app into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), builds it, installs and runs it on the iOS Simulator via `simctl`, runs its XCTest suite, and prints a parsed pass/fail summary.
 
 <p>
-  <img src="example-screenshot.png" alt="CounterApp running in the iOS Simulator, full desktop" width="500">
-  <img src="example-simulator-screenshot.png" alt="CounterApp running in the iOS Simulator, device only" width="180">
+  <img src="example-screenshot.png" alt="CounterApp running in the iOS Simulator, full desktop" height="400">
+  <img src="example-simulator-screenshot.png" alt="CounterApp running in the iOS Simulator, device only" height="400">
 </p>
 
 ## Features
