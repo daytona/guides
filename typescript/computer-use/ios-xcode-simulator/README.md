@@ -4,9 +4,10 @@
 
 This example demonstrates building, running, and testing a real iOS app end-to-end inside a real macOS sandbox. It uses [use.computer](https://use.computer) to provision a macOS sandbox, then assembles a small SwiftUI counter app into a real Xcode project with [XcodeGen](https://github.com/yonaskolb/XcodeGen), builds it, installs and runs it on the iOS Simulator via `simctl`, runs its XCTest suite, and prints a parsed pass/fail summary.
 
-![CounterApp running in the iOS Simulator, full desktop](example-screenshot.png)
-
-<img src="example-simulator-screenshot.png" alt="CounterApp running in the iOS Simulator, device only" width="300">
+<p>
+  <img src="example-screenshot.png" alt="CounterApp running in the iOS Simulator, full desktop" width="500">
+  <img src="example-simulator-screenshot.png" alt="CounterApp running in the iOS Simulator, device only" width="180">
+</p>
 
 ## Features
 
@@ -140,9 +141,7 @@ Open `screenshot.png`/`simulator-screenshot.png` to see the app running on the s
 
 ### Recording
 
-`example-recording.mp4` below is the actual `recording.mp4` from a run with `RECORD_SESSION=true`, capturing the entire sandbox session — Xcode project generation, the simulator booting and opening, the build, the app launching, and the test run — useful for a full visual audit beyond the screenshots above. (This and the two screenshots above are checked into the repo purely to illustrate output; the script itself always writes to `screenshot.png`/`simulator-screenshot.png`/`recording.mp4`, which are gitignored.)
-
-<video src="example-recording.mp4" controls width="600"></video>
+[`example-recording.mp4`](example-recording.mp4) is the actual `recording.mp4` from a run with `RECORD_SESSION=true`, capturing the entire sandbox session — Xcode project generation, the simulator booting and opening, the build, the app launching, and the test run — useful for a full visual audit beyond the screenshots above. (This and the two screenshots above are checked into the repo purely to illustrate output; the script itself always writes to `screenshot.png`/`simulator-screenshot.png`/`recording.mp4`, which are gitignored.)
 
 ## License
 
