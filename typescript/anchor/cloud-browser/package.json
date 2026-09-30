@@ -1,0 +1,27 @@
+{
+  "name": "anchor-cloud-browser",
+  "version": "1.0.0",
+  "description": "Run an Anchor cloud browser from code inside a Daytona sandbox.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js"
+  },
+  "keywords": [
+    "anchor",
+    "anchorbrowser",
+    "daytona",
+    "sandbox",
+    "typescript"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@daytona/sdk": "^0.201.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2"
+  }
+}

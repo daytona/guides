@@ -48,6 +48,7 @@ Then follow the guide's own README to install dependencies and run it.
 | [Inngest AgentKit Coding Agent](typescript/agentkit-inngest/coding-agent) | Autonomous coding agent built with Inngest AgentKit. |
 | [Data Analyst (OpenAI)](typescript/ai-data-analyst) | Natural-language data analysis with the OpenAI API, executing code in a sandbox. |
 | [Amp Code Coding Agent](typescript/amp/amp-sdk) | Coding agent powered by the Amp Code CLI. |
+| [Anchor Cloud Browser](typescript/anchor/cloud-browser) | Run code in a Daytona sandbox and drive an Anchor cloud browser over HTTPS and CDP. |
 | [Claude Two-Agent System](typescript/anthropic/multi-agent-claude-sdk) | Two-agent Claude system coordinating work across sandboxes. |
 | [Claude Coding Agent](typescript/anthropic/single-claude-agent-sdk) | Single Claude Code agent you drive from the CLI. |
 | [Brainbase Universal Harness API](typescript/brainbase/universal-harness-api) | Background coding agent on any harness via Brainbase's Universal Harness API, running in Daytona sandboxes. |
