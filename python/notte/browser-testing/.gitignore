@@ -1,6 +1,3 @@
-# vLLM server logs saved on failed boots
-vllm-*.log
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

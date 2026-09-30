@@ -104,26 +104,30 @@ def notte_cli(*args: str) -> str:
 
 def check_with_notte_cli(url: str) -> None:
     """Add a to-do and scrape the page with Notte CLI commands."""
-    session = json.loads(
-        notte_cli(
-            "sessions",
-            "start",
-            "--extra-http-headers",
-            json.dumps(PREVIEW_HEADERS),
-            "-o",
-            "json",
-        )
+    started = notte_cli(
+        "sessions",
+        "start",
+        "--extra-http-headers",
+        json.dumps(PREVIEW_HEADERS),
+        "-o",
+        "json",
     )
-    print(f"Notte CLI started session {session['session_id']}")
+    # From here on the session exists, so always stop it (the CLI tracks it as current).
     try:
+        print(f"Notte CLI started session {json.loads(started)['session_id']}")
         for args in (
             ("page", "goto", url),
             ("page", "fill", "#title", NEW_TODO),
             ("page", "click", "button[type=submit]"),
-            ("page", "scrape", "--only-main-content"),
         ):
             print(f"$ notte {' '.join(args)}")
             print(notte_cli(*args))
+        print("$ notte page scrape --only-main-content")
+        scraped = notte_cli("page", "scrape", "--only-main-content")
+        print(scraped)
+        if NEW_TODO not in scraped:
+            raise RuntimeError(f"the page does not show the new to-do {NEW_TODO!r}")
+        print(f"Confirmed the page shows {NEW_TODO!r}")
     finally:
         notte_cli("sessions", "stop", "--yes")
 
