@@ -47,6 +47,14 @@
       "created_at": "2026-09-28T17:49:59Z",
       "repoId": 1281305176,
       "pullRequestNo": 19
+    },
+    {
+      "name": "giordano-lucas",
+      "id": 43466781,
+      "comment_id": 5929371309,
+      "created_at": "2026-10-01T10:17:55Z",
+      "repoId": 1281305176,
+      "pullRequestNo": 24
     }
   ]
 }
