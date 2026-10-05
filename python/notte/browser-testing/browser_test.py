@@ -129,7 +129,13 @@ def check_with_notte_cli(url: str) -> None:
             raise RuntimeError(f"the page does not show the new to-do {NEW_TODO!r}")
         print(f"Confirmed the page shows {NEW_TODO!r}")
     finally:
-        notte_cli("sessions", "stop", "--yes")
+        # Warn instead of raising, so a failed stop never hides the original error.
+        try:
+            notte_cli("sessions", "stop", "--yes")
+        except subprocess.CalledProcessError as error:
+            print(
+                f"Warning: could not stop the Notte CLI session: {error.stderr.strip()}"
+            )
 
 
 def main() -> None:
