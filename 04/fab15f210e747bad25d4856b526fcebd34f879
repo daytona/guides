@@ -1,0 +1,69 @@
+README.md
+  s_9f0452649c5c8a::t_cf689cf38de1bf 32
+python/computer-use/claude-draws/pyproject.toml
+  s_9f0452649c5c8a::t_edd9b8f89c47c7 1-6,10-13
+  s_9f0452649c5c8a::t_09e7375462a354 7-9
+python/computer-use/claude-draws/draw.py
+  s_33c6af3ec1a25f::t_15d84321f413e5 148
+  s_33c6af3ec1a25f::t_eabfad9e599c86 144-147,150,155
+  s_33c6af3ec1a25f::t_9df40a8025defa 175,177-180,186
+  s_33c6af3ec1a25f::t_e1f58f63c391d4 127-133
+  s_9f0452649c5c8a::t_e4fc8ce373222c 1-126,134-143,152-154,157-174,176,181-185,187-190
+  s_33c6af3ec1a25f::t_dd8803834bb682 149,151,156
+python/computer-use/claude-draws/README.md
+  s_9f0452649c5c8a::t_67ea62d0fc2327 1-58,67-77
+  s_33c6af3ec1a25f::t_694bfedebabd06 59-66
+python/computer-use/claude-draws/paint.html
+  s_33c6af3ec1a25f::t_e451c5904f037c 560-563
+  s_35c34154f8377a::t_55fada16dae636 644-645,651-661
+  s_7bb4185d5056a9::t_8b4467b0b3b584 646
+  s_33c6af3ec1a25f::t_6d3d04c66f82d9 691-694,697-698,700-710
+  s_35c34154f8377a::t_9975a7fc94d008 1-559,564-566,571-643,662-665,667-670,674-679,681-684,689-690,695-696,699,711-834
+  s_33c6af3ec1a25f::t_58cca716eab567 567-570
+  s_33c6af3ec1a25f::t_98d46642b0640e 647-650
+  s_33c6af3ec1a25f::t_5e8aecfaeda980 671-673,685-688
+  s_33c6af3ec1a25f::t_94ee20fb4e63ba 666
+  s_33c6af3ec1a25f::t_a67db658bd5d3f 680
+python/computer-use/claude-draws/.env.example
+  s_9f0452649c5c8a::t_1f522ad263c751 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "04fab15f210e747bad25d4856b526fcebd34f879",
+  "prompts": {},
+  "sessions": {
+    "s_33c6af3ec1a25f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_ee898b29bffeupkK6pwulq2XhW",
+        "model": "unknown"
+      },
+      "human_author": null
+    },
+    "s_35c34154f8377a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_ee99bce31ffetPKXBZtXAV882m",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_7bb4185d5056a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_ee8fc1cc8ffelXYRYx02vi0vMG",
+        "model": "unknown"
+      },
+      "human_author": null
+    },
+    "s_9f0452649c5c8a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_ee98a442affe7upw7JDIp2yoAH",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
