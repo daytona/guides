@@ -1,0 +1,13 @@
+[project]
+name = "claude-draws"
+version = "0.1.0"
+description = "Let Claude draw on a canvas sketchpad in a Daytona sandbox desktop"
+requires-python = ">=3.10"
+dependencies = [
+    "daytona-toolsets",
+    # Floor: the release that ships `anthropic.tools.computer` (computer_toolset_20260801).
+    "anthropic>=1.9.0",
+]
+
+[tool.setuptools]
+py-modules = ["draw"]
