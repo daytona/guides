@@ -94,6 +94,19 @@ def upload_sketchpad(sandbox: Sandbox) -> None:
     sandbox.fs.upload_file(PAINT_HTML.read_bytes(), REMOTE_HTML)
 
 
+def read_chromium_log(sandbox: Sandbox) -> str:
+    """Last lines of Chromium's log, for the readiness error. Best effort: the log is the
+    diagnosis, not the failure, so a sandbox too broken to read it still reports the timeout."""
+    try:
+        result = sandbox.process.exec(f"tail -n 40 {shlex.quote(PROFILE)}/chromium.log", timeout=10)
+    except Exception as exc:  # noqa: BLE001 - never mask the timeout this is being attached to
+        return f"<could not read the log: {exc}>"
+    output = (result.result or "").strip()
+    if result.exit_code != 0:
+        return f"<could not read the log: tail exited {result.exit_code}>"
+    return output or "<log is empty>"
+
+
 def launch_chromium(sandbox: Sandbox) -> None:
     """Open the uploaded sketchpad in a visible Chromium window on the sandbox's X display.
 
@@ -133,7 +146,7 @@ def launch_chromium(sandbox: Sandbox) -> None:
     # display geometry, not an X display string, so there is nothing to query. That server accepts
     # local connections from the sandbox user without a cookie, so no `XAUTHORITY` is carried
     # either. If any of that changed, Chromium would fail to connect and the probe below would
-    # raise with a pointer to its log rather than hang.
+    # raise with the log's last lines attached rather than hang.
     env = [f"HOME={PROFILE}", "PATH=/usr/local/bin:/usr/bin:/bin", "LANG=C.UTF-8", "DISPLAY=:0"]
     command = (
         f"env -i {' '.join(shlex.quote(e) for e in env)} {shlex.quote(CHROMIUM)} "
@@ -152,8 +165,12 @@ def launch_chromium(sandbox: Sandbox) -> None:
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
+            # `DaytonaComputer` deletes the sandbox as this unwinds, taking the log with it, so
+            # the log has to travel with the error: read it here, while it still exists, instead
+            # of pointing at a path that will be gone by the time anyone looks.
             raise RuntimeError(
-                f"Chromium did not start in the sandbox; see {PROFILE}/chromium.log there"
+                f"Chromium did not start in the sandbox. Last lines of {PROFILE}/chromium.log:\n"
+                f"{read_chromium_log(sandbox)}"
             )
         if sandbox.process.exec(probe, timeout=int(remaining) + 1).exit_code == 0:
             return
