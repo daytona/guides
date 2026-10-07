@@ -161,6 +161,14 @@ def launch_chromium(sandbox: Sandbox) -> None:
 
 
 def main() -> None:
+    if not PAINT_HTML.is_file():
+        # The example runs from its checkout: `draw.py` uploads the `paint.html` sitting next to
+        # it, and a non-editable `pip install .` copies the module to site-packages without the
+        # HTML. Say so plainly here, before a sandbox is spent on a run that cannot work.
+        raise SystemExit(
+            f"{PAINT_HTML} is missing. Run this example from its checkout: clone the repo, "
+            "`pip install -e .`, then `python draw.py` from this directory."
+        )
     client = Anthropic()
     # DaytonaComputer creates the sandbox, starts its desktop, and deletes the sandbox on exit.
     with DaytonaComputer(confirm=confirm, resolution=(WIDTH, HEIGHT)) as computer:

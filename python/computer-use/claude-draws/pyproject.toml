@@ -13,4 +13,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
+# This example runs from its checkout: `pip install -e .`, then `python draw.py` from this
+# directory, where `draw.py` reads the `paint.html` next to it. Only the module is declared, so
+# a non-editable `pip install .` leaves the HTML behind — and `draw.py` then says exactly that
+# and exits instead of failing deep in a run.
 py-modules = ["draw"]
