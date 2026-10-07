@@ -1,0 +1,21 @@
+python/computer-use/claude-draws/draw.py
+  s_6b0eb48c50912a::t_057c99352d18d6 164-171
+python/computer-use/claude-draws/pyproject.toml
+  s_6b0eb48c50912a::t_9992656e888f4c 16-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6624f012cae33f1a67ba5fb9037e4600e3113fd4",
+  "prompts": {},
+  "sessions": {
+    "s_6b0eb48c50912a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_ee800133affe9u0mD9d5JTDBrT",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
