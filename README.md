@@ -29,6 +29,7 @@ Then follow the guide's own README to install dependencies and run it.
 | [Data Analyst](python/ai-data-analyst) | Natural-language data analysis with LiteLLM (works with any LLM provider), executing Python in a sandbox. |
 | [Claude Managed Agents](python/claude/claude-managed-agents) | Self-host Claude Managed Agents inside Daytona sandboxes. |
 | [Cursor Self-Hosted Machines](python/cursor/self-hosted-machines) | Run Cursor Cloud Agent pool workers on demand in Daytona sandboxes. |
+| [Claude Draws](python/computer-use/claude-draws) | Claude drawing on a browser sketchpad in a sandbox desktop, via the Anthropic computer toolset. |
 | [Windows Computer-Use Evals](python/computer-use/windows-evals) | Windows GUI computer-use eval suite driven by Claude Code / Codex via MCP. |
 | [DSPy RLMs](python/dspy-rlms) | Run DSPy's Recursive Language Model (REPL-in-a-loop) module on Daytona. |
 | [Google ADK Code Generator](python/google-adk/code-generator-agent) | Google ADK agent that generates and verifies code with the Daytona plugin. |

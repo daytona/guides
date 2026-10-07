@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paint — canvas sketchpad</title>
+<style>
+/* ==========================================================================
+   DESIGN TOKENS — every color, space, size, radius and motion value in this
+   file resolves to one of these. No ad-hoc magic numbers below this block.
+   Surface: graphite instrument chrome floating over warm dotted paper.
+   ========================================================================== */
+:root {
+  /* chrome */
+  --ink-900: #0e0f12;
+  --ink-800: #16181d;
+  --ink-700: #1e2127;
+  --ink-600: #282c34;
+  --ink-500: #343945;
+
+  /* paper */
+  --paper:     #f4f1ea;
+  --paper-dot: rgba(17, 17, 19, 0.07);
+
+  /* foreground */
+  --fg:      #e9ebef;
+  --fg-dim:  #a2aab6;
+  --fg-mute: #6d7684;
+
+  /* accent — acid lime */
+  --accent:      #d9f24a;
+  --accent-ink:  #14170a;
+  --accent-soft: rgba(217, 242, 74, 0.16);
+
+  /* lines */
+  --line:        rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+
+  /* spacing scale (4px base) */
+  --s1: 4px;  --s2: 8px;  --s3: 12px;
+  --s4: 16px; --s5: 24px; --s6: 32px;
+
+  /* radii */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+
+  /* type scale */
+  --t-xs: 10px; --t-sm: 11px; --t-md: 13px; --t-lg: 15px;
+
+  /* elevation */
+  --shadow-dock: 0 1px 0 rgba(255,255,255,0.05) inset,
+                 0 18px 40px -18px rgba(8, 9, 12, 0.55),
+                 0 2px 8px -2px rgba(8, 9, 12, 0.35);
+  --shadow-chip: 0 1px 2px rgba(8, 9, 12, 0.45);
+
+  /* motion */
+  --dur-fast: 110ms;
+  --dur:      170ms;
+  --ease:     cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* type families — system stacks only, zero external font loads */
+  --font-ui:   ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+               "Helvetica Neue", "Liberation Sans", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono",
+               "Roboto Mono", "DejaVu Sans Mono", monospace;
+
+  /* layout */
+  --dock-gap: var(--s4);
+}
+
+/* ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--fg);
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Text fields must stay selectable (triple-click = select all) even though the
+   surrounding chrome disables selection for a clean drawing experience. */
+input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ---------- canvas ---------- */
+
+#board {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+  z-index: 0;
+}
+
+/* ---------- shared dock shell ---------- */
+
+.dock {
+  position: fixed;
+  z-index: 2;
+  background: color-mix(in srgb, var(--ink-900) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-dock);
+}
+
+.dock--top {
+  top: var(--dock-gap);
+  left: var(--dock-gap);
+  right: var(--dock-gap);
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s3) var(--s4);
+  flex-wrap: wrap;
+}
+
+.dock--bottom {
+  left: var(--dock-gap);
+  right: var(--dock-gap);
+  bottom: var(--dock-gap);
+  padding: var(--s3) 0 var(--s2);
+}
+
+/* ---------- brand ---------- */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 0 0 auto;
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.brand__mark svg { display: block; }
+
+.brand__name {
+  font-family: var(--font-mono);
+  font-size: var(--t-md);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- structure bits ---------- */
+
+.divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+  flex: 0 0 auto;
+}
+
+.spacer { flex: 1 1 auto; }
+
+.group,
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 0 0 auto;
+}
+
+.group__title,
+.field__title,
+.dock__title {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  white-space: nowrap;
+}
+
+/* ---------- brush sizes ---------- */
+
+.sizes {
+  display: flex;
+  gap: var(--s1);
+  padding: var(--s1);
+  background: var(--ink-800);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.size {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg-dim);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease);
+}
+
+.size__dot {
+  display: block;
+  border-radius: var(--r-pill);
+  background: currentColor;
+  transition: transform var(--dur) var(--ease);
+}
+
+.size:hover { background: var(--ink-600); color: var(--fg); }
+.size:hover .size__dot { transform: scale(1.18); }
+
+.size[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---------- caption field ---------- */
+
+#caption {
+  width: 190px;
+  min-width: 120px;
+  padding: var(--s2) var(--s3);
+  font-family: var(--font-ui);
+  font-size: var(--t-md);
+  color: var(--fg);
+  background: var(--ink-800);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease);
+}
+
+#caption::placeholder { color: var(--fg-mute); }
+
+#caption:hover { border-color: var(--line-strong); }
+
+#caption:focus {
+  background: var(--ink-700);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+#caption::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---------- readout ---------- */
+
+.readout {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s1) var(--s3);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  background: var(--ink-800);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+
+.readout__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--r-pill);
+  background: var(--active-color, #000);
+  box-shadow: 0 0 0 1px var(--line-strong);
+  flex: 0 0 auto;
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  padding: var(--s2) var(--s3);
+  background: var(--ink-800);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
+              transform var(--dur-fast) var(--ease);
+}
+
+.btn:hover { color: var(--fg); border-color: var(--line-strong); }
+.btn:active { transform: translateY(1px); }
+
+/* ---------- palette dock ---------- */
+
+.dock__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  padding: 0 var(--s4) var(--s2);
+}
+
+.dock__hint {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.1em;
+  color: var(--fg-mute);
+}
+
+.palette-wrap { position: relative; }
+
+/* Edge fades are decoration only — they never intercept pointer events so a
+   swatch at either end stays fully clickable. */
+.palette-wrap::before,
+.palette-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--s6);
+  pointer-events: none;
+  z-index: 1;
+}
+.palette-wrap::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--ink-900), transparent);
+}
+.palette-wrap::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--ink-900), transparent);
+}
+
+/* The horizontally scrollable strip. `scroll` (not `auto`) keeps the
+   scrollbar permanently present and draggable. */
+.palette {
+  display: flex;
+  gap: var(--s2);
+  padding: var(--s1) var(--s4) var(--s3);
+  overflow-x: scroll;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+}
+
+.palette::-webkit-scrollbar { height: 10px; }
+.palette::-webkit-scrollbar-track {
+  background: var(--ink-800);
+  border-radius: var(--r-pill);
+  margin: 0 var(--s4);
+}
+.palette::-webkit-scrollbar-thumb {
+  background: var(--ink-500);
+  border-radius: var(--r-pill);
+  border: 2px solid var(--ink-800);
+}
+.palette::-webkit-scrollbar-thumb:hover { background: var(--fg-mute); }
+
+/* ---------- swatch ---------- */
+
+.swatch {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  width: 64px;
+  padding: var(--s2) var(--s1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease);
+}
+
+.swatch__chip {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--swatch);
+  box-shadow: var(--shadow-chip), 0 0 0 1px var(--line-strong) inset;
+  transition: transform var(--dur) var(--ease);
+}
+
+.swatch__label {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.swatch:hover { background: var(--ink-700); }
+.swatch:hover .swatch__chip { transform: translateY(-2px) scale(1.06); }
+.swatch:hover .swatch__label { color: var(--fg); }
+
+.swatch[aria-pressed="true"] {
+  background: var(--ink-700);
+  border-color: var(--accent);
+}
+.swatch[aria-pressed="true"] .swatch__label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---------- focus ---------- */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 860px) {
+  :root { --dock-gap: var(--s2); }
+  .readout, .divider { display: none; }
+  #caption { width: 140px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .palette { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="board" aria-label="Drawing canvas"></canvas>
+
+<header class="dock dock--top">
+  <div class="brand">
+    <span class="brand__mark" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+           stroke="currentColor" stroke-width="1.6"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2.5 13.5 4 9.5 10.5 3a1.8 1.8 0 0 1 2.5 2.5L6.5 12z"/>
+        <path d="M9.5 4 12 6.5"/>
+      </svg>
+    </span>
+    <span class="brand__name">Paint</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="group" role="group" aria-label="Brush size">
+    <span class="group__title">Brush</span>
+    <div class="sizes" id="sizes"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <label class="field">
+    <span class="field__title">Caption</span>
+    <input id="caption" name="caption" type="text" autocomplete="off"
+           spellcheck="false" placeholder="Untitled sketch">
+  </label>
+
+  <div class="spacer"></div>
+
+  <div class="readout" id="readout" aria-live="polite">
+    <span class="readout__dot" id="readoutDot" aria-hidden="true"></span>
+    <span id="readoutText">black · 8px</span>
+  </div>
+
+  <button class="btn" id="clear" type="button">Clear</button>
+</header>
+
+<footer class="dock dock--bottom">
+  <div class="dock__head">
+    <span class="dock__title">Palette</span>
+    <span class="dock__hint" id="paletteHint">scroll sideways</span>
+  </div>
+  <div class="palette-wrap">
+    <div class="palette" id="palette" role="group" aria-label="Color palette"></div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ----------------------------------------------------------------------
+     Palette data. Every entry becomes a swatch carrying BOTH a visible text
+     label and a `data-color` attribute set to the same lowercase name, so a
+     consumer can target a color by NAME rather than by position in the strip.
+     ---------------------------------------------------------------------- */
+  var COLORS = [
+    ["black",    "#111113"], ["charcoal", "#2b2d31"], ["slate",    "#4b5563"],
+    ["gray",     "#9aa1ac"], ["silver",   "#cbd2da"], ["white",    "#ffffff"],
+    ["ivory",    "#f7f1df"], ["cream",    "#fde8c8"], ["sand",     "#e3cfa3"],
+    ["tan",      "#d4a373"], ["bronze",   "#a9714b"], ["brown",    "#7a4b2a"],
+    ["maroon",   "#6b1f2e"], ["crimson",  "#c1121f"], ["red",      "#e5383b"],
+    ["coral",    "#ff6b5a"], ["orange",   "#f97316"], ["amber",    "#f59e0b"],
+    ["gold",     "#d4af37"], ["yellow",   "#facc15"], ["lime",     "#a3e635"],
+    ["olive",    "#6b7a3a"], ["green",    "#22a06b"], ["forest",   "#14532d"],
+    ["mint",     "#6ee7b7"], ["teal",     "#14b8a6"], ["cyan",     "#22d3ee"],
+    ["sky",      "#38bdf8"], ["azure",    "#0ea5e9"], ["blue",     "#2563eb"],
+    ["navy",     "#1e3a8a"], ["indigo",   "#4f46e5"], ["violet",   "#7c3aed"],
+    ["purple",   "#9333ea"], ["orchid",   "#c084fc"], ["magenta",  "#d946ef"],
+    ["pink",     "#f472b6"], ["rose",     "#fb7185"]
+  ];
+
+  var SIZES = [
+    ["fine",   2],
+    ["small",  8],
+    ["medium", 16],
+    ["bold",   28]
+  ];
+
+  var board    = document.getElementById("board");
+  var ctx      = board.getContext("2d", { willReadFrequently: true });
+  var palette  = document.getElementById("palette");
+  var sizesBox = document.getElementById("sizes");
+  var readoutText = document.getElementById("readoutText");
+  var readoutDot  = document.getElementById("readoutDot");
+
+  var state = {
+    colorName: "black",
+    color: "#111113",
+    sizeName: "small",
+    size: 8,
+    drawing: false,
+    /** pointerId of the freehand stroke in progress, so the capture is always
+     *  released against the pointer that took it — a shift-click arriving on a
+     *  different pointer must not leave the old one captured. */
+    pointerId: null,
+    /** Anchor for shift-click straight lines: the last point committed to the
+     *  canvas by either a freehand stroke or a straight segment. */
+    lastPoint: null,
+    /** Append-only log of what was drawn, one entry per stroke or straight
+     *  line, written only at the boundaries of an op — never from pointermove,
+     *  which just draws. A long drag therefore costs one entry, not one per
+     *  sample. Nothing in the page reads it: like `probe()` and `painted()`
+     *  below it exists for whatever drives the sketchpad from outside, which
+     *  is how this example's browser tests check what the model drew. The
+     *  canvas bitmap, not this log, is what gets rendered. */
+    ops: []
+  };
+
+  var dpr = 1;
+
+  /* ---------------- canvas sizing (DPR aware, content preserving) -------- */
+
+  function sizeCanvas() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    dpr = window.devicePixelRatio || 1;
+
+    var previous = null;
+    if (board.width > 0 && board.height > 0) {
+      previous = document.createElement("canvas");
+      previous.width = board.width;
+      previous.height = board.height;
+      previous.getContext("2d").drawImage(board, 0, 0);
+    }
+    var prevCssW = board.__cssW || w;
+    var prevCssH = board.__cssH || h;
+
+    board.width = Math.round(w * dpr);
+    board.height = Math.round(h * dpr);
+    board.__cssW = w;
+    board.__cssH = h;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (previous) {
+      ctx.drawImage(previous, 0, 0, prevCssW, prevCssH);
+    }
+  }
+
+  window.addEventListener("resize", sizeCanvas);
+  sizeCanvas();
+
+  /* ---------------- drawing primitives ---------------- */
+
+  function applyStyle() {
+    ctx.strokeStyle = state.color;
+    ctx.fillStyle = state.color;
+    ctx.lineWidth = state.size;
+  }
+
+  function pointFrom(event) {
+    var rect = board.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
+  function segment(from, to) {
+    applyStyle();
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  }
+
+  function dot(at) {
+    applyStyle();
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, state.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /* ---------------- pointer handling ---------------- */
+
+  board.addEventListener("pointerdown", function (event) {
+    if (event.button !== 0 && event.pointerType === "mouse") return;
+    var point = pointFrom(event);
+
+    /* --- SHIFT-CLICK: straight line from the last committed point --- */
+    if (event.shiftKey && state.lastPoint) {
+      /* A shift-click is a discrete op that begins and ends inside this
+         handler, so it takes the capture and gives it straight back. Any
+         stroke still in progress is ended first, releasing whichever pointer
+         owns it, so no capture survives this branch and later pointermove
+         events cannot keep drawing from this line's endpoint. Interrupting a
+         drag this way deliberately ends it: the interrupted pointer stops
+         drawing and its eventual pointerup is a no-op, which is the
+         consistent outcome rather than two gestures sharing one anchor. */
+      board.setPointerCapture(event.pointerId);
+      endStroke();
+      segment(state.lastPoint, point);
+      state.ops.push({
+        type: "line",
+        from: state.lastPoint,
+        to: point,
+        color: state.colorName,
+        size: state.size
+      });
+      state.lastPoint = point;
+      if (board.hasPointerCapture(event.pointerId)) {
+        board.releasePointerCapture(event.pointerId);
+      }
+      return;
+    }
+    /* --- end shift-click branch --- */
+
+    /* One freehand stroke at a time. A second pointer going down — another
+       touch, a pen alongside the mouse — must not take over `pointerId` and
+       `lastPoint`, which would abandon the stroke in progress and leave the
+       first pointer captured with nothing left to end it. Bail out before any
+       capture is taken, so this extra down owns nothing and its eventual up is
+       already a no-op. */
+    if (state.drawing) return;
+
+    board.setPointerCapture(event.pointerId);
+    state.drawing = true;
+    state.pointerId = event.pointerId;
+    state.lastPoint = point;
+    dot(point);
+    state.ops.push({
+      type: "stroke",
+      from: point,
+      to: point,
+      color: state.colorName,
+      size: state.size
+    });
+  });
+
+  board.addEventListener("pointermove", function (event) {
+    if (!state.drawing || event.pointerId !== state.pointerId) return;
+    var point = pointFrom(event);
+    segment(state.lastPoint, point);
+    state.lastPoint = point;
+  });
+
+  /* Ends the freehand stroke in progress and releases the capture against the
+     pointer that actually took it, whoever asks. Safe to call with no stroke
+     active. */
+  function endStroke() {
+    if (!state.drawing) return;
+    state.drawing = false;
+    var current = state.ops[state.ops.length - 1];
+    if (current && current.type === "stroke") current.to = state.lastPoint;
+    if (board.hasPointerCapture(state.pointerId)) {
+      board.releasePointerCapture(state.pointerId);
+    }
+    state.pointerId = null;
+  }
+
+  /* Only the pointer that started the stroke can end it; a second pointer
+     going up must not cut the active one short. */
+  function onPointerEnd(event) {
+    if (event.pointerId === state.pointerId) endStroke();
+  }
+
+  board.addEventListener("pointerup", onPointerEnd);
+  board.addEventListener("pointercancel", onPointerEnd);
+
+  /* ---------------- palette ---------------- */
+
+  function selectColor(name, hex, button) {
+    state.colorName = name;
+    state.color = hex;
+    var pressed = palette.querySelectorAll('[aria-pressed="true"]');
+    for (var i = 0; i < pressed.length; i++) {
+      pressed[i].setAttribute("aria-pressed", "false");
+    }
+    button.setAttribute("aria-pressed", "true");
+    updateReadout();
+  }
+
+  COLORS.forEach(function (entry, index) {
+    var name = entry[0];
+    var hex = entry[1];
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "swatch";
+    button.dataset.color = name;          /* -> data-color="orange" */
+    button.dataset.hex = hex;
+    button.style.setProperty("--swatch", hex);
+    button.setAttribute("aria-pressed", index === 0 ? "true" : "false");
+    button.setAttribute("aria-label", "Color " + name);
+    button.title = name + " " + hex;
+
+    var chip = document.createElement("span");
+    chip.className = "swatch__chip";
+
+    var label = document.createElement("span");
+    label.className = "swatch__label";
+    label.textContent = name;
+
+    button.appendChild(chip);
+    button.appendChild(label);
+    button.addEventListener("click", function () {
+      selectColor(name, hex, button);
+    });
+
+    palette.appendChild(button);
+  });
+
+  document.getElementById("paletteHint").textContent =
+    "scroll sideways · " + COLORS.length + " colors";
+
+  /* ---------------- brush sizes ---------------- */
+
+  SIZES.forEach(function (entry) {
+    var name = entry[0];
+    var px = entry[1];
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "size";
+    button.dataset.size = String(px);
+    button.dataset.sizeName = name;
+    button.setAttribute("aria-pressed", px === state.size ? "true" : "false");
+    button.setAttribute("aria-label", name + " brush, " + px + " pixels");
+    button.title = name + " · " + px + "px";
+
+    var preview = document.createElement("span");
+    preview.className = "size__dot";
+    var visual = Math.max(4, Math.min(16, px));
+    preview.style.width = visual + "px";
+    preview.style.height = visual + "px";
+    button.appendChild(preview);
+
+    button.addEventListener("click", function () {
+      state.size = px;
+      state.sizeName = name;
+      var all = sizesBox.querySelectorAll(".size");
+      for (var i = 0; i < all.length; i++) {
+        all[i].setAttribute("aria-pressed", all[i] === button ? "true" : "false");
+      }
+      updateReadout();
+    });
+
+    sizesBox.appendChild(button);
+  });
+
+  /* ---------------- readout + clear ---------------- */
+
+  function updateReadout() {
+    readoutText.textContent = state.colorName + " · " + state.size + "px";
+    readoutDot.style.setProperty("--active-color", state.color);
+  }
+
+  document.getElementById("clear").addEventListener("click", function () {
+    /* Clear is reachable with a pointer still down — a second touch on the
+       button, or the keyboard activating it mid-drag. End the stroke first:
+       dropping `lastPoint` while `drawing` stays true would make the next
+       pointermove segment from null, and truncating `ops` would pull the entry
+       `endStroke` closes out from under it. */
+    endStroke();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, board.width, board.height);
+    ctx.restore();
+    state.lastPoint = null;
+    state.ops.length = 0;
+  });
+
+  updateReadout();
+
+  /* ----------------------------------------------------------------------
+     Inspection surface, deliberately kept in the shipped page rather than in
+     a test build: this file has no build step, and a sketchpad whose only
+     output is pixels is otherwise unverifiable except by eye. It is what the
+     guide's browser tests assert against, and what you can poke from the
+     devtools console to check a run. Reads the real canvas bitmap — nothing
+     here draws or caches, so it reports exactly what a human sees on screen.
+     ---------------------------------------------------------------------- */
+
+  /* `Object.freeze` seals one level only, and the point and op objects it
+     would otherwise hand out are the live ones the page keeps mutating: the
+     snapshot would change under its reader, and a console poke would write
+     straight back into the anchor. So the snapshot is copied all the way
+     down — points and op records included — and frozen at every level. */
+  function copyPoint(point) {
+    return point ? Object.freeze({ x: point.x, y: point.y }) : null;
+  }
+
+  function copyOp(op) {
+    return Object.freeze({
+      type: op.type,
+      from: copyPoint(op.from),
+      to: copyPoint(op.to),
+      color: op.color,
+      size: op.size
+    });
+  }
+
+  window.paint = {
+    /** Current state as a frozen deep copy, rebuilt on every read: the page
+     *  stays the only writer, so a console poke cannot desync the UI from it. */
+    get state() {
+      return Object.freeze({
+        colorName: state.colorName,
+        color: state.color,
+        sizeName: state.sizeName,
+        size: state.size,
+        drawing: state.drawing,
+        lastPoint: copyPoint(state.lastPoint),
+        ops: Object.freeze(state.ops.map(copyOp))
+      });
+    },
+    colors: COLORS,
+    sizes: SIZES,
+    /** RGBA of one CSS pixel on the canvas. */
+    probe: function (x, y) {
+      var d = ctx.getImageData(
+        Math.round(x * dpr), Math.round(y * dpr), 1, 1
+      ).data;
+      return { r: d[0], g: d[1], b: d[2], a: d[3] };
+    },
+    /** True when a CSS pixel has any paint on it. */
+    painted: function (x, y) {
+      return window.paint.probe(x, y).a > 0;
+    }
+  };
+})();
+</script>
+</body>
+</html>

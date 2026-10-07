@@ -1,0 +1,20 @@
+[project]
+name = "claude-draws"
+version = "0.1.0"
+description = "Let Claude draw on a canvas sketchpad in a Daytona sandbox desktop"
+requires-python = ">=3.10"
+dependencies = [
+    "daytona-toolsets",
+    # `draw.py` imports `daytona` itself, so it is declared here rather than relied on as a
+    # transitive dependency. Same range `daytona-toolsets` pins, so the two cannot disagree.
+    "daytona>=0.223.0,<0.224.0",
+    # Floor: the release that ships `anthropic.tools.computer` (computer_toolset_20260801).
+    "anthropic>=1.9.0",
+]
+
+[tool.setuptools]
+# This example runs from its checkout: `pip install -e .`, then `python draw.py` from this
+# directory, where `draw.py` reads the `paint.html` next to it. Only the module is declared, so
+# a non-editable `pip install .` leaves the HTML behind — and `draw.py` then says exactly that
+# and exits instead of failing deep in a run.
+py-modules = ["draw"]
