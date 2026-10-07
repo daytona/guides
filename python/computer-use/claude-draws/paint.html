@@ -837,9 +837,29 @@ input {
      devtools console to check a run. Reads the real canvas bitmap — nothing
      here draws or caches, so it reports exactly what a human sees on screen.
      ---------------------------------------------------------------------- */
+
+  /* `Object.freeze` seals one level only, and the point and op objects it
+     would otherwise hand out are the live ones the page keeps mutating: the
+     snapshot would change under its reader, and a console poke would write
+     straight back into the anchor. So the snapshot is copied all the way
+     down — points and op records included — and frozen at every level. */
+  function copyPoint(point) {
+    return point ? Object.freeze({ x: point.x, y: point.y }) : null;
+  }
+
+  function copyOp(op) {
+    return Object.freeze({
+      type: op.type,
+      from: copyPoint(op.from),
+      to: copyPoint(op.to),
+      color: op.color,
+      size: op.size
+    });
+  }
+
   window.paint = {
-    /** Current state as a frozen copy, rebuilt on every read: the page stays
-     *  the only writer, so a console poke cannot desync the UI from it. */
+    /** Current state as a frozen deep copy, rebuilt on every read: the page
+     *  stays the only writer, so a console poke cannot desync the UI from it. */
     get state() {
       return Object.freeze({
         colorName: state.colorName,
@@ -847,8 +867,8 @@ input {
         sizeName: state.sizeName,
         size: state.size,
         drawing: state.drawing,
-        lastPoint: state.lastPoint,
-        ops: state.ops.slice()
+        lastPoint: copyPoint(state.lastPoint),
+        ops: Object.freeze(state.ops.map(copyOp))
       });
     },
     colors: COLORS,
