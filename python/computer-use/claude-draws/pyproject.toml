@@ -5,6 +5,9 @@ description = "Let Claude draw on a canvas sketchpad in a Daytona sandbox deskto
 requires-python = ">=3.10"
 dependencies = [
     "daytona-toolsets",
+    # `draw.py` imports `daytona` itself, so it is declared here rather than relied on as a
+    # transitive dependency. Same range `daytona-toolsets` pins, so the two cannot disagree.
+    "daytona>=0.223.0,<0.224.0",
     # Floor: the release that ships `anthropic.tools.computer` (computer_toolset_20260801).
     "anthropic>=1.9.0",
 ]
