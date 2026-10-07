@@ -28,7 +28,7 @@ cp .env.example .env  # macOS/Linux
 # edit .env with your Daytona and Anthropic API keys
 ```
 
-`.env` is a shell file: `source .env` before running, or export the variables yourself.
+`.env` is a POSIX shell file: `source .env` before running. PowerShell cannot source it — set the variables with `$env:` instead, as shown below.
 
 Environment variables:
 
@@ -38,10 +38,18 @@ Environment variables:
 
 ## Workflow
 
-1. Source your keys and run the script:
+1. Put your keys in the environment and run the script:
 
    ```bash
-   source .env
+   source .env          # macOS/Linux
+   python draw.py
+   ```
+
+   On Windows PowerShell, set them in the session instead — `source` is not a PowerShell command and `.env` is not a PowerShell script:
+
+   ```powershell
+   $env:DAYTONA_API_KEY = "<your-daytona-key>"
+   $env:ANTHROPIC_API_KEY = "<your-anthropic-key>"
    python draw.py
    ```
 
