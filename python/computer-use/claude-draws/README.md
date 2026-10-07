@@ -4,7 +4,7 @@ This example opens a canvas sketchpad in a Chromium window on a Daytona sandbox 
 
 ## What you will build
 
-- A sandbox desktop at 1280x800, created and deleted by `DaytonaComputer` from the [`daytona-toolsets`](https://pypi.org/project/daytona-toolsets/) package.
+- A sandbox desktop at 1280x800, created and deleted by `DaytonaComputer` from the [`daytona-claude-toolsets`](https://pypi.org/project/daytona-claude-toolsets/) package.
 - A self-contained HTML sketchpad, `paint.html`, uploaded into the sandbox and opened in a visible Chromium window with no tab strip or omnibox.
 - A drawing loop where `client.beta.messages.tool_runner` hands the computer toolset to the model, which takes screenshots, scrolls the color palette, picks swatches by name, and drags the mouse to draw.
 - An unattended `confirm` callable that logs every action the model takes and approves it, because the desktop is a throwaway sandbox.

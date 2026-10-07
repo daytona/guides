@@ -28,7 +28,7 @@ from pathlib import Path
 from anthropic import Anthropic
 from anthropic.tools.computer import BetaComputerConfirmContext
 from daytona import Sandbox, SessionExecuteRequest
-from daytona_toolsets import DaytonaComputer
+from daytona_claude_toolsets import DaytonaComputer
 
 HERE = Path(__file__).resolve().parent
 PAINT_HTML = HERE / "paint.html"
