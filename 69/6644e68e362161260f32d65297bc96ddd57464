@@ -1,0 +1,19 @@
+python/computer-use/claude-draws/pyproject.toml
+  s_6b0eb48c50912a::t_e189c395641e09 8-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "696644e68e362161260f32d65297bc96ddd57464",
+  "prompts": {},
+  "sessions": {
+    "s_6b0eb48c50912a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_ee800133affe9u0mD9d5JTDBrT",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
