@@ -672,6 +672,14 @@ input {
     }
     /* --- end shift-click branch --- */
 
+    /* One freehand stroke at a time. A second pointer going down — another
+       touch, a pen alongside the mouse — must not take over `pointerId` and
+       `lastPoint`, which would abandon the stroke in progress and leave the
+       first pointer captured with nothing left to end it. Bail out before any
+       capture is taken, so this extra down owns nothing and its eventual up is
+       already a no-op. */
+    if (state.drawing) return;
+
     board.setPointerCapture(event.pointerId);
     state.drawing = true;
     state.pointerId = event.pointerId;
