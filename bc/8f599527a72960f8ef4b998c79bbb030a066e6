@@ -1,0 +1,19 @@
+python/computer-use/claude-draws/paint.html
+  s_6b0eb48c50912a::t_2a166fe8877f57 675-682
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc8f599527a72960f8ef4b998c79bbb030a066e6",
+  "prompts": {},
+  "sessions": {
+    "s_6b0eb48c50912a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_ee800133affe9u0mD9d5JTDBrT",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
