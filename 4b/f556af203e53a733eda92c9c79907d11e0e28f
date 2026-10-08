@@ -1,0 +1,32 @@
+README.md
+  h_634fa4b3782b12 54
+python/computer-use/claude-draws/README.md
+  h_634fa4b3782b12 5-6
+python/computer-use/claude-draws/pyproject.toml
+  h_634fa4b3782b12 11-12
+typescript/computer-use/claude-draws/.env.example
+  h_634fa4b3782b12 1-14
+typescript/computer-use/claude-draws/.gitignore
+  h_634fa4b3782b12 1-15
+typescript/computer-use/claude-draws/README.md
+  h_634fa4b3782b12 1-86
+typescript/computer-use/claude-draws/package.json
+  h_634fa4b3782b12 1-24
+typescript/computer-use/claude-draws/paint.html
+  h_634fa4b3782b12 1-891
+typescript/computer-use/claude-draws/src/draw.ts
+  h_634fa4b3782b12 1-207
+typescript/computer-use/claude-draws/tsconfig.json
+  h_634fa4b3782b12 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4bf556af203e53a733eda92c9c79907d11e0e28f",
+  "prompts": {},
+  "humans": {
+    "h_634fa4b3782b12": {
+      "author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
