@@ -28,7 +28,7 @@ cp .env.example .env  # macOS/Linux
 # edit .env with your Daytona and Anthropic API keys
 ```
 
-Node.js loads `.env` through the `--env-file` option shown below. PowerShell users can set the variables with `$env:` instead.
+On macOS and Linux, load and export `.env` in the shell as shown below. PowerShell users can set the variables with `$env:` instead.
 
 Environment variables:
 
@@ -43,7 +43,8 @@ Environment variables:
 1. Put your keys in `.env` and run the script:
 
    ```bash
-   NODE_OPTIONS=--env-file=.env npm run start  # macOS/Linux
+   set -a; source .env; set +a  # macOS/Linux
+   npm run start
    ```
 
    On Windows PowerShell, set them in the session instead:
