@@ -1,0 +1,24 @@
+{
+  "name": "claude-draws",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Let Claude draw on a canvas sketchpad in a Daytona sandbox desktop",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "tsx src/draw.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": ">=0.132.0",
+    "@daytona/claude-toolsets": "^1.0.0",
+    "@daytona/sdk": "^0.223.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
