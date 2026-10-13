@@ -38,6 +38,28 @@ async function main() {
 
   const daytona = new Daytona({ apiKey: daytonaApiKey })
   let sandbox: Sandbox | undefined
+  let cleanupPromise: Promise<void> | undefined
+
+  const cleanupSandbox = (): Promise<void> => {
+    if (!cleanupPromise) {
+      cleanupPromise = (async () => {
+        if (!sandbox) return
+        console.log('Deleting sandbox...')
+        try {
+          await sandbox.delete()
+        } catch (error) {
+          console.error('Failed to delete sandbox:', error)
+        }
+      })()
+    }
+    return cleanupPromise
+  }
+
+  const onSignal = (signal: NodeJS.Signals) => {
+    void cleanupSandbox().finally(() => {
+      process.exit(signal === 'SIGINT' ? 130 : 143)
+    })
+  }
 
   try {
     console.log('Creating sandbox...')
@@ -49,6 +71,8 @@ async function main() {
         ANCHORBROWSER_API_KEY: anchorApiKey,
       },
     })
+    process.once('SIGINT', onSignal)
+    process.once('SIGTERM', onSignal)
 
     console.log('Installing Anchor SDK in the sandbox...')
     await sandbox.fs.createFolder(APP_DIR, '755')
@@ -67,10 +91,9 @@ async function main() {
     console.error(error)
     process.exitCode = 1
   } finally {
-    if (sandbox) {
-      console.log('Deleting sandbox...')
-      await sandbox.delete()
-    }
+    await cleanupSandbox()
+    process.off('SIGINT', onSignal)
+    process.off('SIGTERM', onSignal)
   }
 }
 

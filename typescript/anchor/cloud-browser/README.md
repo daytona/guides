@@ -89,15 +89,33 @@ const session = await Sessions.createSession({
   },
 })
 
-console.log(`Live view: ${session.data.live_view_url}`)
+const sessionId = session.data?.id
+if (!sessionId) {
+  throw new Error('Anchor session did not return an id')
+}
 
-const browser = await chromium.connectOverCDP(session.data.cdp_url)
-const page = browser.contexts()[0].pages()[0] ?? (await browser.newPage())
-await page.goto('https://example.com')
-console.log('Title:', await page.title())
-await browser.close()
+if (session.data?.live_view_url) {
+  console.log(`Live view: ${session.data.live_view_url}`)
+}
 
-await Sessions.deleteSession({ path: { session_id: session.data.id } })
+let browser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | undefined
+try {
+  browser = await chromium.connectOverCDP(session.data.cdp_url)
+  const page = browser.contexts()[0].pages()[0] ?? (await browser.newPage())
+  await page.goto('https://example.com')
+  console.log('Title:', await page.title())
+} finally {
+  try {
+    await browser?.close()
+  } catch (error) {
+    console.error('Failed to close browser:', error)
+  }
+  try {
+    await Sessions.deleteSession({ path: { session_id: sessionId } })
+  } catch (error) {
+    console.error('Failed to delete Anchor session:', error)
+  }
+}
 ```
 
 You can also create the session outside the sandbox and pass `ANCHOR_CDP_URL` in. Prefer creating it inside the sandbox for this guide so the session is deleted on teardown.
