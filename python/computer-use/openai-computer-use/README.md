@@ -51,7 +51,7 @@ The program prompts for consent before it takes any screenshot. Answer `y` to co
 3. **Open the browser.** A browser is launched in the background on the desktop, pointed at the target page.
 4. **Connect the driver.** A driver that wraps the sandbox's screenshot and mouse APIs is handed to OpenAI's `ComputerToolset`.
 5. **Run the loop.** The model requests screenshots and clicks. The driver allows exactly one plain left click inside the display bounds, raises on every other action, and always rejects pending safety checks.
-6. **Check the result.** The script verifies that the model actually clicked before printing its answer; the answer alone does not prove the click happened.
+6. **Check the click.** The script raises if the model never clicked. It does not check where the click landed, so the printed heading is still the model's own answer.
 7. **Clean up.** The sandbox is deleted in a `finally` block, so it is removed even if the run fails.
 
 ## Safety
