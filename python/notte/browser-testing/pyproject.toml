@@ -1,0 +1,14 @@
+[project]
+name = "daytona-notte-browser-testing"
+version = "0.1.0"
+description = "Test a web app running in a Daytona sandbox with a Notte cloud browser"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "daytona>=0.220.0,<1.0.0",
+    "notte-sdk[playwright]>=1.9.3",
+    "python-dotenv>=1.2.1",
+]
+
+[tool.setuptools]
+py-modules = []
