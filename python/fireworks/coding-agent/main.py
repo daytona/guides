@@ -97,7 +97,7 @@ def main() -> None:
 
         # What the sandbox actually sees: an opaque placeholder.
         placeholder = sandbox.process.exec("printenv FIREWORKS_API_KEY")
-        print(f"✓ Value inside the sandbox: {placeholder.result.strip()}")
+        print(f"✓ Value inside the sandbox: {placeholder.result.strip()} (opaque placeholder)")
 
         # BYOK sanity check. A 200 proves the proxy substituted the real key,
         # because Fireworks rejects the placeholder with a 401.
