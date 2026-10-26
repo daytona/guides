@@ -67,30 +67,39 @@ TOOLS = [
 ]
 
 
+def _kill_tree(proc: subprocess.Popen) -> None:
+    """Kill the process group started with start_new_session=True."""
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except ProcessLookupError:
+        proc.kill()
+
+
 def execute_tool(name: str, args: dict) -> str:
     if name == "write_file":
         Path(args["path"]).write_text(args["content"], encoding="utf-8")
         return f"Wrote {len(args['content'])} characters to {args['path']}"
     if name == "run_bash":
-        # Run the command in its own session (process group) so a timeout
+        # Run the command in its own session (process group) so that cleanup
         # kills the whole process tree, not just the shell.
-        proc = subprocess.Popen(
+        with subprocess.Popen(
             args["command"],
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
             start_new_session=True,
-        )
-        try:
-            stdout, _ = proc.communicate(timeout=120)
-        except subprocess.TimeoutExpired:
+        ) as proc:
             try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except ProcessLookupError:
-                proc.kill()
-            proc.wait()
-            return "error: command timed out after 120 seconds (process tree killed)"
+                stdout, _ = proc.communicate(timeout=120)
+            except subprocess.TimeoutExpired:
+                _kill_tree(proc)
+                proc.wait()
+                return "error: command timed out after 120 seconds (process tree killed)"
+            except BaseException:
+                # Mirror subprocess.run: never leak the child, whatever raised.
+                _kill_tree(proc)
+                raise
         output = stdout.strip() or "(no output)"
         return f"exit code: {proc.returncode}\n{output[-4000:]}"
     return f"Unknown tool: {name}"
