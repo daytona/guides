@@ -106,8 +106,8 @@ After the loop, the agent reruns `tests.py` as the final verdict and writes the 
 The host downloads the file. Fireworks uses the same OpenAI-compatible format for supervised fine-tuning data and requires between 3 and 3 million examples per dataset, so concatenate a few verified runs and upload the result:
 
 ```bash
-cat run-*.jsonl > trajectories.jsonl   # at least 3 verified runs
-firectl dataset create my-agent-trajectories trajectories.jsonl
+cat trajectory.jsonl >> trajectories.jsonl   # append after each verified run
+firectl dataset create my-agent-trajectories trajectories.jsonl   # once it has 3+ rows
 ```
 
 Collect many successful runs (vary the tasks), and you have an SFT dataset distilled from your own agent — the standard first step before [reinforcement learning on the Fireworks Training API](https://docs.fireworks.ai/fine-tuning/training-api/cookbook/agentic-rl).
