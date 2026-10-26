@@ -33,6 +33,7 @@ Then follow the guide's own README to install dependencies and run it.
 | [OpenAI Computer-Use Helpers](python/computer-use/openai-computer-use) | OpenAI model clicking through a browser on a sandbox desktop, via the OpenAI SDK's ComputerToolset. |
 | [Windows Computer-Use Evals](python/computer-use/windows-evals) | Windows GUI computer-use eval suite driven by Claude Code / Codex via MCP. |
 | [DSPy RLMs](python/dspy-rlms) | Run DSPy's Recursive Language Model (REPL-in-a-loop) module on Daytona. |
+| [Fireworks Coding Agent](python/fireworks/coding-agent) | Coding agent on Fireworks open models with BYOK scoped secrets, exporting trajectories as fine-tuning data. |
 | [Google ADK Code Generator](python/google-adk/code-generator-agent) | Google ADK agent that generates and verifies code with the Daytona plugin. |
 | [LangChain Data Analysis](python/langchain/data-analysis) | LangChain agent doing secure data analysis via the Daytona data-analysis tool. |
 | [LangGraph Plan-and-Execute](python/langgraph/plan-and-execute-data-agent) | Plan-and-execute ETL + analytical-SQL agent wired as a six-node state machine. |

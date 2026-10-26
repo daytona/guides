@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fireworks-coding-agent"
+version = "0.1.0"
+description = "Daytona + Fireworks AI coding agent example with BYOK secrets and SFT data export"
+authors = [
+    {name = "Daytona Team", email = "support@daytona.io"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "daytona>=0.1.0,<1.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+]
+
+[tool.setuptools]
+py-modules = []
