@@ -11,6 +11,7 @@ header, but only for HTTPS requests to api.fireworks.ai.
 
 import json
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -71,18 +72,26 @@ def execute_tool(name: str, args: dict) -> str:
         Path(args["path"]).write_text(args["content"], encoding="utf-8")
         return f"Wrote {len(args['content'])} characters to {args['path']}"
     if name == "run_bash":
+        # Run the command in its own session (process group) so a timeout
+        # kills the whole process tree, not just the shell.
+        proc = subprocess.Popen(
+            args["command"],
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            start_new_session=True,
+        )
         try:
-            proc = subprocess.run(
-                args["command"],
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=120,
-                check=False,
-            )
+            stdout, _ = proc.communicate(timeout=120)
         except subprocess.TimeoutExpired:
-            return "error: command timed out after 120 seconds"
-        output = (proc.stdout + proc.stderr).strip() or "(no output)"
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except ProcessLookupError:
+                proc.kill()
+            proc.wait()
+            return "error: command timed out after 120 seconds (process tree killed)"
+        output = stdout.strip() or "(no output)"
         return f"exit code: {proc.returncode}\n{output[-4000:]}"
     return f"Unknown tool: {name}"
 
