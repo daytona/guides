@@ -34,8 +34,8 @@ See the `.env.example` file for the exact structure. Copy `.env.example` to `.en
 1. Create and activate a virtual environment:
 
    ```bash
-   python3.10 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python -m venv venv
+   source venv/bin/activate  # macOS/Linux; Windows PowerShell: .\venv\Scripts\Activate.ps1
    ```
 
 2. Install dependencies:
@@ -103,13 +103,16 @@ After the loop, the agent reruns `tests.py` as the final verdict and writes the 
 {"messages": [{"role": "system", ...}, {"role": "assistant", "tool_calls": [...]}, {"role": "tool", ...}, ...]}
 ```
 
-The host downloads the file. Fireworks uses the same OpenAI-compatible format for supervised fine-tuning data, so successful trajectories can be uploaded as-is:
+The host downloads the file. Fireworks uses the same OpenAI-compatible format for supervised fine-tuning data and requires between 3 and 3 million examples per dataset, so concatenate a few verified runs and upload the result:
 
 ```bash
-firectl dataset create my-agent-trajectories trajectory.jsonl
+cat run-*.jsonl > trajectories.jsonl   # at least 3 verified runs
+firectl dataset create my-agent-trajectories trajectories.jsonl
 ```
 
 Collect many successful runs (vary the tasks), and you have an SFT dataset distilled from your own agent — the standard first step before [reinforcement learning on the Fireworks Training API](https://docs.fireworks.ai/fine-tuning/training-api/cookbook/agentic-rl).
+
+One caveat worth knowing before you scale this up: in this demo, `tests.py` doubles as the task spec the model is allowed to read, so a solution could in principle memorize the visible cases instead of generalizing. Production reward functions should also score **held-out cases** the policy never sees.
 
 ## Next Steps
 

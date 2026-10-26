@@ -40,10 +40,10 @@ def upsert_fireworks_secret(daytona: Daytona, value: str) -> None:
     created in the dashboard.
     """
     try:
-        existing = next(
-            (secret for secret in daytona.secret.list().items if secret.name == SECRET_NAME),
-            None,
-        )
+        # Server-side name filter: exact lookup no matter how many secrets
+        # (and pages) the organization has.
+        page = daytona.secret.list(name=SECRET_NAME)
+        existing = next((secret for secret in page.items if secret.name == SECRET_NAME), None)
         if existing is None:
             daytona.secret.create(
                 CreateSecretParams(
@@ -65,7 +65,10 @@ def upsert_fireworks_secret(daytona: Daytona, value: str) -> None:
             f"  Either grant it to the key, or create a secret named '{SECRET_NAME}'\n"
             f"  with host allowlist {FIREWORKS_HOSTS} in the dashboard:\n"
             f"  https://app.daytona.io/dashboard/secrets\n"
-            f"  Continuing, assuming the secret already exists..."
+            f"  IMPORTANT: this script cannot verify that secret's allowlist. Make sure\n"
+            f"  it is exactly {FIREWORKS_HOSTS} - an unrestricted secret can be sent\n"
+            f"  to any host by code running in the sandbox.\n"
+            f"  Continuing, assuming the secret exists and is correctly scoped..."
         )
 
 
@@ -103,7 +106,14 @@ def main() -> None:
             '-H "Authorization: Bearer $FIREWORKS_API_KEY" '
             "https://api.fireworks.ai/inference/v1/models"
         )
-        print(f"✓ Fireworks auth check from sandbox: HTTP {check.result.strip()}")
+        status = check.result.strip()
+        if status != "200":
+            raise RuntimeError(
+                f"Fireworks auth check from the sandbox failed (HTTP {status}). "
+                f"Verify that the '{SECRET_NAME}' secret exists, holds a valid key, "
+                "and allows api.fireworks.ai."
+            )
+        print(f"✓ Fireworks auth check from sandbox: HTTP {status}")
 
         # Upload the task and the agent, then run the agent inside the sandbox.
         sandbox.fs.upload_file("tests.py", "tests.py")
@@ -123,13 +133,17 @@ def main() -> None:
         try:
             sandbox.fs.download_file("trajectory.jsonl", "trajectory.jsonl")
             print("✓ Saved trajectory.jsonl")
-            print("  Upload it as a Fireworks dataset with:")
-            print("  firectl dataset create my-agent-trajectories trajectory.jsonl")
+            if run.exit_code == 0:
+                print("  Verified run. Fireworks datasets need at least 3 examples, so")
+                print("  concatenate a few successful runs, then upload with:")
+                print("  firectl dataset create my-agent-trajectories trajectories.jsonl")
+            else:
+                print("  Tests did not pass - keep this trajectory for debugging, not training.")
         except DaytonaError:
             print("! No trajectory produced (agent crashed before writing one)")
 
         if run.exit_code != 0:
-            sys.exit("Agent finished but tests did not pass; trajectory saved anyway.")
+            sys.exit(f"Agent exited with code {run.exit_code}; see output above.")
 
     finally:
         if sandbox is not None:

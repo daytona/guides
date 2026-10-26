@@ -71,14 +71,17 @@ def execute_tool(name: str, args: dict) -> str:
         Path(args["path"]).write_text(args["content"], encoding="utf-8")
         return f"Wrote {len(args['content'])} characters to {args['path']}"
     if name == "run_bash":
-        proc = subprocess.run(
-            args["command"],
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-        )
+        try:
+            proc = subprocess.run(
+                args["command"],
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return "error: command timed out after 120 seconds"
         output = (proc.stdout + proc.stderr).strip() or "(no output)"
         return f"exit code: {proc.returncode}\n{output[-4000:]}"
     return f"Unknown tool: {name}"
@@ -91,6 +94,11 @@ def main() -> None:
         # on requests to api.fireworks.ai, and nowhere else.
         api_key=os.environ["FIREWORKS_API_KEY"],
     )
+
+    # Snapshot the verifier before the agent can touch the filesystem. The
+    # model may edit tests.py during the run, but the final verdict always
+    # executes this pristine copy (anti reward-hacking).
+    tests_snapshot = Path("tests.py").read_bytes()
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -117,13 +125,18 @@ def main() -> None:
                 break
 
             for tool_call in message.tool_calls:
-                args = json.loads(tool_call.function.arguments)
-                print(f"[agent] turn {turn}: {tool_call.function.name}({json.dumps(args)[:120]})")
+                try:
+                    args = json.loads(tool_call.function.arguments)
+                    print(f"[agent] turn {turn}: {tool_call.function.name}({json.dumps(args)[:120]})")
+                    result = execute_tool(tool_call.function.name, args)
+                except (json.JSONDecodeError, KeyError, TypeError) as exc:
+                    result = f"error: invalid tool call ({exc})"
+                    print(f"[agent] turn {turn}: rejected malformed tool call ({exc})")
                 messages.append(
                     {
                         "role": "tool",
                         "tool_call_id": tool_call.id,
-                        "content": execute_tool(tool_call.function.name, args),
+                        "content": result,
                     }
                 )
 
@@ -138,14 +151,26 @@ def main() -> None:
             f.write(json.dumps({"messages": messages}, ensure_ascii=False) + "\n")
         print(f"[agent] trajectory written to {TRAJECTORY_PATH}")
 
-    # Final verification. In an RL setup this exit code is the reward signal.
-    verdict = subprocess.run(
-        [sys.executable, "tests.py"], capture_output=True, text=True, check=False
-    )
-    print(verdict.stdout.strip())
-    print(f"[agent] verification exit code: {verdict.returncode}")
+    # Restore the pristine verifier, then run the final verification. In an RL
+    # setup this exit code is the reward signal, so it must come from a test
+    # file the policy could not have tampered with.
+    Path("tests.py").write_bytes(tests_snapshot)
+    try:
+        verdict = subprocess.run(
+            [sys.executable, "tests.py"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+        print(verdict.stdout.strip())
+        exit_code = verdict.returncode
+    except subprocess.TimeoutExpired:
+        print("verification timed out after 60 seconds")
+        exit_code = 1
+    print(f"[agent] verification exit code: {exit_code}")
 
-    sys.exit(verdict.returncode)
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
