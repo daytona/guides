@@ -13,7 +13,7 @@ A moving average is the mean of every `window` consecutive values, a common way 
 - **Sandbox execution:** Generated files and commands stay in the Daytona workspace.
 - **Test-driven iteration:** The agent writes tests, runs them, and corrects errors or missing dependencies.
 - **Workspace reuse:** A follow-up run reattaches by ref without replaying message history.
-- **Typed output:** Each run returns a validated `TestReport`; reported failures in the first run prevent reattachment.
+- **Typed output:** Each run returns a validated `TestReport`; a run that reports failed tests stops the script.
 - **Tool trace:** Each run prints bounded sandbox tool arguments and results, followed by its JSON report.
 - **Explicit cleanup:** The script keeps the sandbox ref reachable even if the first model run fails.
 
@@ -80,7 +80,7 @@ cp .env.example .env
 
 1. **Create the workspace:** A caller-owned `DaytonaSandboxBackend` creates the sandbox on first use during the run. Keeping the backend reachable gives `finally` access to its ref even if a model call fails before returning a result.
 2. **Generate and test:** `await agent.run(TASK, workspace=backend)` writes the implementation and pytest tests, runs them, and corrects failures.
-3. **Inspect the run:** `print_trace` reads `result.new_messages()` and prints sandbox tool calls and returns, excluding the default `final_result` output tool. Payloads are shortened; this is not a full audit log. The script prints the typed report and stops before reattachment if it reports failed tests.
+3. **Inspect the run:** `print_trace` reads `result.new_messages()` and prints sandbox tool calls and returns, excluding the default `final_result` output tool. Payloads are shortened; this is not a full audit log. The script prints the typed report and stops if it reports failed tests.
 4. **Reattach:** The second call uses `workspace=first.workspace.ref`. It starts a new conversation in the same files, reads the existing implementation and tests, adds one test, and runs the full suite.
 5. **Delete:** `await sandbox.destroy(ref)` runs in `finally`. The enclosing `aclosing` releases the caller-owned backend's client, which is separate from deleting the sandbox.
 
@@ -92,7 +92,7 @@ You can also continue with `message_history=first.all_messages()`; the native in
 
 If output validation fails, Pydantic AI sends the validation errors back to the model to retry. By default it retries once; pass `retries={"output": N}` to `Agent` to change that. Running out of retries raises `UnexpectedModelBehavior`. This validates the report's structure, not whether the model accurately reported pytest; compare it with the shell trace.
 
-The script prints each report with `model_dump_json(indent=2)` and checks `first.output.tests_failed` before reattaching. If the first report lists failed tests, `raise RuntimeError(...)` ends `main()` early: the follow-up run is skipped, the `finally` block still deletes the sandbox, and the script exits with the error.
+The script prints each report with `model_dump_json(indent=2)` and checks its failure count. If run 1 reports failed tests, `raise RuntimeError(...)` ends `main()` before the follow-up run; if run 2 does, the script exits with the error after it. Either way, the `finally` block still deletes the sandbox.
 
 ### Clean up
 
@@ -202,7 +202,7 @@ result = await agent.run("Run python -c 'print(2 + 2)' in the sandbox and report
 print(result.output)
 ```
 
-The agent runs the command with the package's `run_command` tool, and the snippet prints:
+The agent runs the command with the package's `run_command` tool and replies with something like:
 
 ```text
 The command `python -c 'print(2 + 2)'` output: **4**

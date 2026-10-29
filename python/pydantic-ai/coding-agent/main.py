@@ -81,6 +81,8 @@ async def main() -> None:
             print("\nRun 2 tool trace:")
             print_trace(second)
             print(second.output.model_dump_json(indent=2))
+            if second.output.tests_failed:
+                raise RuntimeError(f"Run 2 reported {second.output.tests_failed} failed tests")
             print(f"Run 2 workspace: {second.workspace.ref}")
         finally:
             ref = backend.ref
