@@ -1,0 +1,24 @@
+python/pydantic-ai/coding-agent/main.py
+  s_67a803e3e6fc01::t_038e425889eba1 84-85
+python/pydantic-ai/coding-agent/README.md
+  s_67a803e3e6fc01::t_1957f66afe3c8e 95
+  s_67a803e3e6fc01::t_dbb3c40256c4a6 205
+  s_67a803e3e6fc01::t_f99c07ef5e60e6 83
+  s_67a803e3e6fc01::t_dadded1f0e8ddc 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b2e14e9ae7f61672a9b30cd143b0994cdce06eb7",
+  "prompts": {},
+  "sessions": {
+    "s_67a803e3e6fc01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_013a263c3ffernjUEd3n8Ojk47",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
