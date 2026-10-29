@@ -1,0 +1,37 @@
+python/pydantic-ai/coding-agent/README.md
+  s_67a803e3e6fc01::t_58ff65ba6e038a 236-237
+  s_67a803e3e6fc01::t_a7073554871920 233-235
+  s_67a803e3e6fc01::t_939fc636e5f398 1-232
+README.md
+  s_56b2474f38b6b8::t_70a682be94dbe0 43
+python/pydantic-ai/coding-agent/.env.example
+  s_56b2474f38b6b8::t_a062bf5ae5e323 1-6
+python/pydantic-ai/coding-agent/.gitignore
+  s_56b2474f38b6b8::t_7b1217bdf3a7d4 1-166
+python/pydantic-ai/coding-agent/main.py
+  s_56b2474f38b6b8::t_d80788ab40e2bf 1-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed31166f93d3e44c102b8629afd3c618fc60f4b8",
+  "prompts": {},
+  "sessions": {
+    "s_56b2474f38b6b8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_013a263c3ffernjUEd3n8Ojk47",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_67a803e3e6fc01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_013a263c3ffernjUEd3n8Ojk47",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
