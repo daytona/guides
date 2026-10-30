@@ -25,6 +25,7 @@ Then follow the guide's own README to install dependencies and run it.
 
 | Guide | Description |
 | --- | --- |
+| [Migration Workflow](python/migration-workflow) | Daytona v2 alpha: verify command results, file integrity and cleanup before migrating a sandbox workflow. |
 | [AG2 Bug Fixer](python/ag2/bug-fixer-agent) | Two AG2 agents that iteratively fix broken code, running each attempt in a sandbox. |
 | [Data Analyst](python/ai-data-analyst) | Natural-language data analysis with LiteLLM (works with any LLM provider), executing Python in a sandbox. |
 | [Claude Managed Agents](python/claude/claude-managed-agents) | Self-host Claude Managed Agents inside Daytona sandboxes. |
@@ -49,6 +50,7 @@ Then follow the guide's own README to install dependencies and run it.
 
 | Guide | Description |
 | --- | --- |
+| [Migration Workflow](typescript/migration-workflow) | Daytona v2 alpha: verify command results, file integrity and cleanup before migrating a sandbox workflow. |
 | [Inngest AgentKit Coding Agent](typescript/agentkit-inngest/coding-agent) | Autonomous coding agent built with Inngest AgentKit. |
 | [Data Analyst (OpenAI)](typescript/ai-data-analyst) | Natural-language data analysis with the OpenAI API, executing code in a sandbox. |
 | [Amp Code Coding Agent](typescript/amp/amp-sdk) | Coding agent powered by the Amp Code CLI. |

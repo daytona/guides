@@ -1,0 +1,13 @@
+{
+  "name": "daytona-v2-migration-workflow",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.4.0" },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test dist/workflow.test.js",
+    "start": "node dist/workflow.js --run"
+  },
+  "dependencies": { "@daytona/sdk": "2.0.0-alpha.4" },
+  "devDependencies": { "@types/node": "22.19.1", "typescript": "5.9.3" }
+}
