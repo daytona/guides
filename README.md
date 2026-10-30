@@ -40,6 +40,7 @@ Then follow the guide's own README to install dependencies and run it.
 | [Model Serving (SGLang)](python/model-serving/sglang) | Serve gpt-oss-20b with SGLang on a GPU sandbox behind a preview URL. |
 | [Model Serving (vLLM)](python/model-serving/vllm) | Serve an open-weights model with vLLM on a GPU sandbox behind a preview URL. |
 | [Notte Browser Testing](python/notte/browser-testing) | Serve a web app from a sandbox and test it with a Notte cloud browser, via Playwright over CDP and the Notte CLI. |
+| [Pydantic AI Coding Agent](python/pydantic-ai/coding-agent) | Generate and test Python code with the native Daytona workspace, then reattach for a follow-up run. |
 | [Recursive Language Models](python/recursive-language-models) | Recursive-LM agents that spawn sub-agents, each in its own sandbox. |
 | [OpenEnv (FinQA)](python/reinforcement-learning/openenv) | Evaluate and train models on FinQA with OpenEnv and Daytona sandboxes. |
 | [TRL RL Rollouts](python/reinforcement-learning/trl) | Run TRL RL rollouts, executing generated code in parallel sandboxes. |
