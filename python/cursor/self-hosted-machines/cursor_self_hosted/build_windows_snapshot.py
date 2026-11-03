@@ -342,7 +342,7 @@ def build_windows_snapshot(
             )
 
         builder.stop(timeout=sandbox_timeout)
-        builder._experimental_create_snapshot(name, timeout=build_timeout)
+        builder.create_snapshot(name, timeout=build_timeout)
         snapshot = daytona.snapshot.get(name)
         _validate_windows_snapshot(snapshot, name)
     except Exception as error:

@@ -68,7 +68,7 @@ class FakeSandbox:
     def stop(self, *, timeout: int) -> None:
         self.stop_calls.append(timeout)
 
-    def _experimental_create_snapshot(self, name: str, *, timeout: int) -> None:
+    def create_snapshot(self, name: str, *, timeout: int) -> None:
         self.snapshot_calls.append((name, timeout))
         self._snapshots.created = FakeSnapshot(
             name=name,
