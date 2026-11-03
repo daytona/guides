@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from daytona import (
     CreateSandboxFromImageParams,
     Daytona,
-    DaytonaConfig,
     GpuType,
     Image,
     Resources,
@@ -24,11 +23,10 @@ MODEL = "google/gemma-4-26B-A4B-it"
 SERVED_AS = "gemma-4-moe"
 VLLM_IMAGE = "vllm/vllm-openai:v0.22.1"
 PORT = 8000
-TARGET = "us-east-1"  # current region for GPU sandboxes
 SESSION = "vllm"  # name of the background session the server runs in
 BOOT_TIMEOUT = 900  # max seconds to wait for the server to come up
 
-daytona = Daytona(DaytonaConfig(target=TARGET))
+daytona = Daytona()
 env_vars = {"HF_TOKEN": os.environ["HF_TOKEN"]} if os.environ.get("HF_TOKEN") else {}
 print(f"creating GPU sandbox from {VLLM_IMAGE} ...", flush=True)
 sb = daytona.create(
