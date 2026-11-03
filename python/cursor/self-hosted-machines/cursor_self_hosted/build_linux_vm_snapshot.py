@@ -213,7 +213,7 @@ def _capture_snapshot(
             timeout=build_timeout,
         )
         builder.stop(timeout=sandbox_timeout)
-        builder._experimental_create_snapshot(name, timeout=build_timeout)
+        builder.create_snapshot(name, timeout=build_timeout)
         snapshot = daytona.snapshot.get(name)
         _validate_linux_vm_snapshot(snapshot, name)
     except Exception as primary_error:
