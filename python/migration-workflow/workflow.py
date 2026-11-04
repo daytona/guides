@@ -7,8 +7,8 @@ import sys
 from daytona import Daytona
 from daytona.v2 import LifecyclePolicyConfig
 
-# Public API evidence: https://pypi.org/pypi/daytona/2.0.0a4/json
-# Targets daytona 2.0.0a4. Requires v2 Linux access.
+# Public API evidence: https://pypi.org/pypi/daytona/2.0.0a6/json
+# Targets daytona 2.0.0a6. Requires v2 Linux access.
 def run_workflow(daytona: Daytona, image: str):
     sandbox = daytona.v2.create(
         image, wait_seconds=60, create_timeout_seconds=300,

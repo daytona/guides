@@ -1,1 +1,1 @@
-daytona==2.0.0a4
+daytona==2.0.0a6

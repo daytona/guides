@@ -6,11 +6,11 @@ This example does not translate hosting, volumes, Functions, edge bindings or so
 
 ## Requirements
 
-- Node 22.4+ and `@daytona/sdk@2.0.0-alpha.4`.
+- Node 22.4+ and `@daytona/sdk@2.0.0-alpha.6`.
 - Organization access to Daytona v2 Linux sandboxes.
 - A Daytona API key and an approved registered image containing `python3`.
 
-The default SDK release channel can select stable 0.x. Keep the exact dependency pin. The [versioned package metadata](https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.4) links the tarball containing its README.
+The default SDK release channel can select stable 0.x. Keep the exact dependency pin. The [versioned package metadata](https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.6) links the tarball containing its public README and API declarations.
 
 ## Check offline
 
@@ -36,7 +36,7 @@ Expect JSON containing `"output": "migration ok\n"` and a zero exit code. The sa
 
 Creation waits up to 60 seconds, then an explicit startup wait allows up to 300 additional seconds. Guest operations begin only after the sandbox reaches `started`; a startup failure still triggers cleanup.
 
-The process execution deadline is 30,000 milliseconds. The example requests deletion after a 600-second sandbox lifetime as a fallback. Normal cleanup requests deletion in `finally`; deletion returns before teardown finishes. A failed or uncertain create can require manual inspection; do not blindly create another resource. If cleanup fails, use the printed owned ID to inspect it. See the deletion caveat in the [package README](https://registry.npmjs.org/@daytona/sdk/-/sdk-2.0.0-alpha.4.tgz).
+The process execution deadline is 30,000 milliseconds. The example requests deletion after a 600-second sandbox lifetime as a fallback. Normal cleanup requests deletion in `finally`; deletion returns before teardown finishes. A failed or uncertain create can require manual inspection; do not blindly create another resource. If cleanup fails, use the printed owned ID to inspect it. See the deletion caveat in the [package README](https://registry.npmjs.org/@daytona/sdk/-/sdk-2.0.0-alpha.6.tgz).
 
 ## Apply it to a migration
 
@@ -47,12 +47,14 @@ The process execution deadline is 30,000 milliseconds. The example requests dele
 5. Re-lint and run offline tests. Authorize a live check separately before changing production traffic.
 6. Keep the source service available until the migrated workflow passes its acceptance checks.
 
-For async Python applications, use `AsyncDaytona` and await the matching operations; this TypeScript example does not establish parity for every source runtime. Keep source storage until the target's retention and recovery behavior is verified. An installed SDK does not establish storage availability.
+This example does not establish parity for every source runtime. Keep source storage until the target's retention and recovery behavior is verified. An installed SDK does not establish storage availability.
 
-## Changes from alpha.3
+## Changes from alpha.4
 
-- The [alpha.4 package README](https://registry.npmjs.org/@daytona/sdk/-/sdk-2.0.0-alpha.4.tgz) makes image readiness explicit: `images.pull()` now waits by default; `images.build()` remains non-waiting. This workflow already requires a registered image, so it needs no image-import step.
-- The same README clarifies asynchronous deletion. The example requests deletion in `finally`; a successful return does not prove teardown or image-reference release.
-- The create, startup wait, file and process calls used here need no signature changes. Compare the public [alpha.3 metadata](https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.3) and [alpha.4 metadata](https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.4), including their linked tarball artifacts.
+- The [alpha.6 public README](https://registry.npmjs.org/@daytona/sdk/-/sdk-2.0.0-alpha.6.tgz) describes region IDs from a flat `/regions` list. Omitting a region can fall back to `earth`, which permits placement anywhere. This example omits placement; set an approved explicit region in your application when geography matters.
+- CPU values are cores; one Linux core equals two vCPUs. This example does not request custom resources.
+- The SDK exposes volume management, create-time attachments and attached-volume pull. Live support still depends on the deployment, and pull can return `ServiceUnavailableError`. This example does not move or mount source storage.
+- Image pulls still wait for readiness by default; image builds remain non-waiting. Sandbox deletion still requests asynchronous teardown. The example keeps its registered-image prerequisite and owned-resource cleanup.
+- The create, startup wait, file and process calls used here need no signature changes. Compare the public [alpha.4 metadata](https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.4) and [alpha.6 metadata](https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.6), including their linked tarball artifacts.
 
-The alpha.4 update has not been executed against a live sandbox. Run the offline checks above before authorizing a live check.
+The alpha.6 update has not been executed against a live sandbox. Run the offline checks above before authorizing a live check.
