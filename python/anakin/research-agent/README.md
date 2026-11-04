@@ -13,18 +13,19 @@ Scraped pages are untrusted, and they influence the code the model writes. So th
 - **No keys in the sandbox:** the agent loop calls Anakin and the LLM from your machine, and passes the sandbox only the scraped text
 - **No outbound network:** the sandbox is created with `network_block_all=True`
 - **Small context:** the model sees a short preview of each page and writes code to read the full text from files
+- **Prompt caching:** the conversation history is cached on providers that support it, since every turn resends it
 - **Any LLM provider:** the agent uses [LiteLLM](https://docs.litellm.ai/docs/providers), so you can switch models with one environment variable
 
 ## Requirements
 
-- **Python:** 3.10 or higher
+- **Python:** 3.10 to 3.14 (tested on 3.12)
 
 ## Environment Variables
 
 - `DAYTONA_API_KEY`: Required for Daytona sandbox access. Get it from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
 - `ANAKIN_API_KEY`: Required for Anakin Search and scraping. Get it from [Anakin](https://anakin.io/signup)
 - `ANTHROPIC_API_KEY`: Required for the default model. Get it from [Anthropic Console](https://console.anthropic.com)
-- `RESEARCH_MODEL`: Optional. Any LiteLLM model name, such as `openai/<model>`. Set that provider's API key instead of `ANTHROPIC_API_KEY`
+- `RESEARCH_MODEL`: Optional. Any LiteLLM model that supports tool calling, such as `openai/<model>`. Set that provider's API key instead of `ANTHROPIC_API_KEY`
 - `RESEARCH_MAX_TURNS`: Optional. The most model calls per run. Defaults to 20
 
 ## Getting Started
@@ -32,8 +33,8 @@ Scraped pages are untrusted, and they influence the code the model writes. So th
 1. Create and activate a virtual environment:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv venv  # On Windows: python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Install dependencies:
@@ -46,6 +47,7 @@ pip install -e .
 
 ```bash
 cp .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
 # edit .env with your API keys
 ```
 
@@ -56,7 +58,7 @@ python research_agent.py
 python research_agent.py "Compare the free tiers of the top 3 serverless Postgres providers"
 ```
 
-The report and charts are saved to `output/`. In our test, the default question took about 3 minutes and 14 turns, using about 620,000 input and 15,000 output tokens plus 9 searches and 15 scraped pages. Runs vary, so set `RESEARCH_MAX_TURNS` lower to cap the cost.
+Each run saves its report and charts in a new timestamped folder under `output/`. In our test, the default question took about 3.5 minutes and 15 turns, using 6 searches and 18 scraped pages. LiteLLM estimated the LLM cost at $0.40, and the script prints this estimate at the end of each run. Runs vary, so set `RESEARCH_MAX_TURNS` lower to cap the cost.
 
 ## How It Works
 
@@ -65,7 +67,7 @@ The report and charts are saved to `output/`. In our test, the default question 
 3. **Scrape:** the model calls `scrape_pages`, which uses Anakin's batch scraper on your machine. Each page's full Markdown is uploaded to the sandbox, and the model gets back the file path and a preview.
 4. **Analyze:** the model calls `run_python` to search the files, extract figures and build charts. The output goes back to the model, including any errors, so it can correct its code.
 5. **Report:** when the model replies without a tool call, the script saves its report and downloads everything in the sandbox's `output` folder.
-6. **Cleanup:** the sandbox is deleted, even if the run fails.
+6. **Cleanup:** the sandbox is deleted, even if the run fails. It's also created as ephemeral, so if the script is killed, the sandbox deletes itself once it auto-stops.
 
 ## Security Notes
 
