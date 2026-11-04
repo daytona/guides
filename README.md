@@ -26,6 +26,7 @@ Then follow the guide's own README to install dependencies and run it.
 | Guide | Description |
 | --- | --- |
 | [AG2 Bug Fixer](python/ag2/bug-fixer-agent) | Two AG2 agents that iteratively fix broken code, running each attempt in a sandbox. |
+| [Anakin Research Agent](python/anakin/research-agent) | Research agent that reads the live web with Anakin and analyzes it in a sandbox with no keys or outbound network, producing a cited report with charts. |
 | [Data Analyst](python/ai-data-analyst) | Natural-language data analysis with LiteLLM (works with any LLM provider), executing Python in a sandbox. |
 | [Claude Managed Agents](python/claude/claude-managed-agents) | Self-host Claude Managed Agents inside Daytona sandboxes. |
 | [Cursor Self-Hosted Machines](python/cursor/self-hosted-machines) | Run Cursor Cloud Agent pool workers on demand in Daytona sandboxes. |
