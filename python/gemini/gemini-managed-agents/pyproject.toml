@@ -1,0 +1,25 @@
+[project]
+name = "daytona-gemini-managed-agents"
+version = "0.1.0"
+description = "Reference implementation for running Gemini Managed Agents self-hosted environments on Daytona."
+requires-python = ">=3.12"
+dependencies = [
+    "daytona>=0.231",
+    "google-genai>=3.1",
+    "httpx",
+    "python-dotenv",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = [
+    "build_snapshot",
+    "create_environment",
+    "provision_sandbox",
+    "run_agent",
+    "sandbox_lib",
+    "worker",
+]
