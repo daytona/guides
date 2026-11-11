@@ -78,9 +78,9 @@ The endpoint authenticates via the token header. Two alternatives: `sb.create_si
 Code running inside the sandbox can skip the preview URL and token and talk to `http://localhost:8000` directly. The vLLM image ships the `openai` package, so the SDK works there as-is:
 
 ```python
-from daytona import Daytona, DaytonaConfig
+from daytona import Daytona
 
-sb = Daytona(DaytonaConfig(target="us-east-1")).get("SANDBOX_ID")
+sb = Daytona().get("SANDBOX_ID")
 print(sb.process.code_run("""
 from openai import OpenAI
 
@@ -162,16 +162,15 @@ Constants at the top of `serve_vllm.py`:
 - `SERVED_AS`: model name exposed by the API, what clients pass as `model` (default: `gemma-4-moe`)
 - `VLLM_IMAGE`: vLLM Docker image (default: `vllm/vllm-openai:v0.22.1`)
 - `PORT`: port the server listens on (default: `8000`)
-- `TARGET`: Daytona region; `us-east-1` is currently the region for GPU sandboxes
 - `BOOT_TIMEOUT`: seconds to wait for the server to become healthy (default: `900`)
 
 When changing `MODEL`, also update the `--tool-call-parser` and `--reasoning-parser` flags: parser names must match the model family and your vLLM version, or `vllm serve` won't start.
 
-GPU sandboxes are currently capped at 1 GPU each.
+GPU sandboxes take up to 8 GPUs. For a model that doesn't fit on one, raise `gpu` in `Resources` and add `--tensor-parallel-size` with the same number to the `vllm serve` command.
 
 ## How It Works
 
-1. **Create sandbox:** Spin up an ephemeral GPU sandbox in `us-east-1` from the official vLLM image
+1. **Create sandbox:** Spin up an ephemeral GPU sandbox from the official vLLM image
 2. **Start the server:** Run `vllm serve` as a background session command; the model downloads from Hugging Face and loads onto the GPU
 3. **Wait for health:** Poll `/health` through the preview URL while streaming server logs; if the server process exits, save the log locally and fail fast
 4. **Hand off:** Print `export ENDPOINT=... TOKEN=...` lines for the query scripts
