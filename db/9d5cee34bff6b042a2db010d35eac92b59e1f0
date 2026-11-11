@@ -1,0 +1,20 @@
+python/gemini/gemini-managed-agents/provision_sandbox.py
+  s_05aa3b67bc2222::t_7bf2db7b0fa57c 136,155-161
+  s_05aa3b67bc2222::t_6855482f95e217 44-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db9d5cee34bff6b042a2db010d35eac92b59e1f0",
+  "prompts": {},
+  "sessions": {
+    "s_05aa3b67bc2222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e3f20c477ffeAwGlGV8epGcWrl",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
