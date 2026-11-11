@@ -1,0 +1,21 @@
+python/cognition/devin-outposts/devin_outposts/build_windows_snapshot.py
+  s_a71f43bd9bc7f2::t_768eab6e6c4ce9 441
+python/cognition/devin-outposts/pyproject.toml
+  s_a71f43bd9bc7f2::t_85616d18413bfc 12-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ef1775da3475cdde9dbcd0bf7d088486b894441c",
+  "prompts": {},
+  "sessions": {
+    "s_a71f43bd9bc7f2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e3525be68ffeSRfpZMarup0mV6",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
