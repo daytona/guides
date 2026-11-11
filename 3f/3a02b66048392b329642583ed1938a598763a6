@@ -1,0 +1,32 @@
+python/gemini/gemini-managed-agents/create_environment.py
+  s_05aa3b67bc2222::t_47dbfd1d16b913 38-47
+python/gemini/gemini-managed-agents/provision_sandbox.py
+  s_05aa3b67bc2222::t_b76a7498b49e12 149-152,154-158
+python/gemini/gemini-managed-agents/README.md
+  s_05aa3b67bc2222::t_e8b78cf751a0d6 59-61
+  s_05aa3b67bc2222::t_f5edab8614b9c6 181
+  s_05aa3b67bc2222::t_85e01cf9792786 19-20,23
+python/gemini/gemini-managed-agents/worker.py
+  s_05aa3b67bc2222::t_baed2ec3dbac50 15,18,23,30-40
+python/gemini/gemini-managed-agents/build_snapshot.py
+  s_05aa3b67bc2222::t_812259b5557ca6 28-30,32-35
+  s_05aa3b67bc2222::t_4860d5a53d260e 9,12
+  s_05aa3b67bc2222::t_3280d2e62673a9 31
+  s_05aa3b67bc2222::t_8d5a48d07b4610 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3f3a02b66048392b329642583ed1938a598763a6",
+  "prompts": {},
+  "sessions": {
+    "s_05aa3b67bc2222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e3f20c477ffeAwGlGV8epGcWrl",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
