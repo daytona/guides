@@ -1,0 +1,21 @@
+python/computer-use/windows-evals/prep_snapshot.py
+  s_a71f43bd9bc7f2::t_d63a42ad00003a 82
+python/computer-use/windows-evals/pyproject.toml
+  s_a71f43bd9bc7f2::t_1db6e583e2da7e 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2fbb6ac69122613f39b8c4caf7c1406f474844c",
+  "prompts": {},
+  "sessions": {
+    "s_a71f43bd9bc7f2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e3525be68ffeSRfpZMarup0mV6",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
