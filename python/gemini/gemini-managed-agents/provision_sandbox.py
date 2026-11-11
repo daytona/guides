@@ -41,6 +41,8 @@ ATTACH_TIMEOUT_SECONDS = 45
 # How long the worker must stay up after attaching before the lease is handed off.
 ATTACH_GRACE_SECONDS = 3
 WATCH_INTERVAL_SECONDS = 15
+# Tries at reading the finished worker's log before deleting the sandbox without it.
+LOG_READ_ATTEMPTS = 4
 # Hard upper bound on one interaction's sandbox, even if its worker never exits.
 SANDBOX_TTL_MINUTES = 120
 
@@ -131,6 +133,7 @@ def provision(payload: dict[str, Any]) -> int:
 def watch(sandbox_id: str, cmd_id: str, interaction_id: str) -> int:
     """Wait for the worker to exit, save its log, and delete the sandbox."""
     daytona = Daytona()
+    log_read_failures = 0
     while True:
         try:
             sandbox = daytona.get(sandbox_id)
@@ -149,7 +152,13 @@ def watch(sandbox_id: str, cmd_id: str, interaction_id: str) -> int:
             try:
                 output = sandbox_lib.worker_log(sandbox, cmd_id)
             except DaytonaError as e:
-                output = f"(reading the worker log failed: {e})"
+                # Deleting the sandbox loses the log for good, so retry a transient error first.
+                log_read_failures += 1
+                if log_read_failures < LOG_READ_ATTEMPTS:
+                    log(interaction_id, f"reading the worker log failed, retrying: {e}")
+                    time.sleep(WATCH_INTERVAL_SECONDS)
+                    continue
+                output = f"(reading the worker log failed {LOG_READ_ATTEMPTS} times: {e})"
             log(interaction_id, f"worker exited with code {exit_code}; worker log:\n{output}")
             try:
                 sandbox.delete()
