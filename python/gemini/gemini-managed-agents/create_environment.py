@@ -35,12 +35,16 @@ def main() -> int:
         body["custom_config"] = {"daytona": {"snapshot": args.snapshot}}
 
     # google-genai 3.1 has no self-hosted environment fields yet, so call the REST API directly.
-    response = httpx.post(
-        ENVIRONMENTS_URL,
-        headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
-        json=body,
-        timeout=30,
-    )
+    try:
+        response = httpx.post(
+            ENVIRONMENTS_URL,
+            headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+            json=body,
+            timeout=30,
+        )
+    except httpx.HTTPError as e:
+        print(f"!! creating the environment failed: {e}", file=sys.stderr)
+        return 1
     if response.is_error:
         print(f"!! creating the environment failed ({response.status_code}): {response.text}", file=sys.stderr)
         return 1

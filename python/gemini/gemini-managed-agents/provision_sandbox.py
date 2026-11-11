@@ -146,9 +146,16 @@ def watch(sandbox_id: str, cmd_id: str, interaction_id: str) -> int:
             continue
 
         if exit_code is not None:
-            output = sandbox_lib.worker_log(sandbox, cmd_id)
+            try:
+                output = sandbox_lib.worker_log(sandbox, cmd_id)
+            except DaytonaError as e:
+                output = f"(reading the worker log failed: {e})"
             log(interaction_id, f"worker exited with code {exit_code}; worker log:\n{output}")
-            sandbox.delete()
+            try:
+                sandbox.delete()
+            except DaytonaError as e:
+                log(interaction_id, f"deleting sandbox {sandbox_id} failed: {e}; it auto-stops and is deleted later")
+                return 1
             log(interaction_id, f"deleted sandbox {sandbox_id}")
             return 0
         time.sleep(WATCH_INTERVAL_SECONDS)

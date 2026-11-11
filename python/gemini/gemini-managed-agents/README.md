@@ -16,10 +16,11 @@ Your application creates interactions with your Gemini API key (`run_agent.py`).
 - A Gemini API key from a project with access to Gemini Managed Agents self-hosted environments.
 - A Daytona account and API key.
 - Python 3.12.
-- For the per-interaction mode, the `gemini-api` CLI on the host that runs the poller:
+- macOS or Linux. The commands below use a POSIX shell; on Windows, run them in WSL.
+- For the per-interaction mode, the `gemini-api` CLI on the host that runs the poller, at the same version as the worker snapshot. The install script's `GEMINI_VERSION` pins the binary it downloads:
 
   ```
-  curl -fsSL https://raw.githubusercontent.com/google-gemini/gemini-api-cli/main/scripts/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/google-gemini/gemini-api-cli/main/scripts/install.sh | GEMINI_VERSION=v0.4.6 bash
   ```
 
 ## Setup
@@ -55,7 +56,9 @@ The API returns the environment key only once. Use the environment id exactly as
 .venv/bin/python build_snapshot.py
 ```
 
-Builds a Daytona snapshot from `Dockerfile` (Python 3.12, git, ripgrep, jq, and the `gemini-api` CLI pinned to v0.4.6 and checksum-verified) and names it `gemini-managed-agents-{sha8}` after the Dockerfile's SHA-256. It skips the build if that snapshot already exists. Sandboxes get 2 vCPU, 4 GB memory, and 10 GB disk; edit `build_snapshot.py` to change that.
+Builds a Daytona snapshot from `Dockerfile` (Python 3.12, git, ripgrep, jq, and the `gemini-api` CLI pinned to v0.4.6 and checksum-verified) and names it `gemini-managed-agents-{sha8}` after the Dockerfile's SHA-256. It skips the build if that snapshot already exists and is active, and exits with an error if it exists in another state, for example after a failed build.
+
+Sandboxes get 2 vCPU, 4 GB memory, and 10 GB disk. To change that, edit `RESOURCES` in `build_snapshot.py`, then delete the existing snapshot or set `SNAPSHOT_NAME` before rerunning the script: the snapshot name only tracks the Dockerfile, so the old snapshot would otherwise be reused.
 
 To give the agent more tools, add them to `Dockerfile` and rerun the script.
 
@@ -175,7 +178,7 @@ gemini-api agent run "Create hello.txt and run uname -a in bash." \
 ## Security notes
 
 - `--root-dir /workspace` confines the file tools. `execute_bash` runs model-generated commands with no such confinement, which is why the worker runs in a sandbox rather than on your host.
-- The environment key only grants access to its own environment's interactions. The CLI strips credentials from the environment of the agent's commands, but in the one-worker mode the key is still inside the sandbox, so a command could find it, for example in the worker process's environment. If that matters, use the per-interaction mode: its sandboxes only ever hold one interaction's lease token.
+- The environment key only grants access to its own environment's interactions. The CLI strips credentials from the environment of the agent's commands, but in the one-worker mode the key is still inside the sandbox, so a command could find it, for example in the worker process's environment. If that matters, use the per-interaction mode: its sandboxes only ever hold one interaction's lease token. The agent's commands can read that token too, for example from the worker's command line, but it only works for the interaction they are already part of and expires when that interaction ends.
 - In production, run the poller and your application as separate processes with separate credentials: the poller needs `GEMINI_ENVIRONMENT_KEY` and `DAYTONA_API_KEY`, the application only `GEMINI_API_KEY`. The single `.env` here is for local-machine simplicity.
 
 ## See also

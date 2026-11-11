@@ -12,21 +12,32 @@ runs their tool calls in /workspace. The sandbox is deleted on exit.
 
 import os
 import signal
+import sys
 import time
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona, Sandbox
+from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaError, DaytonaNotFoundError, Sandbox
 
 import sandbox_lib
 
 POLL_SECONDS = 2
+RETRY_SECONDS = 10
 
 
 def follow(sandbox: Sandbox, cmd_id: str) -> int:
     """Print the worker's log as it grows and return its exit code once it stops."""
     printed = 0
     while True:
-        exit_code = sandbox_lib.worker_exit_code(sandbox, cmd_id)
-        log = sandbox_lib.worker_log(sandbox, cmd_id)
+        try:
+            exit_code = sandbox_lib.worker_exit_code(sandbox, cmd_id)
+            log = sandbox_lib.worker_log(sandbox, cmd_id)
+        except DaytonaNotFoundError:
+            raise
+        except DaytonaError as e:
+            # The worker keeps running in the sandbox; only reading its log failed. Retry rather
+            # than end this script, which would delete the sandbox and its files.
+            print(f"!! reading the worker log failed, retrying in {RETRY_SECONDS}s: {e}", file=sys.stderr, flush=True)
+            time.sleep(RETRY_SECONDS)
+            continue
         print(log[printed:], end="", flush=True)
         printed = len(log)
         if exit_code is not None:

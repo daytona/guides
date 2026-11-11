@@ -6,8 +6,10 @@ Build the worker snapshot from the Dockerfile.
 
 Names the snapshot with sandbox_lib.snapshot_name() so the worker scripts and
 this builder cannot drift, and skips the build if that snapshot already
-exists. Streams the build logs.
+exists and is active. Streams the build logs.
 """
+
+import sys
 
 from daytona import CreateSnapshotParams, Daytona, DaytonaNotFoundError, Image, Resources
 
@@ -23,7 +25,14 @@ def main() -> int:
     daytona = Daytona()
     try:
         existing = daytona.snapshot.get(name)
-        print(f"snapshot {name} already exists (state {existing.state}); skipping build")
+        if existing.state != "active":
+            # For example a failed or unfinished build. Sandboxes can't be created from it.
+            print(
+                f"!! snapshot {name} exists but is {existing.state.value}; wait for it to finish, or delete it and rerun",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"snapshot {name} already exists; skipping build")
         return 0
     except DaytonaNotFoundError:
         pass
