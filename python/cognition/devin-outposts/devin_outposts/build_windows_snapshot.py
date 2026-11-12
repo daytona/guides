@@ -438,7 +438,7 @@ def main() -> int:
                 build_failed = True
             else:
                 builder.stop(timeout=args.sandbox_timeout)
-                builder._experimental_create_snapshot(name, timeout=args.build_timeout)
+                builder.create_snapshot(name, timeout=args.build_timeout)
                 snapshot = daytona.snapshot.get(name)
                 if snapshot.state != SnapshotState.ACTIVE:
                     print(
