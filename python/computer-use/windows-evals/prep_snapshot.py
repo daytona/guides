@@ -79,7 +79,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         sandbox.stop(timeout=300)
 
         print(f"      Creating snapshot {args.name!r} from stopped sandbox...", flush=True)
-        sandbox._experimental_create_snapshot(args.name)
+        sandbox.create_snapshot(args.name)
 
         print("      Waiting for snapshot to become active...", flush=True)
         _wait_for_snapshot_active(client, args.name, timeout_s=300)
