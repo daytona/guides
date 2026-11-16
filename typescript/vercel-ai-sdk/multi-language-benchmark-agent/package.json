@@ -21,7 +21,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",
-    "@daytona/sdk": "^0.163.0",
+    "@daytona/sdk": "2.0.0-alpha.13",
     "ai": "^6.0.190",
     "dotenv": "^16.3.1",
     "zod": "^4.1.8"
