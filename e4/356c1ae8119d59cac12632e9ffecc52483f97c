@@ -1,0 +1,25 @@
+typescript/letta-code/README.md
+  s_c3d660d8b8c346::t_0eab4f5911beab 18,59,74,87
+typescript/letta-code/package.json
+  s_c3d660d8b8c346::t_64bead2eb81332 20
+typescript/letta-code/src/index.ts
+  s_c3d660d8b8c346::t_c006da9b3b1103 6-7,52
+typescript/letta-code/src/letta-session.ts
+  s_c3d660d8b8c346::t_53a4862789c27b 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e4356c1ae8119d59cac12632e9ffecc52483f97c",
+  "prompts": {},
+  "sessions": {
+    "s_c3d660d8b8c346": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1acf2207ffec2qB1eNzhZWBmx",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
