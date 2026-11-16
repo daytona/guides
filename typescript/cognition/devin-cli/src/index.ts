@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
 import { DevinSession } from './session.js'
@@ -37,7 +38,7 @@ async function main() {
 
   try {
     console.log('Creating sandbox...')
-    sandbox = await daytona.create()
+    sandbox = await daytona.v0.create()
 
     process.once('SIGINT', () => cleanup())
 

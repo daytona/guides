@@ -12,7 +12,7 @@ A coding agent powered by [Cognition's Devin CLI](https://docs.devin.ai/cli), ru
 
 ## Prerequisites
 
-- Node.js 18 or newer
+- Node.js 22.15 or newer
 - A Daytona API key from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
 - A [Devin account](https://app.devin.ai/) - any plan, including the free tier. You log in interactively the first time the sandbox starts (open the printed URL, sign in, paste the code back); no API key is required.
 
