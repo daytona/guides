@@ -1,0 +1,19 @@
+python/computer-use/windows-evals/README.md
+  s_a9b9cbac98f5c5::t_d9d56d86e24b7a 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68f9ae341dc131947fe9d565e88eca558715380e",
+  "prompts": {},
+  "sessions": {
+    "s_a9b9cbac98f5c5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e1b113f24ffeYw46WAie4Uve6K",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
