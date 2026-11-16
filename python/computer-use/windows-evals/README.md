@@ -14,7 +14,7 @@ This example builds a reusable Windows snapshot, defines an 8-task GUI eval suit
 - Python 3.10 or higher on your machine.
 - A Daytona account and API key.
 - Claude Code and/or Codex CLI only for `--agent claude` / `--agent codex` runs. The `oracle` and `nop` agents need neither.
-- Daytona CLI 0.x on your PATH for the Claude Code / Codex runs (with Homebrew, `brew pin daytona` keeps it on 0.x).
+- Install a Daytona CLI 0.x release and put it on your PATH for the Claude Code / Codex runs; Homebrew's `brew pin daytona` can then prevent upgrades to that installed version.
 
 ## Setup
 
