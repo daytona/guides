@@ -1,0 +1,31 @@
+typescript/openai/codex-sdk/README.md
+  s_3a591a44a1d7df::t_3cd3250238efeb 17,57,72,85
+typescript/openai/codex-sdk/package.json
+  s_c3d660d8b8c346::t_2c5c094859b153 20
+typescript/openai/codex-sdk/src/index.ts
+  s_c3d660d8b8c346::t_873166e44156d2 6-7,85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bb4048e6b153b212fbbf38cd483f3e0de355807e",
+  "prompts": {},
+  "sessions": {
+    "s_3a591a44a1d7df": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1acedc8cffe7rGCMLaQlavWMp",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_c3d660d8b8c346": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1acf2207ffec2qB1eNzhZWBmx",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
