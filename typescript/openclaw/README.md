@@ -13,7 +13,7 @@ This example runs [OpenClaw](https://openclaw.ai/), a general purpose AI assista
 
 ## Prerequisites
 
-- **Node.js:** Version 18 or higher is required
+- **Node.js:** Version 22.15 or higher is required
 - **Daytona account:** the sandbox is created private, so opening the preview link requires being signed in to Daytona
 
 ## Environment Variables
@@ -63,7 +63,7 @@ When this example is run, the agent follows the following workflow:
 
 The quickstart loads everything in `.env.sandbox` - including `ANTHROPIC_API_KEY` - into the sandbox as plain environment variables, so anything running inside the sandbox (OpenClaw, its agents, any code they run) can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
 
-The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secret setup:
+The Secret-based flow uses `daytona.v0` from the `@daytona/sdk` version this guide pins and a one-time Secret setup:
 
 1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create-secret.ts` in the project directory and run `npx tsx create-secret.ts`):
 
@@ -79,7 +79,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
      if (!sandboxEnv.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set in .env.sandbox')
 
      const daytona = new Daytona()
-     await daytona.secret.create({
+     await daytona.v0.secret.create({
        name: 'anthropic-api-key',
        value: sandboxEnv.ANTHROPIC_API_KEY,
        hosts: ['api.anthropic.com'], // the only host the real key may be sent to
@@ -92,7 +92,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
 2. In `src/index.ts`, add a `secrets:` mapping (environment variable name to Secret name) to the sandbox creation, and delete the `ANTHROPIC_API_KEY` line from `.env.sandbox` so the raw key is no longer injected. Any other variables in `.env.sandbox` keep flowing into the sandbox through `envVars` as before:
 
    ```diff
-    const sandbox = await daytona.create({
+    const sandbox = await daytona.v0.create({
       snapshot: DAYTONA_SNAPSHOT,
       autoStopInterval: 0,
       envVars: readEnvFile(ENV_SANDBOX_PATH),
