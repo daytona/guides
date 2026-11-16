@@ -1,0 +1,23 @@
+typescript/opencode/opencode-web/README.md
+  s_68a43c7ef8eea5::t_ba7496ce037dc7 16
+typescript/opencode/opencode-web/package.json
+  s_68a43c7ef8eea5::t_62155343c43a96 20
+typescript/opencode/opencode-web/src/index.ts
+  s_68a43c7ef8eea5::t_73cfa5a09eacdd 6-7,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "941ed5440c74a447cd599cab8de5dea05d05fcd7",
+  "prompts": {},
+  "sessions": {
+    "s_68a43c7ef8eea5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1acb16c3fferXyUfWSQVZo8Ta",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
