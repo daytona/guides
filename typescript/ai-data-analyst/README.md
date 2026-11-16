@@ -15,7 +15,7 @@ In this example, the agent analyzes a cafe sales dataset to find the three highe
 
 ## Prerequisites
 
-- **Node.js:** Version 18 or higher is required
+- **Node.js:** Version 22.15 or higher is required
 - **npm:** Included with Node.js installation
 
 ## Environment Variables

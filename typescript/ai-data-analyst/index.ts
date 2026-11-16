@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, CodeLanguage, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { CodeLanguage, Sandbox } from '@daytona/sdk/v0'
 import OpenAI from 'openai'
 import * as fs from 'fs'
 
@@ -24,7 +25,7 @@ async function run() {
   let sb: Sandbox | null = null
 
   try {
-    sb = await dt.create({ language: CodeLanguage.PYTHON })
+    sb = await dt.v0.create({ language: CodeLanguage.PYTHON })
 
     // Upload the CSV file to the sandbox
     const csvPath = 'cafe_sales_data.csv'
