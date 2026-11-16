@@ -1,0 +1,25 @@
+typescript/gemini/gemini-cli/README.md
+  s_1c9473a265f8c6::t_6ce3c99ee8bd01 14,49,64,77
+typescript/gemini/gemini-cli/package.json
+  s_1c9473a265f8c6::t_b4844e3cc96552 22
+typescript/gemini/gemini-cli/src/index.ts
+  s_1c9473a265f8c6::t_79591cc9655551 6-7,52
+typescript/gemini/gemini-cli/src/session.ts
+  s_1c9473a265f8c6::t_a85aaf37dcb18e 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6238b8393a013507dc25ab8f6ce175d76b72fe73",
+  "prompts": {},
+  "sessions": {
+    "s_1c9473a265f8c6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ad262ecffeIADa6pi0KLn5nf",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
