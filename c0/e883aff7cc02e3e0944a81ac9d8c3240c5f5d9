@@ -1,0 +1,31 @@
+typescript/anchor/cloud-browser/README.md
+  s_6cc7da0f15a4d5::t_e03d5bfc432a8c 20
+typescript/anchor/cloud-browser/package.json
+  s_58a564815b472e::t_c10c5c417bd055 20
+typescript/anchor/cloud-browser/src/index.ts
+  s_58a564815b472e::t_df1b9281f73ed1 6-7,67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c0e883aff7cc02e3e0944a81ac9d8c3240c5f5d9",
+  "prompts": {},
+  "sessions": {
+    "s_58a564815b472e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ada17abffemnj6upxdIxngvs",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_6cc7da0f15a4d5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ad99a9fffebqrzplHka5RHHl",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
