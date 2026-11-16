@@ -1,0 +1,21 @@
+python/pydantic-ai/coding-agent/README.md
+  s_a9b9cbac98f5c5::t_582ee7d0b927d6 188
+python/langchain/data-analysis/README.md
+  s_a9b9cbac98f5c5::t_e803162f606449 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "47c9e53e41c406e466322bd2e732106e7e0353f4",
+  "prompts": {},
+  "sessions": {
+    "s_a9b9cbac98f5c5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e1b113f24ffeYw46WAie4Uve6K",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
