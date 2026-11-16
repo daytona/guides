@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -63,7 +64,7 @@ async function main() {
 
   try {
     console.log('Creating sandbox...')
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       envVars: {
         ANCHOR_API_KEY: anchorApiKey,
         // Alias the name the SDK reads, so session and task calls authenticate
