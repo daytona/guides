@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox, OutputMessage, ExecutionResult } from '@daytona/sdk'
-import { InterpreterContext, ExecuteResponse } from '@daytona/toolbox-api-client'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox, OutputMessage, ExecutionResult } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
 
 // Load environment variables from .env file
 dotenv.config()
 import { renderMarkdown } from './utils'
+
+type InterpreterContext = Awaited<ReturnType<Sandbox['codeInterpreter']['createContext']>>
+type ExecuteResponse = Awaited<ReturnType<Sandbox['process']['executeCommand']>>
 
 async function processPrompt(prompt: string, sandbox: Sandbox, ctx: InterpreterContext): Promise<void> {
   console.log('Thinking...')
@@ -63,7 +66,7 @@ async function main() {
     // Create a new Daytona sandbox
     // The sandbox language is irrelevant since we will use the code interpreter SDK
     console.log('Creating sandbox...')
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       // Claude Code is memory intensive, so we use a medium snapshot
       snapshot: 'daytona-medium', // This snapshot has 4GiB RAM and 2 vCPUs
       envVars: {
