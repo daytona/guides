@@ -1,0 +1,23 @@
+typescript/vercel-ai-sdk/multi-language-benchmark-agent/README.md
+  s_56a6417a4c9817::t_21b298e861ab0f 17
+typescript/vercel-ai-sdk/multi-language-benchmark-agent/package.json
+  s_56a6417a4c9817::t_9ffba0011e229f 24
+typescript/vercel-ai-sdk/multi-language-benchmark-agent/src/index.ts
+  s_56a6417a4c9817::t_710863fc8e47e4 7-8,52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "49e7a45f23e56d1b84f36ca14e2885d115b20bda",
+  "prompts": {},
+  "sessions": {
+    "s_56a6417a4c9817": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1acafb54ffeaHa1PmPDWxiOcF",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
