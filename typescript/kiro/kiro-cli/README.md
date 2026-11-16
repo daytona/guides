@@ -12,7 +12,7 @@ A coding agent powered by [AWS Kiro's CLI](https://kiro.dev/docs/cli/) running i
 
 ## Prerequisites
 
-- Node.js 18 or newer
+- Node.js 22.15 or newer
 - A Daytona API key from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
 - A [Kiro account](https://app.kiro.dev/) - any plan, including the free tier. You log in interactively the first time the sandbox starts (pick a provider, open the printed URL, approve the sign-in in your browser); no API key is required.
 
