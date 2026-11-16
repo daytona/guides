@@ -1,0 +1,23 @@
+typescript/ai-data-analyst/README.md
+  s_58a564815b472e::t_b75829f8f6bcd6 18
+typescript/ai-data-analyst/index.ts
+  s_58a564815b472e::t_cf960db2506dbe 6-7,28
+typescript/ai-data-analyst/package.json
+  s_58a564815b472e::t_cc4a95a5a8df1f 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f30868a3aabc504de506027e57662d74175d2f1a",
+  "prompts": {},
+  "sessions": {
+    "s_58a564815b472e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ada17abffemnj6upxdIxngvs",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
