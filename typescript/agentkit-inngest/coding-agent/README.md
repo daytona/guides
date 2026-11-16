@@ -16,7 +16,7 @@ This project demonstrates a fully autonomous coding agent capable of performing 
 
 ## Requirements
 
-- **Node.js:** Version 18 or higher is required.
+- **Node.js:** Version 22.15 or higher is required.
 
 ## Environment Variables
 
