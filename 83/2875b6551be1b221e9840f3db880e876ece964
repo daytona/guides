@@ -1,0 +1,19 @@
+.github/workflows/cla.yml
+  s_5ca4dfee717534::t_0eed3e5c1aa178 28-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "832875b6551be1b221e9840f3db880e876ece964",
+  "prompts": {},
+  "sessions": {
+    "s_5ca4dfee717534": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e1ab9782fffeXVJTlgkVqr6Rir",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
