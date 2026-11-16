@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
 import { GeminiSession } from './session.js'
@@ -48,7 +49,7 @@ async function main() {
     // GEMINI_CLI_TRUST_WORKSPACE bypasses the CLI's workspace-trust prompt,
     // which otherwise blocks headless runs in a fresh sandbox directory.
     console.log('Creating sandbox...')
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       envVars: {
         GEMINI_API_KEY: process.env.SANDBOX_GEMINI_API_KEY,
         GEMINI_CLI_TRUST_WORKSPACE: 'true',

@@ -11,7 +11,7 @@ A headless coding agent powered by the [Gemini CLI](https://geminicli.com/) runn
 
 ## Prerequisites
 
-- Node.js 20 or newer
+- Node.js 22.15 or newer
 - A Daytona API key from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
 - A Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
 
@@ -46,7 +46,7 @@ The script creates a Daytona sandbox with `GEMINI_API_KEY` and `GEMINI_CLI_TRUST
 
 The quickstart passes the Gemini key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
 
-The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secret setup:
+The Secret-based flow uses `daytona.v0` from the `@daytona/sdk` version this guide pins and needs a one-time Secret setup:
 
 1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create-secret.ts` next to this guide's `.env` and run `npx tsx create-secret.ts`):
 
@@ -61,7 +61,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
      if (!value) throw new Error('SANDBOX_GEMINI_API_KEY is not set')
 
      const daytona = new Daytona()
-     await daytona.secret.create({
+     await daytona.v0.secret.create({
        name: 'gemini-api-key',
        value,
        hosts: ['generativelanguage.googleapis.com'], // the only host the real key may be sent to
@@ -74,7 +74,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
 2. In `src/index.ts`, swap the `GEMINI_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name). `GEMINI_CLI_TRUST_WORKSPACE` carries no credentials and stays a plain env var:
 
    ```diff
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       envVars: {
    -    GEMINI_API_KEY: process.env.SANDBOX_GEMINI_API_KEY,
         GEMINI_CLI_TRUST_WORKSPACE: 'true',
