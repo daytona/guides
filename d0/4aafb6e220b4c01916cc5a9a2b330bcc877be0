@@ -1,0 +1,45 @@
+python/ag2/bug-fixer-agent/README.md
+  s_e1f4eabd32fc13::t_f3289036afdfd8 38
+python/claude/claude-managed-agents/pyproject.toml
+  s_e1f4eabd32fc13::t_e30d457b541a96 8
+python/cognition/devin-outposts/pyproject.toml
+  s_e1f4eabd32fc13::t_52f8222cace7cd 12
+python/computer-use/windows-evals/README.md
+  s_e1f4eabd32fc13::t_f6dd8d52424810 17
+python/computer-use/windows-evals/pyproject.toml
+  s_e1f4eabd32fc13::t_0ad29de56440b4 7
+python/cursor/self-hosted-machines/pyproject.toml
+  s_e1f4eabd32fc13::t_208a15d68c702b 12
+python/dspy-rlms/pyproject.toml
+  s_e1f4eabd32fc13::t_2bebe6cdffda2d 9
+python/gemini/gemini-managed-agents/pyproject.toml
+  s_e1f4eabd32fc13::t_81a0d074be84f6 7
+python/langgraph/plan-and-execute-data-agent/README.md
+  s_e1f4eabd32fc13::t_1c174f03891ee2 48
+python/model-serving/sglang/pyproject.toml
+  s_e1f4eabd32fc13::t_836bdbef856d7c 15
+python/model-serving/vllm/pyproject.toml
+  s_e1f4eabd32fc13::t_bd8d9c4beaf014 11
+python/openai/agents-api/README.md
+  s_e1f4eabd32fc13::t_2fa22819dd505a 39
+python/recursive-language-models/pyproject.toml
+  s_e1f4eabd32fc13::t_0bd9a244d7ecb5 9
+python/reinforcement-learning/openenv/pyproject.toml
+  s_e1f4eabd32fc13::t_60db6cd861e90b 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d04aafb6e220b4c01916cc5a9a2b330bcc877be0",
+  "prompts": {},
+  "sessions": {
+    "s_e1f4eabd32fc13": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1afd079affeBjFhtigG0n1OKY",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
