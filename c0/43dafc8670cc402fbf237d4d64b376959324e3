@@ -1,0 +1,25 @@
+typescript/flue/.flue/agents/bug-fix.ts
+  s_8e73ffcb38ed18::t_2d451f6657d89a 65
+typescript/flue/.flue/connectors/daytona.ts
+  s_8e73ffcb38ed18::t_cbe1506c68e25f 18,25
+typescript/flue/README.md
+  s_8e73ffcb38ed18::t_57bf67ec63f8fe 27,226,240,253
+typescript/flue/package.json
+  s_8e73ffcb38ed18::t_ae10be85d30230 24,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c043dafc8670cc402fbf237d4d64b376959324e3",
+  "prompts": {},
+  "sessions": {
+    "s_8e73ffcb38ed18": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1abe50f5ffeuqUKJtg6GBOuMy",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
