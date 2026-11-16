@@ -1,0 +1,40 @@
+typescript/anthropic/single-claude-agent-sdk/src/index.ts
+  s_5b401cc5a415e6::t_68563f58c8bcb1 15-16
+  s_8e73ffcb38ed18::t_9c56875ade5e90 6-7,17,69
+typescript/anthropic/single-claude-agent-sdk/README.md
+  s_54cd5520ecacf0::t_e2f4f2e2af8fde 17,57,72,85
+typescript/anthropic/single-claude-agent-sdk/package.json
+  s_54cd5520ecacf0::t_97a235b22335d6 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c86f6585a7f41df025571cf9ab4c3545601e7969",
+  "prompts": {},
+  "sessions": {
+    "s_54cd5520ecacf0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1abe1eb6ffe5lNG7pxaXVMoN0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_5b401cc5a415e6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e1abe1eb6ffe5lNG7pxaXVMoN0",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_8e73ffcb38ed18": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1abe50f5ffeuqUKJtg6GBOuMy",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
