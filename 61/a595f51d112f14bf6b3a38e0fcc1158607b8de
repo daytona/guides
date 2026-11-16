@@ -1,0 +1,25 @@
+typescript/kiro/kiro-cli/README.md
+  s_ae4dcc650f452d::t_a53715906b3991 15
+typescript/kiro/kiro-cli/package.json
+  s_ae4dcc650f452d::t_687bb435a03f94 22
+typescript/kiro/kiro-cli/src/index.ts
+  s_ae4dcc650f452d::t_03c5c37cecb99c 6-7,41
+typescript/kiro/kiro-cli/src/session.ts
+  s_ae4dcc650f452d::t_8cf9b73b34d149 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61a595f51d112f14bf6b3a38e0fcc1158607b8de",
+  "prompts": {},
+  "sessions": {
+    "s_ae4dcc650f452d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ae199efffeknE5qbolrzfbjn",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
