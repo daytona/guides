@@ -15,14 +15,14 @@
  * import { daytona } from './connectors/daytona';
  *
  * const client = new Daytona({ apiKey: process.env.DAYTONA_API_KEY });
- * const sandbox = await client.create({ image: 'ubuntu:latest' });
+ * const sandbox = await client.v0.create({ image: 'ubuntu:latest' });
  * const agent = await init({ sandbox: daytona(sandbox), model: 'anthropic/claude-sonnet-4-6' });
  * const session = await agent.session();
  * ```
  */
 import { createSandboxSessionEnv } from '@flue/sdk/sandbox'
 import type { SandboxApi, SandboxFactory, SessionEnv, FileStat } from '@flue/sdk/sandbox'
-import type { Sandbox as DaytonaSandbox } from '@daytona/sdk'
+import type { Sandbox as DaytonaSandbox } from '@daytona/sdk/v0'
 
 export interface DaytonaConnectorOptions {
   /**
