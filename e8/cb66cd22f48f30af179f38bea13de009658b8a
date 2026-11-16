@@ -1,0 +1,23 @@
+typescript/anthropic/multi-agent-claude-sdk/README.md
+  s_22a7e5f507e119::t_8ac155f4717e40 25,115,130,143
+typescript/anthropic/multi-agent-claude-sdk/package.json
+  s_22a7e5f507e119::t_f2c09415069fc8 21
+typescript/anthropic/multi-agent-claude-sdk/src/index.ts
+  s_22a7e5f507e119::t_8e008a8e768eb5 164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8cb66cd22f48f30af179f38bea13de009658b8a",
+  "prompts": {},
+  "sessions": {
+    "s_22a7e5f507e119": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ad2c016ffe1cRP0VGt32B58k",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
