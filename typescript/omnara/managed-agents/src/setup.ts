@@ -31,7 +31,7 @@ async function agentModel(): Promise<{ providerConfig: string; name: string }> {
 // fails here with a clear error.
 async function checkDaytonaKey(apiKey: string): Promise<void> {
   try {
-    await new Daytona({ apiKey }).snapshot.get(pool.snapshot)
+    await new Daytona({ apiKey }).v0.snapshot.get(pool.snapshot)
   } catch (err) {
     throw new Error(
       `Daytona didn't accept your API key or has no snapshot named "${pool.snapshot}": ` +

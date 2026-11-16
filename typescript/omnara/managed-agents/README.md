@@ -18,7 +18,7 @@ The example launches an agent based on Omnara's [quickstart](https://docs.omnara
 
 ## Prerequisites
 
-- **Node.js:** Version 22 or higher is required.
+- **Node.js:** Version 22.15 or higher is required.
 - **Omnara account:** Sign up at [app.omnara.com](https://app.omnara.com). Every new organization comes with the `omnara-openrouter` model provider that `agent.yaml` uses. You need the admin or owner role in the organization.
 - **Daytona account and API key:** Create a key at [app.daytona.io/dashboard/keys](https://app.daytona.io/dashboard/keys) with the `write:sandboxes` and `delete:sandboxes` permissions. Any Daytona tier works: the Omnara daemon in each sandbox downloads from `releases.omnara.com` and connects to `api.omnara.com`, and Daytona allows both on every tier.
 
