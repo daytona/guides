@@ -1,0 +1,25 @@
+typescript/cognition/devin-cli/README.md
+  s_1c9473a265f8c6::t_7383f139a97f7f 15
+typescript/cognition/devin-cli/package.json
+  s_1c9473a265f8c6::t_17f045740d7838 22
+typescript/cognition/devin-cli/src/index.ts
+  s_1c9473a265f8c6::t_c357439933a023 6-7,41
+typescript/cognition/devin-cli/src/session.ts
+  s_1c9473a265f8c6::t_240307fd240691 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88d3598474b6f3067941680bf900e44c85fa57c5",
+  "prompts": {},
+  "sessions": {
+    "s_1c9473a265f8c6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ad262ecffeIADa6pi0KLn5nf",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
