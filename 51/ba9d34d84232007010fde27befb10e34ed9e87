@@ -1,0 +1,25 @@
+typescript/agentkit-inngest/coding-agent/README.md
+  s_3b0e4a684e3e31::t_5644d562f53171 19
+typescript/agentkit-inngest/coding-agent/package.json
+  s_3b0e4a684e3e31::t_22ff0abb0ed1f8 16
+typescript/agentkit-inngest/coding-agent/src/index.ts
+  s_3b0e4a684e3e31::t_51dddd5cbda10f 10,12
+typescript/agentkit-inngest/coding-agent/src/utils.ts
+  s_3b0e4a684e3e31::t_d335cb5fdbfb7a 6-7,25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51ba9d34d84232007010fde27befb10e34ed9e87",
+  "prompts": {},
+  "sessions": {
+    "s_3b0e4a684e3e31": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1abde955ffe4xE3uXE0xCNzu5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
