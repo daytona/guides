@@ -1,0 +1,23 @@
+typescript/openclaw/README.md
+  s_3a591a44a1d7df::t_d52fda562eeee8 16,66,82,95
+typescript/openclaw/package.json
+  s_3a591a44a1d7df::t_055339493ea235 12
+typescript/openclaw/src/index.ts
+  s_3a591a44a1d7df::t_b13d96430943d0 8,168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "02da26b2fec8bfb58f4a1b78c3756bbdd1e52f5b",
+  "prompts": {},
+  "sessions": {
+    "s_3a591a44a1d7df": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1acedc8cffe7rGCMLaQlavWMp",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
