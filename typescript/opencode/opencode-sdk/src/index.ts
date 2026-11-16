@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
 import { Session } from './session.js'
@@ -36,7 +37,7 @@ async function main(): Promise<void> {
 
   try {
     console.log('Creating sandbox...')
-    sandbox = await daytona.create({ public: true })
+    sandbox = await daytona.v0.create({ public: true })
     process.once('SIGINT', cleanup)
 
     console.log('Installing OpenCode in sandbox...')
