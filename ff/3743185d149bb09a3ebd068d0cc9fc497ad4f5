@@ -1,0 +1,25 @@
+typescript/amp/amp-sdk/README.md
+  s_5569d949c67efc::t_8c30825d89f372 7,84,99,112
+typescript/amp/amp-sdk/package.json
+  s_5569d949c67efc::t_fc92e877f31aac 22
+typescript/amp/amp-sdk/src/index.ts
+  s_5569d949c67efc::t_e6dbc63abaa600 6-7,60
+typescript/amp/amp-sdk/src/session.ts
+  s_5569d949c67efc::t_e39c0ad64f77b7 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ff3743185d149bb09a3ebd068d0cc9fc497ad4f5",
+  "prompts": {},
+  "sessions": {
+    "s_5569d949c67efc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ad9d201ffef40M5f0AFuXMhs",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
