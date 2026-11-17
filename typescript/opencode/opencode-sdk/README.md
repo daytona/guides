@@ -12,7 +12,7 @@ This example runs an [OpenCode](https://opencode.ai/docs/sdk/) coding agent insi
 
 ## Prerequisites
 
-- **Node.js:** Version 18 or higher is required
+- **Node.js:** Version 22.15 or higher is required
 
 ## Environment Variables
 
