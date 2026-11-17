@@ -4,7 +4,8 @@
  */
 
 import { anthropic } from '@ai-sdk/anthropic'
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import { ToolLoopAgent, stepCountIs, tool } from 'ai'
 import { writeFileSync } from 'fs'
 import { randomUUID } from 'node:crypto'
@@ -48,7 +49,7 @@ async function main(): Promise<void> {
 
   try {
     console.log('Creating sandbox...')
-    sandbox = await daytona.create()
+    sandbox = await daytona.v0.create()
 
     // Five tools that wrap Daytona primitives. Each has a single, non-overlapping
     // job so the agent never has to choose between two paths for the same goal:

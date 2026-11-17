@@ -14,7 +14,7 @@ This example builds a multi-language benchmarking agent using the [Vercel AI SDK
 
 ## Prerequisites
 
-- **Node.js:** Version 18 or higher is required.
+- **Node.js:** Version 22.15 or higher is required.
 
 ## Environment Variables
 
