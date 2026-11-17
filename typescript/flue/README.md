@@ -24,7 +24,7 @@ The whole TDD loop runs inside an isolated Daytona sandbox, so the agent can ins
 
 ## Prerequisites
 
-- **Node.js 22+** (Flue requires it)
+- **Node.js 22.15+** (Flue requires it)
 - A **Daytona** account (sign up at [app.daytona.io](https://app.daytona.io))
 - An **Anthropic** API key (for the default model `claude-sonnet-4-6`)
 - A **GitHub Personal Access Token** with `repo` scope
@@ -223,7 +223,7 @@ The quickstart passes `GITHUB_TOKEN` into the sandbox as a plain `GH_TOKEN` envi
 
 One Secret covers both `gh` and git. `gh` API calls send the token verbatim in an `Authorization` header. Git over HTTPS, through the credential helper that `gh auth setup-git` configures, sends it as Basic credentials; the proxy decodes them, substitutes the placeholder, and encodes them again (see [HTTP Basic Auth](https://www.daytona.io/docs/en/secrets/#http-basic-auth)). No git configuration is needed: the sandbox already points git at the proxy's CA certificate through `GIT_SSL_CAINFO`.
 
-The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time setup of one Secret:
+The Secret-based flow uses `daytona.v0` from the `@daytona/sdk` version this guide pins and a one-time setup of one Secret:
 
 1. Create the Secret once for your organization, in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create-secrets.ts` and run `DAYTONA_API_KEY=... GITHUB_TOKEN=... npx tsx create-secrets.ts`):
 
@@ -237,7 +237,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time setup
      const daytona = new Daytona()
 
      // Used by gh API calls (api.github.com) and by git over HTTPS (github.com)
-     await daytona.secret.create({
+     await daytona.v0.secret.create({
        name: 'github-token',
        value: token,
        hosts: ['api.github.com', 'github.com'],
@@ -250,7 +250,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time setup
 2. In `.flue/agents/bug-fix.ts`, swap the `GH_TOKEN` env var for a `secrets:` mapping (environment variable name to Secret name); the host-side `githubToken` / `requireEnv(env, 'GITHUB_TOKEN')` lookup is no longer needed. Keep the `gh auth setup-git` step as it is:
 
    ```diff
-    const sandbox = await client.create({
+    const sandbox = await client.v0.create({
    -  envVars: { GH_TOKEN: githubToken },
    +  secrets: {
    +    GH_TOKEN: 'github-token',

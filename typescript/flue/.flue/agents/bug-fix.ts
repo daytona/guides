@@ -62,7 +62,7 @@ export default async function ({ init, payload, env }: FlueContext) {
   console.log(`[bug-fix] target: ${repo}#${issueNumber} (model: ${model})`)
 
   const client = new Daytona({ apiKey: daytonaApiKey })
-  const sandbox = await client.create({
+  const sandbox = await client.v0.create({
     envVars: { GH_TOKEN: githubToken },
   })
   console.log(`[bug-fix] sandbox ready (id: ${sandbox.id})`)
