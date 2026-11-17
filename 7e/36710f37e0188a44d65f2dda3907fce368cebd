@@ -1,0 +1,19 @@
+.github/workflows/cla.yml
+  s_f449666bba7531::t_2a52f5d940e227 10-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e36710f37e0188a44d65f2dda3907fce368cebd",
+  "prompts": {},
+  "sessions": {
+    "s_f449666bba7531": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1ab9782fffeXVJTlgkVqr6Rir",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
