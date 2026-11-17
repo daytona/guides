@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
 import { KimiSession } from './session.js'
@@ -49,7 +50,7 @@ async function main() {
     // from the environment, and it refuses to start a turn ("LLM not set") unless the
     // base URL and model name are also set.
     console.log('Creating sandbox...')
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       envVars: {
         KIMI_API_KEY: process.env.SANDBOX_KIMI_API_KEY,
         KIMI_BASE_URL: 'https://api.moonshot.ai/v1',
