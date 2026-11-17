@@ -14,7 +14,7 @@ This example runs a coding agent with the capabilities of Claude Code inside a D
 
 ## Prerequisites
 
-- **Node.js:** Version 18 or higher is required
+- **Node.js:** Version 22.15 or higher is required
 
 ## Environment Variables
 
@@ -54,7 +54,7 @@ When this example is run, the agent follows the following workflow:
 
 The quickstart passes the Anthropic key into the sandbox as a plain environment variable, so anything running inside the sandbox - including the agent itself - can read the raw key with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. An agent that dumps the environment or exfiltrates it never sees a usable key.
 
-The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secret setup:
+The Secret-based flow uses `daytona.v0` from the `@daytona/sdk` version this guide pins and a one-time Secret setup:
 
 1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create-secret.ts` next to this guide's `.env` and run `npx tsx create-secret.ts`):
 
@@ -69,7 +69,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
      if (!value) throw new Error('SANDBOX_ANTHROPIC_API_KEY is not set')
 
      const daytona = new Daytona()
-     await daytona.secret.create({
+     await daytona.v0.secret.create({
        name: 'anthropic-api-key',
        value,
        hosts: ['api.anthropic.com'], // the only host the real key may be sent to
@@ -82,7 +82,7 @@ The Secret-based flow needs `@daytona/sdk` 0.192.0 or newer and a one-time Secre
 2. In `src/index.ts`, swap the `ANTHROPIC_API_KEY` env var for a `secrets:` mapping (environment variable name to Secret name):
 
    ```diff
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       // Claude Code is memory intensive, so we use a medium snapshot
       snapshot: 'daytona-medium', // This snapshot has 4GiB RAM and 2 vCPUs
    -  envVars: {
