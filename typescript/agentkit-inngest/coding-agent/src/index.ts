@@ -7,9 +7,9 @@ import 'dotenv/config'
 
 import { z } from 'zod'
 import { createAgent, createNetwork, createTool, anthropic } from '@inngest/agent-kit'
-import { CodeRunParams, DaytonaError } from '@daytona/sdk'
+import { CodeRunParams, DaytonaError } from '@daytona/sdk/v0'
 import { getSandbox, extractTextMessageContent, logDebug } from './utils.js'
-import type { FileUpload } from '@daytona/sdk/src/FileSystem.js'
+import type { FileUpload } from '@daytona/sdk/v0'
 import { Buffer } from 'buffer'
 
 async function main() {
