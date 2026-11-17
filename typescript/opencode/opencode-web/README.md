@@ -13,7 +13,7 @@ This example runs [OpenCode](https://opencode.ai/), an open source coding agent,
 
 ## Prerequisites
 
-- **Node.js:** Version 18 or higher is required
+- **Node.js:** Version 22.15 or higher is required
 
 ## Environment Variables
 
