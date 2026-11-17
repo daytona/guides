@@ -7,14 +7,13 @@ on:
     types: [opened, closed, synchronize]
 
 # Least-privilege token. `pull_request_target` runs in the BASE repo context so
-# that PRs from forks can still write the signature file and set the status
-# check. This job must ONLY run the trusted CLA action -- never check out or
+# that PRs from forks can still write the signature file and post the CLA
+# comment. This job must ONLY run the trusted CLA action -- never check out or
 # execute the PR head's code here.
 permissions:
   actions: write # re-run the check via the rerun API
   contents: write # commit the signature file to the signatures branch
   pull-requests: write # post / refresh the CLA comment
-  statuses: write # set the pass/fail commit status that gates merge
 
 # Serialize CLA runs repo-wide: every PR writes the same signatures branch/file,
 # so concurrent signatures could otherwise race and lose a write. Queue, don't
