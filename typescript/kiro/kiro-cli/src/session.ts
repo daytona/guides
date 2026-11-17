@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Sandbox } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 
 const WORK_DIR = '/home/daytona'
 const KIRO = '"$HOME/.local/bin/kiro-cli"'
