@@ -17,7 +17,7 @@ Setup follows the [Anchor Daytona integration](https://docs.anchorbrowser.io/int
 
 ## Prerequisites
 
-- **Node.js:** Version 18 or higher, on the machine that starts the guide. The default Daytona sandbox image provides Node.js and npm for the script that runs inside it.
+- **Node.js:** Version 22.15 or higher, on the machine that starts the guide. The default Daytona sandbox image provides Node.js and npm for the script that runs inside it.
 - A **Daytona account** and **API key**.
 - An **Anchor API key** (bring your own key). Anchor bills browser usage on that key. Daytona does not meter it.
 
