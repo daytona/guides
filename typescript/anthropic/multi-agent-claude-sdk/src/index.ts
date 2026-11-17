@@ -161,7 +161,7 @@ async function main() {
   try {
     // Create a new Daytona sandbox for the Developer Agent
     console.log('Creating Developer Agent sandbox...')
-    const sandbox = await daytona.create({
+    const sandbox = await daytona.v0.create({
       envVars: {
         ANTHROPIC_API_KEY: sandboxApiKey,
       },
