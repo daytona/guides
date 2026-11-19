@@ -13,6 +13,21 @@ function debug(...args: unknown[]) {
   if (DEBUG) console.error('[debug]', ...args)
 }
 
+export function formatPreview(input: string, maxLength = 80): string {
+  const normalized = input.replace(/\s+/g, ' ').trim()
+  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized
+}
+
+// The argument worth showing next to a tool name, e.g. "shell: npm test" or "write: app.py".
+// Goose's built-in tools take `command` (shell), `path` (write, edit, tree, analyze) or
+// `source` (read_image, load); the other keys cover extension tools.
+const TOOL_DETAIL_KEYS = ['command', 'path', 'source', 'uri', 'extension_name', 'query', 'instructions']
+
+function describeToolCall(name: string, args: Record<string, unknown> = {}): string {
+  const detail = TOOL_DETAIL_KEYS.map((key) => args[key]).find((value) => typeof value === 'string' && value.trim())
+  return typeof detail === 'string' ? `${name}: ${formatPreview(detail)}` : name
+}
+
 // A tool fails either before it runs (status "error") or by flagging its result with isError.
 function toolError(block: GooseToolResponseBlock): string | null {
   const result = block.toolResult
@@ -40,8 +55,21 @@ export class GooseSession {
   // Sent via --system on the first turn only; Goose carries it forward as part of
   // the session it resumes from then on, so it is not resent on later turns.
   private systemPrompt: string | null = null
+  // Whether the terminal cursor sits at the start of a line, so status lines can start on
+  // a fresh line without leaving blank lines between them.
+  private atLineStart = true
 
   constructor(private sandbox: Sandbox) {}
+
+  private write(text: string, stream: NodeJS.WriteStream = process.stdout): void {
+    if (!text) return
+    stream.write(text)
+    this.atLineStart = text.endsWith('\n')
+  }
+
+  private writeLine(line: string, stream: NodeJS.WriteStream = process.stdout): void {
+    this.write(`${this.atLineStart ? '' : '\n'}${line}\n`, stream)
+  }
 
   // Quote a string so it is passed to a shell command literally.
   private shellQuote(s: string): string {
@@ -56,12 +84,12 @@ export class GooseSession {
         const msg = (event as GooseMessageEvent).message
         for (const block of msg.content) {
           if (block.type === 'text' && msg.role === 'assistant') {
-            process.stdout.write(block.text)
+            this.write(block.text)
           } else if (block.type === 'toolRequest' && block.toolCall.status === 'success') {
-            process.stdout.write(`\n[tool] ${block.toolCall.value.name}\n`)
+            this.writeLine(`[tool] ${describeToolCall(block.toolCall.value.name, block.toolCall.value.arguments)}`)
           } else if (block.type === 'toolResponse') {
             const error = toolError(block)
-            if (error) process.stdout.write(`\n[tool error] ${error}\n`)
+            if (error) this.writeLine(`[tool error] ${error}`)
           }
         }
         return
@@ -70,14 +98,14 @@ export class GooseSession {
         // The turn ran to completion, so later turns can --resume its session.
         this.resumable = true
         this.turnEnded = true
-        process.stdout.write('\n')
+        if (!this.atLineStart) this.write('\n')
         return
       }
       case 'error': {
         // Provider failures (bad API key, quota, etc.) end the turn with this event
         // instead of "complete".
         this.turnEnded = true
-        process.stderr.write(`\nFailed: ${(event as GooseErrorEvent).error}\n`)
+        this.writeLine(`Failed: ${(event as GooseErrorEvent).error}`, process.stderr)
         return
       }
       case 'goose_exit': {
@@ -85,7 +113,7 @@ export class GooseSession {
         // error it prints as plain text), the turn still ends here instead of hanging.
         if (!this.turnEnded) {
           const code = (event as GooseExitEvent).code
-          process.stderr.write(`\nFailed: goose exited with code ${code} (set DEBUG = true in src/session.ts to see its output)\n`)
+          this.writeLine(`Failed: goose exited with code ${code} (set DEBUG = true in src/session.ts to see its output)`, process.stderr)
         }
         this.onResponseComplete?.()
         return
@@ -151,6 +179,10 @@ export class GooseSession {
     const turnDone = new Promise<void>((resolve) => {
       this.onResponseComplete = resolve
     })
+    // Pressing Enter at the prompt left the cursor on a new line. Goose takes a few
+    // seconds to start and reach the model, so show that the turn is underway.
+    this.atLineStart = true
+    this.writeLine('Thinking...')
     // The printf runs however goose exits and reports its exit code as a goose_exit line.
     await this.ptyHandle!.sendInput(`cd ${WORK_DIR} && ${command}; printf '{"type":"goose_exit","code":%d}\\n' $?\n`)
     await turnDone

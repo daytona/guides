@@ -7,14 +7,9 @@ import { Daytona } from '@daytona/sdk'
 import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
-import { GooseSession } from './session.js'
+import { GooseSession, formatPreview } from './session.js'
 
 dotenv.config()
-
-function formatCommandPreview(input: string, maxLength = 80): string {
-  const normalized = input.replace(/\s+/g, ' ').trim()
-  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized
-}
 
 async function main() {
   const apiKey = process.env.DAYTONA_API_KEY
@@ -116,7 +111,7 @@ async function main() {
       }
 
       const startScriptContents = (await activeSandbox.fs.downloadFile(startScript)).toString('utf-8')
-      const clippedStartScript = formatCommandPreview(startScriptContents)
+      const clippedStartScript = formatPreview(startScriptContents)
       console.log(`Running \`${clippedStartScript}\` via session command...`)
       // Execute server startup outside Goose so long-running/background commands
       // do not keep the turn (and `goose run`) from completing.

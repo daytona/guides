@@ -43,7 +43,7 @@ Then type a prompt at the `User:` prompt and watch the agent stream its work. Pr
 
 The script creates a Daytona sandbox with `OPENAI_API_KEY`, `GOOSE_PROVIDER=openai`, and `GOOSE_MODEL=gpt-4o` injected at create time, so Goose has a provider configured without ever running its interactive `goose configure` wizard. `GOOSE_MODE=auto` auto-approves tool calls so a turn never blocks on a confirmation prompt, and `GOOSE_DISABLE_KEYRING=1` makes Goose use file-based secret storage instead of a desktop keyring that doesn't exist in the sandbox.
 
-It installs Goose with the official install script, passing `CONFIGURE=false` so the installer skips its trailing interactive `goose configure` step (which would otherwise try to read from a controlling terminal that doesn't exist in the sandbox's exec environment and fail), and checks `goose --version` so a failed download stops the setup instead of hanging the first prompt. It then opens a single PTY for the whole conversation and runs `goose run --output-format stream-json --text "<prompt>"` for each turn, adding `--resume` once a turn has completed so Goose continues its most recent session. `--output-format stream-json` emits newline-delimited JSON events that are parsed and printed live: assistant text streams as it arrives, tool calls (`toolRequest` blocks in assistant messages) print as `[tool] <name>`, and failed tool results (`toolResponse` blocks, which come back in user messages) print as `[tool error] ...`. Goose reports a turn's outcome with a `complete` event, or with an `error` event when the provider rejects the request (bad key, quota, etc.), which prints as `Failed: ...`. Each command is followed by a `printf` that reports Goose's exit code as one more JSON line, so a turn also ends when Goose exits without either event, for example on a setup error it prints as plain text. The sandbox is deleted automatically on exit.
+It installs Goose with the official install script, passing `CONFIGURE=false` so the installer skips its trailing interactive `goose configure` step (which would otherwise try to read from a controlling terminal that doesn't exist in the sandbox's exec environment and fail), and checks `goose --version` so a failed download stops the setup instead of hanging the first prompt. It then opens a single PTY for the whole conversation and runs `goose run --output-format stream-json --text "<prompt>"` for each turn, adding `--resume` once a turn has completed so Goose continues its most recent session. Each turn prints `Thinking...` while Goose starts up and reaches the model. `--output-format stream-json` emits newline-delimited JSON events that are parsed and printed live: assistant text streams as it arrives, tool calls (`toolRequest` blocks in assistant messages) print as `[tool] <name>: <command or path>` the moment Goose makes them, and failed tool results (`toolResponse` blocks, which come back in user messages) print as `[tool error] ...`. Goose reports a turn's outcome with a `complete` event, or with an `error` event when the provider rejects the request (bad key, quota, etc.), which prints as `Failed: ...`. Each command is followed by a `printf` that reports Goose's exit code as one more JSON line, so a turn also ends when Goose exits without either event, for example on a setup error it prints as plain text. The sandbox is deleted automatically on exit.
 
 Before the first turn, a Daytona-aware system prompt is sent via Goose's native `--system` flag (only once - Goose carries it forward as part of the session `--resume` continues). It tells Goose the preview URL pattern for the sandbox and, critically, not to run servers directly: `goose run` is a one-shot command that blocks until it exits, so a foreground dev server started inside a turn would never let that turn (or the whole prompt loop) complete. Instead, Goose is told to write the server-start command to `/home/daytona/start.sh`. After every turn, the script moves that file out of the way (so each server starts once, not again after every later turn) and, if there was one, runs it in a separate Daytona session with `runAsync: true` - outside Goose entirely - so the server keeps running in the background while the conversation continues. Those server sessions are cleaned up alongside the sandbox on exit.
 
@@ -106,40 +106,27 @@ Starting Goose CLI...
 Agent ready. Press Ctrl+C at any time to exit.
 
 User: Write a Python script fib.py that prints the first 10 Fibonacci numbers on one line, run it, and show me the output
-
-[tool] write
-
-[tool] shell
-Here is the Python script `fib.py` that prints the first 10 Fibonacci numbers on one line:
-
-```python
-def fibonacci(n):
-    fib_sequence = [0, 1]
-    while len(fib_sequence) < n:
-        fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
-    return fib_sequence[:n]
-
-print(' '.join(map(str, fibonacci(10))))
-```
-
-And here is the output when the script is run:
+Thinking...
+[tool] write: /home/daytona/fib.py
+[tool] shell: python3 /home/daytona/fib.py
+Here is the output of the first 10 Fibonacci numbers on one line:
 
 ```
 0 1 1 2 3 5 8 13 21 34
 ```
 User: What was the last number fib.py printed? Answer in one short sentence.
+Thinking...
 The last number printed by `fib.py` was 34.
 User: Create an index.html that says Hello from Goose on Daytona and serve the current directory with Python's http.server on port 8000
-
-[tool] write
-
-[tool] write
-I've created the `index.html` file and set up the server. You can view the page [here](https://8000-<sandbox-id>.daytonaproxy01.net).
+Thinking...
+[tool] write: /home/daytona/index.html
+[tool] write: /home/daytona/start.sh
+The `index.html` file has been created, and the server is set to run on port 8000. You can view it [here](https://8000-<sandbox-id>.daytonaproxy01.net).
 Running `python3 -m http.server 8000` via session command...
 User:
 ````
 
-The second `write` in the last turn is Goose writing `python3 -m http.server 8000` to `/home/daytona/start.sh`; the script then starts that server in its own Daytona session, and the preview URL serves the page.
+In the last turn, Goose writes the server's start command to `/home/daytona/start.sh` instead of running it; the script then starts that command in its own Daytona session, and the preview URL serves the page.
 
 ## References
 
