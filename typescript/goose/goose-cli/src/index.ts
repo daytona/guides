@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
 import { GooseSession } from './session.js'
@@ -59,7 +60,7 @@ async function main() {
     // avoids Goose trying to reach a desktop keyring service that doesn't exist in the
     // sandbox, falling back to file-based secret storage instead.
     console.log('Creating sandbox...')
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       envVars: {
         OPENAI_API_KEY: process.env.SANDBOX_OPENAI_API_KEY,
         GOOSE_PROVIDER: 'openai',
