@@ -4,7 +4,7 @@
  */
 
 import { Sandbox, PtyHandle } from '@daytona/sdk/v0'
-import { GooseEvent, GooseMessageEvent, GooseErrorEvent, GooseToolResponseBlock } from './types.js'
+import { GooseEvent, GooseMessageEvent, GooseErrorEvent, GooseExitEvent, GooseToolResponseBlock } from './types.js'
 
 const WORK_DIR = '/home/daytona'
 
@@ -35,6 +35,8 @@ export class GooseSession {
   // Goose continues its most recent session (there is no explicit session/thread ID
   // to track - unlike Amp or Gemini, Goose resume is just "continue the last one").
   private resumable = false
+  // Whether the current turn has reported its outcome ("complete" or "error").
+  private turnEnded = false
   // Sent via --system on the first turn only; Goose carries it forward as part of
   // the session it resumes from then on, so it is not resent on later turns.
   private systemPrompt: string | null = null
@@ -67,14 +69,24 @@ export class GooseSession {
       case 'complete': {
         // The turn ran to completion, so later turns can --resume its session.
         this.resumable = true
+        this.turnEnded = true
         process.stdout.write('\n')
-        this.onResponseComplete?.()
         return
       }
       case 'error': {
         // Provider failures (bad API key, quota, etc.) end the turn with this event
         // instead of "complete".
+        this.turnEnded = true
         process.stderr.write(`\nFailed: ${(event as GooseErrorEvent).error}\n`)
+        return
+      }
+      case 'goose_exit': {
+        // `goose run` has exited. If it never reported an outcome (for example a setup
+        // error it prints as plain text), the turn still ends here instead of hanging.
+        if (!this.turnEnded) {
+          const code = (event as GooseExitEvent).code
+          process.stderr.write(`\nFailed: goose exited with code ${code} (set DEBUG = true in src/session.ts to see its output)\n`)
+        }
         this.onResponseComplete?.()
         return
       }
@@ -87,10 +99,19 @@ export class GooseSession {
     const lines = this.buffer.split('\n')
     this.buffer = lines.pop() || ''
     for (const line of lines.map((l) => l.trim()).filter(Boolean)) {
+      let event: GooseEvent
       try {
-        this.handleEvent(JSON.parse(line) as GooseEvent)
+        event = JSON.parse(line) as GooseEvent
       } catch {
         debug('non-JSON line:', line)
+        continue
+      }
+      try {
+        this.handleEvent(event)
+      } catch (e) {
+        // Report handler bugs instead of throwing: an exception escaping this PTY
+        // callback would crash the process before it deletes the sandbox.
+        console.error('Error handling Goose event:', e)
       }
     }
   }
@@ -112,7 +133,7 @@ export class GooseSession {
     }
   }
 
-  // Run a single headless turn and resolve once Goose emits its "complete" or "error" event.
+  // Run a single headless turn and resolve once `goose run` exits.
   async processPrompt(prompt: string): Promise<void> {
     const flags = ['run', '--output-format', 'stream-json', '--text', this.shellQuote(prompt)]
     if (this.resumable) {
@@ -126,10 +147,12 @@ export class GooseSession {
 
     // Register the completion handler before sending, so a fast turn can't finish
     // before anything is listening for it.
+    this.turnEnded = false
     const turnDone = new Promise<void>((resolve) => {
       this.onResponseComplete = resolve
     })
-    await this.ptyHandle!.sendInput(`cd ${WORK_DIR} && ${command}\n`)
+    // The printf runs however goose exits and reports its exit code as a goose_exit line.
+    await this.ptyHandle!.sendInput(`cd ${WORK_DIR} && ${command}; printf '{"type":"goose_exit","code":%d}\\n' $?\n`)
     await turnDone
   }
 

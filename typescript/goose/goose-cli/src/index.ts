@@ -132,6 +132,7 @@ async function main() {
 
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
     rl.once('SIGINT', () => cleanup())
+    rl.once('close', () => cleanup())
 
     console.log('Agent ready. Press Ctrl+C at any time to exit.\n')
 

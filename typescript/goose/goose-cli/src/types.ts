@@ -56,3 +56,9 @@ export interface GooseErrorEvent extends GooseEvent {
   type: 'error'
   error: string
 }
+
+// Not from Goose: the session's shell prints this once `goose run` exits (see session.ts).
+export interface GooseExitEvent extends GooseEvent {
+  type: 'goose_exit'
+  code: number
+}
