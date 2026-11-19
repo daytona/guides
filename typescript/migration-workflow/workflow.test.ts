@@ -3,6 +3,7 @@ import test from 'node:test'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import type { Daytona } from '@daytona/sdk'
+import type { WaitOptions } from '@daytona/sdk/v2'
 import { runWorkflow } from './workflow.js'
 
 for (const scenario of [
@@ -15,9 +16,13 @@ for (const scenario of [
   let ready = false
   const sandbox = {
     id: 'example-sandbox',
-    async wait() { ready = true },
+    async wait(options: WaitOptions) {
+      ready = options.until === 'started'
+    },
     fs: { async writeText() { assert.ok(ready, 'Wait for started before filesystem access') }, async readText() { return scenario.output } },
-    process: { async run() { return { reason: scenario.reason, exitCode: scenario.exitCode } } },
+    process: { async run() {
+      return { reason: scenario.reason, exitCode: scenario.exitCode }
+    } },
     async delete() { deleted++ },
   }
   const client = { v2: { async create() { return sandbox } } } as unknown as Daytona

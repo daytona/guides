@@ -1,8 +1,8 @@
 import { Daytona } from '@daytona/sdk'
 import { pathToFileURL } from 'node:url'
 
-// Public API evidence: https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.6
-// Targets @daytona/sdk 2.0.0-alpha.6. Requires v2 Linux access.
+// Public API evidence: https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.13
+// Targets @daytona/sdk 2.0.0-alpha.13. Requires v2 Linux access.
 export async function runWorkflow(daytona: Daytona, image: string) {
   const sandbox = await daytona.v2.create(image, {
     waitSeconds: 60,
@@ -13,13 +13,13 @@ export async function runWorkflow(daytona: Daytona, image: string) {
   console.error(`Created disposable sandbox ${sandbox.id}`)
   try {
     // create's caller wait can expire before startup. Sandbox.wait uses seconds.
-    await sandbox.wait({ until: 'started', timeout: 300 })
+    await sandbox.wait({ until: 'started', timeoutSeconds: 300 })
     const input = 'migration ok\n'
     await sandbox.fs.writeText('/tmp/migration-input.txt', input)
     const result = await sandbox.process.run({
       argv: ['python3', '-c',
         'from pathlib import Path; p=Path("/tmp/migration-input.txt"); Path("/tmp/migration-output.txt").write_bytes(p.read_bytes())'],
-    }, { executionTimeout: 30_000 })
+    }, { executionTimeoutSeconds: 30 })
     if (result.reason !== 'exited' || result.exitCode !== 0) {
       throw new Error(`Command did not succeed: ${result.reason}, exit=${result.exitCode}`)
     }
@@ -28,7 +28,7 @@ export async function runWorkflow(daytona: Daytona, image: string) {
     return { output, exitCode: result.exitCode }
   } finally {
     // Only the newly created disposable sandbox belongs to this example.
-    // Deletion is asynchronous; returning does not prove teardown completed.
+    // delete() waits for destroyed (or a 404), with a 60-second default budget.
     await sandbox.delete()
   }
 }
