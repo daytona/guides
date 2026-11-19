@@ -1,0 +1,36 @@
+typescript/goose/goose-cli/src/index.ts
+  s_bd307d61c531cd::t_0448df2b11bd89 127
+  s_bd307d61c531cd::t_2c48918403b023 81-82,84
+  s_bd307d61c531cd::t_ab5317b1c1a911 109-113,117
+typescript/goose/goose-cli/src/types.ts
+  s_bd307d61c531cd::t_45543856975f20 7-8,14-17,23-24,26,29-32,35-36,38-40,49,54,57
+typescript/goose/goose-cli/src/session.ts
+  s_bd307d61c531cd::t_97f9981cb757fe 52-53,56,58-62,68,75-77
+  s_bd307d61c531cd::t_24c62b3ab1235e 127-129,132-133
+  s_bd307d61c531cd::t_39cb1850024457 115
+  s_bd307d61c531cd::t_1342cbeac5eef1 7,17-25
+  s_bd307d61c531cd::t_f96c05e8612f18 16
+typescript/goose/goose-cli/README.md
+  s_bd307d61c531cd::t_24ed84caab2fd7 3
+  s_bd307d61c531cd::t_dd293f040dc051 98-143,146-147
+  s_bd307d61c531cd::t_a05818040448fd 48
+  s_bd307d61c531cd::t_988c0410989516 46
+README.md
+  s_bd307d61c531cd::t_08c9fdd1bac8e6 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "786ce7f312d76342b9eeda61515908f2e47fbc17",
+  "prompts": {},
+  "sessions": {
+    "s_bd307d61c531cd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_e0be8347bffeUq4kwPk9uP9ER0",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
