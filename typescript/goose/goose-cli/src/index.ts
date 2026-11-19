@@ -78,8 +78,10 @@ async function main() {
     // it, the script tries to run that interactively - `[ -r /dev/tty ]` reports true
     // in the sandbox's exec environment even though there is no real controlling
     // terminal attached, so the read fails instead of falling back cleanly.
+    // The pipe hides a failed download (bash exits 0 on empty input), so the trailing
+    // `goose --version` makes the exit code reflect whether Goose actually installed.
     const install = await activeSandbox.process.executeCommand(
-      'curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash',
+      'curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash && $HOME/.local/bin/goose --version',
     )
     if (install.exitCode !== 0) {
       throw new Error('Error installing Goose CLI: ' + install.result)
@@ -104,13 +106,15 @@ async function main() {
     await session.initialize({ systemPrompt: defaultSystemPrompt })
 
     const startServerFromScript = async () => {
-      // Only run when Goose has produced a start script for this turn.
-      const startScriptCheck = await activeSandbox.process.executeCommand('test -f /home/daytona/start.sh')
-      if (startScriptCheck.exitCode !== 0) {
+      // Only run when Goose has produced a start script for this turn. Moving it out of
+      // the way claims it, so a later turn doesn't start the same server again.
+      const startScript = `/tmp/goose-start-${Date.now()}.sh`
+      const claim = await activeSandbox.process.executeCommand(`mv /home/daytona/start.sh ${startScript}`)
+      if (claim.exitCode !== 0) {
         return
       }
 
-      const startScriptContents = (await activeSandbox.fs.downloadFile('/home/daytona/start.sh')).toString('utf-8')
+      const startScriptContents = (await activeSandbox.fs.downloadFile(startScript)).toString('utf-8')
       const clippedStartScript = formatCommandPreview(startScriptContents)
       console.log(`Running \`${clippedStartScript}\` via session command...`)
       // Execute server startup outside Goose so long-running/background commands
@@ -120,7 +124,7 @@ async function main() {
       serverSessions.push(sessionId)
 
       await activeSandbox.process.executeSessionCommand(sessionId, {
-        command: 'cd /home/daytona && chmod +x start.sh && ./start.sh',
+        command: `cd /home/daytona && bash ${startScript}`,
         runAsync: true,
       })
     }

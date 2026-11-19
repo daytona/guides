@@ -4,7 +4,7 @@
  */
 
 import { Sandbox, PtyHandle } from '@daytona/sdk'
-import { GooseEvent, GooseMessageEvent, GooseErrorEvent } from './types.js'
+import { GooseEvent, GooseMessageEvent, GooseErrorEvent, GooseToolResponseBlock } from './types.js'
 
 const WORK_DIR = '/home/daytona'
 
@@ -13,14 +13,16 @@ function debug(...args: unknown[]) {
   if (DEBUG) console.error('[debug]', ...args)
 }
 
-// Goose doesn't emit a `{type:"error"}` event for provider/model failures (auth,
-// quota, etc). Instead it wraps them in an assistant message whose text is
-// "Ran into this error: <detail>. Please retry if you think this is a transient or
-// recoverable error." and then emits a plain `complete`. This regex captures
-// <detail> (dropping the retry boilerplate) so the `complete` handler can surface a
-// real error instead of the turn looking like a clean, empty success.
-const GOOSE_ERROR_TEXT =
-  /^\s*Ran into this error:\s*([\s\S]+?)\.?\s*(?:Please retry if you think this is a transient or recoverable error\.?)?\s*$/i
+// A tool fails either before it runs (status "error") or by flagging its result with isError.
+function toolError(block: GooseToolResponseBlock): string | null {
+  const result = block.toolResult
+  if (result.status === 'error') return result.error
+  if (!result.value.isError) return null
+  return result.value.content
+    .filter((part) => part.type === 'text' && part.text)
+    .map((part) => part.text)
+    .join('\n')
+}
 
 export class GooseSession {
   private ptyHandle: PtyHandle | null = null
@@ -33,9 +35,6 @@ export class GooseSession {
   // Goose continues its most recent session (there is no explicit session/thread ID
   // to track - unlike Amp or Gemini, Goose resume is just "continue the last one").
   private resumable = false
-  // Detail from a wrapped provider error, stashed by handleEvent's "message" case for
-  // the "complete" case to report.
-  private pendingError: string | null = null
   // Sent via --system on the first turn only; Goose carries it forward as part of
   // the session it resumes from then on, so it is not resent on later turns.
   private systemPrompt: string | null = null
@@ -50,51 +49,32 @@ export class GooseSession {
   private handleEvent(event: GooseEvent): void {
     switch (event.type) {
       case 'message': {
+        // Assistant messages carry streamed reply text and tool requests; tool
+        // responses come back in user messages.
         const msg = (event as GooseMessageEvent).message
-        if (msg.role !== 'assistant') return
-
         for (const block of msg.content) {
-          if (block.type === 'text') {
-            const errMatch = block.text.match(GOOSE_ERROR_TEXT)
-            if (errMatch) {
-              this.pendingError = errMatch[1].trim()
-              continue
-            }
+          if (block.type === 'text' && msg.role === 'assistant') {
             process.stdout.write(block.text)
-          } else if (block.type === 'tool_use') {
-            process.stdout.write(`\n[tool] ${block.name}\n`)
-          } else if (block.type === 'tool_result' && block.is_error) {
-            const content = block.content
-            const output =
-              typeof content === 'string'
-                ? content
-                : Array.isArray(content)
-                  ? content
-                      .filter((part) => part.type === 'text' && part.text)
-                      .map((part) => part.text)
-                      .join('\n')
-                  : ''
-            process.stdout.write(`\n[tool error] ${output}\n`)
+          } else if (block.type === 'toolRequest' && block.toolCall.status === 'success') {
+            process.stdout.write(`\n[tool] ${block.toolCall.value.name}\n`)
+          } else if (block.type === 'toolResponse') {
+            const error = toolError(block)
+            if (error) process.stdout.write(`\n[tool error] ${error}\n`)
           }
         }
         return
       }
       case 'complete': {
-        // A turn ran to completion - even a wrapped provider error still creates a
-        // resumable session, so this is the right place to flip the flag.
+        // The turn ran to completion, so later turns can --resume its session.
         this.resumable = true
-        if (this.pendingError) {
-          process.stderr.write(`\nFailed: ${this.pendingError}\n`)
-          this.pendingError = null
-        }
         process.stdout.write('\n')
         this.onResponseComplete?.()
         return
       }
       case 'error': {
-        const err = (event as GooseErrorEvent).error
-        const message = typeof err === 'string' ? err : err.message
-        process.stderr.write(`\nFailed: ${message}\n`)
+        // Provider failures (bad API key, quota, etc.) end the turn with this event
+        // instead of "complete".
+        process.stderr.write(`\nFailed: ${(event as GooseErrorEvent).error}\n`)
         this.onResponseComplete?.()
         return
       }
@@ -132,7 +112,7 @@ export class GooseSession {
     }
   }
 
-  // Run a single headless turn and resolve once Goose emits its "complete" event.
+  // Run a single headless turn and resolve once Goose emits its "complete" or "error" event.
   async processPrompt(prompt: string): Promise<void> {
     const flags = ['run', '--output-format', 'stream-json', '--text', this.shellQuote(prompt)]
     if (this.resumable) {
@@ -144,10 +124,13 @@ export class GooseSession {
     const command = ['goose', ...flags].join(' ')
     debug('running:', command)
 
-    await this.ptyHandle!.sendInput(`cd ${WORK_DIR} && ${command}\n`)
-    await new Promise<void>((resolve) => {
+    // Register the completion handler before sending, so a fast turn can't finish
+    // before anything is listening for it.
+    const turnDone = new Promise<void>((resolve) => {
       this.onResponseComplete = resolve
     })
+    await this.ptyHandle!.sendInput(`cd ${WORK_DIR} && ${command}\n`)
+    await turnDone
   }
 
   async cleanup(): Promise<void> {

@@ -4,34 +4,40 @@
  */
 
 // Event shapes emitted by `goose run --output-format stream-json` (newline-delimited JSON).
+// Mirrors the CLI's `StreamEvent` enum and the message content blocks it serializes:
+// https://github.com/aaif-goose/goose/blob/main/crates/goose-cli/src/session/mod.rs
 
 export interface GooseEvent {
   type: string
 }
+
+// Goose wraps tool calls and tool results as `{ status: "success", value }` or
+// `{ status: "error", error }`.
+export type GooseToolResult<T> = { status: 'success'; value: T } | { status: 'error'; error: string }
 
 export interface GooseTextBlock {
   type: 'text'
   text: string
 }
 
-export interface GooseToolUseBlock {
-  type: 'tool_use'
+export interface GooseToolRequestBlock {
+  type: 'toolRequest'
   id: string
-  name: string
-  input?: Record<string, unknown>
+  toolCall: GooseToolResult<{ name: string; arguments?: Record<string, unknown> }>
 }
 
-export interface GooseToolResultBlock {
-  type: 'tool_result'
-  tool_use_id: string
-  content?: string | Array<{ type: string; text?: string }>
-  is_error?: boolean
+export interface GooseToolResponseBlock {
+  type: 'toolResponse'
+  id: string
+  toolResult: GooseToolResult<{ content: Array<{ type: string; text?: string }>; isError?: boolean }>
 }
 
-export type GooseContentBlock = GooseTextBlock | GooseToolUseBlock | GooseToolResultBlock
+// Goose also emits thinking, error and system-notification blocks; the session ignores them.
+export type GooseContentBlock = GooseTextBlock | GooseToolRequestBlock | GooseToolResponseBlock
 
-// A single turn of the conversation. Goose has no dedicated session-init event, so
-// there is no session/thread ID to capture here (see session.ts for how resume works).
+// Assistant messages carry the reply text (streamed: each chunk arrives as its own event)
+// and tool requests; tool responses come back in user messages. Goose has no session-init
+// event, so there is no session ID to capture (see session.ts for how resume works).
 export interface GooseMessageEvent extends GooseEvent {
   type: 'message'
   message: {
@@ -40,13 +46,13 @@ export interface GooseMessageEvent extends GooseEvent {
   }
 }
 
-// Marks the end of a turn. Goose emits this even when the turn itself failed (see the
-// wrapped-error handling in session.ts), so it does not by itself mean "success".
+// Marks the end of a successful turn.
 export interface GooseCompleteEvent extends GooseEvent {
   type: 'complete'
 }
 
+// Marks the end of a failed turn (for example a rejected API key); no `complete` follows.
 export interface GooseErrorEvent extends GooseEvent {
   type: 'error'
-  error: string | { message: string; code?: string }
+  error: string
 }
