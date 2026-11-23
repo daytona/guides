@@ -1,0 +1,21 @@
+python/ai-data-analyst/ai_data_analyst.py
+  s_842e43753a3a37::t_497fd939326495 11-12,31,106
+python/ai-data-analyst/pyproject.toml
+  s_842e43753a3a37::t_b097f2bf7bf060 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b2ca16e7269200265497305cab4b4aa1ff3dfd3",
+  "prompts": {},
+  "sessions": {
+    "s_842e43753a3a37": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6ce9a7effet5wV9y4qraCBD0",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
