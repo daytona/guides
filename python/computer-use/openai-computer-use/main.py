@@ -1,7 +1,8 @@
 import os
 import time
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams
 from dotenv import load_dotenv
 from openai import OpenAI
 from openai.lib.computer import ComputerToolset
@@ -74,7 +75,7 @@ def main():
     sandbox = None
     toolset = None
     try:
-        sandbox = daytona.create(
+        sandbox = daytona.v0.create(
             CreateSandboxFromSnapshotParams(
                 auto_stop_interval=20,
                 auto_delete_interval=60,
