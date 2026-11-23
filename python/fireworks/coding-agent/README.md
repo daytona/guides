@@ -59,7 +59,7 @@ See the `.env.example` file for the exact structure. Copy `.env.example` to `.en
 The host stores your Fireworks key as a Daytona organization secret with a host allowlist:
 
 ```python
-daytona.secret.create(CreateSecretParams(
+daytona.v0.secret.create(CreateSecretParams(
     name="fireworks-api-key",
     value=fireworks_key,
     hosts=["api.fireworks.ai"],
@@ -69,7 +69,7 @@ daytona.secret.create(CreateSecretParams(
 When the sandbox is created, the secret is mounted as an environment variable. The variable holds an opaque placeholder (`dtn_secret_...`), not the key:
 
 ```python
-sandbox = daytona.create(CreateSandboxFromSnapshotParams(
+sandbox = daytona.v0.create(CreateSandboxFromSnapshotParams(
     language="python",
     secrets={"FIREWORKS_API_KEY": "fireworks-api-key"},
 ))
