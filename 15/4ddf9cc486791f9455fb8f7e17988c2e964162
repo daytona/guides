@@ -1,0 +1,23 @@
+python/model-serving/sglang/README.md
+  s_6cd8d13205f409::t_9def8973dcebb1 91,112,121,130-131,136,148
+python/model-serving/sglang/pyproject.toml
+  s_6cd8d13205f409::t_7a83127bbebd4e 15
+python/model-serving/sglang/serve_sglang.py
+  s_6cd8d13205f409::t_e6a9f6ec4b7257 14-16,36,119-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "154ddf9cc486791f9455fb8f7e17988c2e964162",
+  "prompts": {},
+  "sessions": {
+    "s_6cd8d13205f409": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6b1c352ffeDLZ4NUetjLpWfy",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
