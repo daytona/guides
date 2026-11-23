@@ -1,0 +1,21 @@
+python/computer-use/openai-computer-use/README.md
+  s_4f2e739d377bb3::t_0054a76a4ec5da 36
+python/computer-use/openai-computer-use/main.py
+  s_4f2e739d377bb3::t_5db6e3c8c73153 4-5,78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39759564018888da490b90c5916701ad3dd36137",
+  "prompts": {},
+  "sessions": {
+    "s_4f2e739d377bb3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6c4cf42ffe51JfKlTPT5l4XU",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
