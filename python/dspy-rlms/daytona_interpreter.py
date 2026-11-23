@@ -232,7 +232,7 @@ class DaytonaInterpreter:
     persistent state across calls.
 
     Prerequisites:
-        - Daytona SDK: pip install daytona
+        - Daytona SDK: pip install -e . (from this guide's directory)
         - DAYTONA_API_KEY environment variable set
 
     Example:
@@ -306,18 +306,19 @@ class DaytonaInterpreter:
             return
 
         try:
-            from daytona import Daytona, SessionExecuteRequest  # pylint: disable=import-outside-toplevel
+            from daytona import Daytona  # pylint: disable=import-outside-toplevel
+            from daytona.v0 import SessionExecuteRequest  # pylint: disable=import-outside-toplevel
 
             self._session_execute_request = SessionExecuteRequest
         except ImportError as exc:
             raise CodeInterpreterError(
-                "Daytona not installed. Install with: pip install daytona\n"
+                "Daytona not installed. Install with: pip install -e . (from this guide's directory)\n"
                 "Also ensure DAYTONA_API_KEY environment variable is set."
             ) from exc
 
         logger.info("Creating Daytona sandbox...")
         self._daytona = Daytona()
-        self._sandbox = self._daytona.create(**self.sandbox_params)
+        self._sandbox = self._daytona.v0.create(**self.sandbox_params)
         logger.info("Sandbox created: %s", self._sandbox.id)
 
         # Create isolated interpreter context
