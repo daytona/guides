@@ -1,0 +1,23 @@
+python/openai/agents-api/README.md
+  s_ecabdd8dfb97da::t_d07eec7072a706 39
+python/openai/agents-api/application_managed.py
+  s_ecabdd8dfb97da::t_5b3d5de0e10e9b 16-18,49
+python/openai/agents-api/webhook_managed.py
+  s_ecabdd8dfb97da::t_651bee367a07a7 32-33,75,80,132,140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "564199ee902ee4c7f6bb16095bf9c3a0dcd63d5a",
+  "prompts": {},
+  "sessions": {
+    "s_ecabdd8dfb97da": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6c48e8bffeTA1glGLSSeFrXt",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
