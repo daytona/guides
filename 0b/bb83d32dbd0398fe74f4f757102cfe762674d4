@@ -1,0 +1,19 @@
+typescript/goose/goose-cli/package.json
+  s_0e385ccbd1352a::t_0f634051e84e68 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0bbb83d32dbd0398fe74f4f757102cfe762674d4",
+  "prompts": {},
+  "sessions": {
+    "s_0e385ccbd1352a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e0be8347bffeUq4kwPk9uP9ER0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
