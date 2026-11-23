@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.15"
 dependencies = [
     "anakin-sdk>=0.2.0,<0.3.0",
-    "daytona>=0.227.3,<1.0.0",
+    "daytona[v0-sdk]==2.0.0a13",
     "litellm[mcp]>=1.108.0,<2.0.0",
     "python-dotenv>=1.0.0,<2.0.0",
 ]
