@@ -17,7 +17,8 @@ import anthropic
 import dotenv
 import host_lib
 
-from daytona import Daytona, DaytonaNotFoundError
+from daytona import Daytona
+from daytona.v0 import DaytonaNotFoundError
 
 dotenv.load_dotenv(override=True)
 
@@ -331,7 +332,7 @@ def janitor_once(*, recover_crashed_runners: bool = True) -> None:
 
     while True:
         try:
-            page = DAYT.list(
+            page = DAYT.v0.list(
                 labels={host_lib.ENVIRONMENT_ID_LABEL: ENVIRONMENT_ID},
                 page=page_number,
                 limit=100,
@@ -405,7 +406,7 @@ def janitor_once(*, recover_crashed_runners: bool = True) -> None:
 
         with session_lock(sid):
             try:
-                sb = DAYT.get(sandbox_id)
+                sb = DAYT.v0.get(sandbox_id)
             except DaytonaNotFoundError:
                 print(f"[janitor] recovery sandbox {sandbox_id} no longer exists", flush=True)
                 continue
