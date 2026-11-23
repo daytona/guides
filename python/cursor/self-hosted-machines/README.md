@@ -66,6 +66,9 @@ command -v build-cursor-self-hosted-snapshot
 
 Both commands must resolve inside the current `.venv`.
 
+The package pins `daytona[v0-sdk]==2.0.0a13` and uses its `daytona.v0`
+compatibility namespace for sandbox and snapshot operations.
+
 ## Set up Cursor
 
 A Cursor team administrator must complete these steps:

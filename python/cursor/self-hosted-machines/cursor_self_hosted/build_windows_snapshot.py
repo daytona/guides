@@ -11,7 +11,7 @@ from collections.abc import Iterator
 from importlib.resources.abc import Traversable
 from typing import Any
 
-from daytona import (
+from daytona.v0 import (
     CreateSandboxFromSnapshotParams,
     DaytonaError,
     ExecuteResponse,
@@ -73,7 +73,7 @@ def windows_snapshot_name_for(
 def _iter_snapshots(daytona: Any) -> Iterator[object]:
     page = 1
     while True:
-        result = daytona.snapshot.list(page=page, limit=WINDOWS_SNAPSHOT_PAGE_LIMIT)
+        result = daytona.v0.snapshot.list(page=page, limit=WINDOWS_SNAPSHOT_PAGE_LIMIT)
         snapshots = getattr(result, "items", []) or []
         yield from snapshots
 
@@ -237,7 +237,7 @@ def _delete_sandbox(
     primary_error: Exception | None,
 ) -> None:
     try:
-        daytona.delete(sandbox, timeout=timeout)
+        daytona.v0.delete(sandbox, timeout=timeout)
     except Exception as cleanup_error:
         name = getattr(sandbox, "name", "unknown")
         if primary_error is not None:
@@ -259,7 +259,7 @@ def _verify_or_delete_snapshot(
     verifier: Any | None = None
     verifier_error: Exception | None = None
     try:
-        verifier = daytona.create(
+        verifier = daytona.v0.create(
             CreateSandboxFromSnapshotParams(
                 snapshot=name,
                 name=_unique_sandbox_name("verifier"),
@@ -280,7 +280,7 @@ def _verify_or_delete_snapshot(
     except Exception as error:
         verifier_error = error
         try:
-            daytona.snapshot.delete(snapshot)
+            daytona.v0.snapshot.delete(snapshot)
         except Exception as cleanup_error:
             error.add_note(
                 f"Cleanup also failed for uncertified Windows snapshot "
@@ -321,7 +321,7 @@ def build_windows_snapshot(
     builder_cleanup_error: Exception | None = None
     snapshot: Any
     try:
-        builder = daytona.create(
+        builder = daytona.v0.create(
             CreateSandboxFromSnapshotParams(
                 snapshot=source_snapshot,
                 name=_unique_sandbox_name("builder"),
@@ -343,7 +343,7 @@ def build_windows_snapshot(
 
         builder.stop(timeout=sandbox_timeout)
         builder.create_snapshot(name, timeout=build_timeout)
-        snapshot = daytona.snapshot.get(name)
+        snapshot = daytona.v0.snapshot.get(name)
         _validate_windows_snapshot(snapshot, name)
     except Exception as error:
         builder_error = error

@@ -130,7 +130,7 @@ def test_linux_vm_snapshot_provisions_captures_verifies_and_cleans_up(
     monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
 
     snapshot, reused = module.build_linux_vm_snapshot(
-        daytona,
+        SimpleNamespace(v0=daytona),
         name="cursor-self-hosted-linux-vm-test",
         source_snapshot="daytona-vm-medium",
         build_timeout=1800,
@@ -185,7 +185,7 @@ def test_active_linux_vm_snapshot_is_cold_verified_before_reuse(
     monkeypatch.setattr(module, "run_linux_vm_provisioner", run_provisioner)
 
     snapshot, reused = module.build_linux_vm_snapshot(
-        daytona,
+        SimpleNamespace(v0=daytona),
         name=existing.name,
         source_snapshot="daytona-vm-medium",
         build_timeout=1800,
@@ -222,7 +222,7 @@ def test_failed_linux_vm_verification_deletes_uncertified_snapshot(
 
     with pytest.raises(RuntimeError, match="verification transport failed"):
         module.build_linux_vm_snapshot(
-            daytona,
+            SimpleNamespace(v0=daytona),
             name="cursor-self-hosted-linux-vm-unverified",
             source_snapshot="daytona-vm-medium",
             build_timeout=1800,
@@ -263,7 +263,7 @@ def test_linux_vm_verification_runs_after_builder_cleanup_failure(
 
     with pytest.raises(RuntimeError, match="temporary sandbox"):
         module.build_linux_vm_snapshot(
-            daytona,
+            SimpleNamespace(v0=daytona),
             name="cursor-self-hosted-linux-vm-cleanup-failure",
             source_snapshot="daytona-vm-medium",
             build_timeout=1800,

@@ -14,9 +14,11 @@ from pathlib import Path
 from typing import Any
 
 from daytona import (
-    CreateSnapshotParams,
     Daytona,
     DaytonaConfig,
+)
+from daytona.v0 import (
+    CreateSnapshotParams,
     Image,
     Resources,
     SandboxClass,
@@ -94,7 +96,7 @@ def snapshot_name_for(
 def _iter_snapshots(daytona: Any) -> Iterator[object]:
     page = 1
     while True:
-        result = daytona.snapshot.list(page=page, limit=SNAPSHOT_PAGE_LIMIT)
+        result = daytona.v0.snapshot.list(page=page, limit=SNAPSHOT_PAGE_LIMIT)
         snapshots = getattr(result, "items", []) or []
         yield from snapshots
 
@@ -226,6 +228,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         daytona = Daytona(DaytonaConfig(target=target))
+        # The SDK initializes the v0 client lazily; keep startup errors in this handler.
+        _ = daytona.v0
         if sandbox_class == SandboxClass.LINUX_VM:
             source_snapshot = args.source_snapshot or LINUX_VM_SOURCE_SNAPSHOT
             name = linux_vm_snapshot_name_for(
@@ -286,7 +290,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         with resources.as_file(snapshot_inputs[0]) as dockerfile:
-            snapshot = daytona.snapshot.create(
+            snapshot = daytona.v0.snapshot.create(
                 CreateSnapshotParams(
                     name=name,
                     image=Image.from_dockerfile(dockerfile),

@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from daytona import SandboxClass
+from daytona.v0 import SandboxClass
 import pytest
 
 from cursor_self_hosted import build_snapshot as snapshot_module
@@ -157,7 +157,7 @@ def test_active_snapshot_with_matching_name_is_reused() -> None:
     daytona = FakeDaytona([[existing]])
 
     found = find_reusable_snapshot(
-        daytona,
+        SimpleNamespace(v0=daytona),
         existing.name,
         SandboxClass.CONTAINER,
     )
@@ -183,7 +183,7 @@ def test_active_snapshot_with_matching_name_on_second_page_is_reused() -> None:
     )
 
     found = find_reusable_snapshot(
-        daytona,
+        SimpleNamespace(v0=daytona),
         existing.name,
         SandboxClass.CONTAINER,
     )
@@ -201,7 +201,7 @@ def test_non_active_snapshot_with_matching_name_raises_collision_error() -> None
 
     with pytest.raises(SnapshotCollisionError) as caught:
         find_reusable_snapshot(
-            daytona,
+            SimpleNamespace(v0=daytona),
             existing.name,
             SandboxClass.CONTAINER,
         )
@@ -223,7 +223,7 @@ def test_active_snapshot_with_wrong_class_is_rejected() -> None:
 
     with pytest.raises(SnapshotCollisionError) as caught:
         find_reusable_snapshot(
-            daytona,
+            SimpleNamespace(v0=daytona),
             existing.name,
             SandboxClass.LINUX_VM,
         )
@@ -248,9 +248,9 @@ def test_builder_creates_explicit_container_snapshot_in_requested_target(
     daytona = FakeDaytona([[]], created)
     constructed_with: list[object] = []
 
-    def make_daytona(config: object) -> FakeDaytona:
+    def make_daytona(config: object) -> SimpleNamespace:
         constructed_with.append(config)
-        return daytona
+        return SimpleNamespace(v0=daytona)
 
     monkeypatch.setattr(snapshot_module, "Daytona", make_daytona)
 
@@ -294,9 +294,9 @@ def test_builder_dispatches_linux_vm_snapshot_provisioning(
     daytona = FakeDaytona([[]])
     calls: list[dict[str, object]] = []
 
-    def make_daytona(config: object) -> FakeDaytona:
+    def make_daytona(config: object) -> SimpleNamespace:
         calls.append({"config": config})
-        return daytona
+        return SimpleNamespace(v0=daytona)
 
     def build_linux_vm(
         daytona_arg: object,
@@ -332,7 +332,7 @@ def test_builder_dispatches_linux_vm_snapshot_provisioning(
 
     assert status == 0
     assert calls[1] == {
-        "daytona": daytona,
+        "daytona": SimpleNamespace(v0=daytona),
         "name": created.name,
         "source_snapshot": "daytona-vm-medium",
         "build_timeout": 1800,
@@ -359,9 +359,9 @@ def test_builder_dispatches_windows_snapshot_provisioning(
     daytona = FakeDaytona([[]])
     calls: list[dict[str, object]] = []
 
-    def make_daytona(config: object) -> FakeDaytona:
+    def make_daytona(config: object) -> SimpleNamespace:
         calls.append({"config": config})
-        return daytona
+        return SimpleNamespace(v0=daytona)
 
     def build_windows(daytona_arg: object, **kwargs: object) -> tuple[object, bool]:
         calls.append({"daytona": daytona_arg, **kwargs})
@@ -394,7 +394,7 @@ def test_builder_dispatches_windows_snapshot_provisioning(
 
     assert status == 0
     assert calls[1] == {
-        "daytona": daytona,
+        "daytona": SimpleNamespace(v0=daytona),
         "name": created.name,
         "source_snapshot": "windows-medium",
         "build_timeout": 1800,

@@ -138,7 +138,7 @@ def test_windows_snapshot_build_provisions_captures_verifies_and_cleans_up(
     monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
 
     snapshot, reused = module.build_windows_snapshot(
-        daytona,
+        SimpleNamespace(v0=daytona),
         name="cursor-self-hosted-windows-test",
         source_snapshot="windows-medium",
         build_timeout=1800,
@@ -195,7 +195,7 @@ def test_active_windows_snapshot_is_cold_verified_before_reuse(
     monkeypatch.setattr(module, "run_windows_provisioner", run_provisioner)
 
     snapshot, reused = module.build_windows_snapshot(
-        daytona,
+        SimpleNamespace(v0=daytona),
         name=existing.name,
         source_snapshot="windows-medium",
         build_timeout=1800,
@@ -259,7 +259,7 @@ def test_failed_windows_verification_deletes_uncertified_snapshot(
 
     with pytest.raises(RuntimeError, match="verification transport failed"):
         module.build_windows_snapshot(
-            daytona,
+            SimpleNamespace(v0=daytona),
             name="cursor-self-hosted-windows-unverified",
             source_snapshot="windows-medium",
             build_timeout=1800,
@@ -303,7 +303,7 @@ def test_windows_verification_runs_after_builder_cleanup_failure(
         match="builder",
     ):
         module.build_windows_snapshot(
-            daytona,
+            SimpleNamespace(v0=daytona),
             name="cursor-self-hosted-windows-cleanup-failure",
             source_snapshot="windows-medium",
             build_timeout=1800,

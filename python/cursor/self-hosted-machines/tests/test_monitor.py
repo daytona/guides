@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import patch
 
@@ -114,7 +115,7 @@ class MonitorWorkerTests(unittest.TestCase):
         monitor_worker = monitor_module.monitor_worker
         return monitor_worker(
             cast(Any, config or FakeMonitorConfig()),
-            daytona,
+            SimpleNamespace(v0=daytona),
             sleep=cast(Any, sleeps.append),
         )
 
