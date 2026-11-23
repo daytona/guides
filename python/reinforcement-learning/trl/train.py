@@ -10,8 +10,8 @@ from datasets import Dataset
 from dotenv import load_dotenv
 from trl import GRPOConfig, GRPOTrainer
 
-from daytona import AsyncDaytona, AsyncSandbox
-from daytona.common.errors import DaytonaTimeoutError
+from daytona import AsyncDaytona
+from daytona.v0 import AsyncSandbox, DaytonaTimeoutError
 
 load_dotenv()
 
@@ -89,7 +89,7 @@ PROMPT_TO_TASK = {task["prompt"]: task for task in TASKS.values()}
 
 async def _create_sandbox_pool_async(daytona: AsyncDaytona, n: int = 10) -> List[AsyncSandbox]:
     print(f"Creating {n} sandboxes...")
-    tasks = [daytona.create() for _ in range(n)]
+    tasks = [daytona.v0.create() for _ in range(n)]
     sandboxes = await asyncio.gather(*tasks)
     print(f"Successfully created all {len(sandboxes)} sandboxes")
     return list(sandboxes)
