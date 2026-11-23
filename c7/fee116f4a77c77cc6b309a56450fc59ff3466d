@@ -1,0 +1,31 @@
+python/notte/browser-testing/README.md
+  s_0e385ccbd1352a::t_3f13faab2915a5 26,64
+python/notte/browser-testing/browser_test.py
+  s_737ac98203ec96::t_d2b295d2d21ced 14-15,145,154
+python/notte/browser-testing/pyproject.toml
+  s_737ac98203ec96::t_4c79ce386d78e7 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c7fee116f4a77c77cc6b309a56450fc59ff3466d",
+  "prompts": {},
+  "sessions": {
+    "s_0e385ccbd1352a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e0be8347bffeUq4kwPk9uP9ER0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_737ac98203ec96": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6be620effebBfVrtPCa1PvL5",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
