@@ -1,0 +1,25 @@
+python/recursive-language-models/pyproject.toml
+  s_4e5d2fcf42d61c::t_b449d2a01b3c34 9
+python/recursive-language-models/rlm/agent.py
+  s_4e5d2fcf42d61c::t_4b39edbd1e60f8 22
+python/recursive-language-models/rlm/repl.py
+  s_4e5d2fcf42d61c::t_0cfbbb2f9aa5cd 27,30
+python/recursive-language-models/rlm/sandbox.py
+  s_4e5d2fcf42d61c::t_16f29663d7b9a0 12-13,16,94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6c38862f19de383bb78547b6df97d439c36e6cff",
+  "prompts": {},
+  "sessions": {
+    "s_4e5d2fcf42d61c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6b8cc1affe2AYE3qWXIMvPR4",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
