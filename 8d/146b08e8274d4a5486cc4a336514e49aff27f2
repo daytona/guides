@@ -1,0 +1,38 @@
+python/reinforcement-learning/trl/train.py
+  s_c7332fe1b8e434::t_71d289d9309bd3 14
+  s_6cd8d13205f409::t_c83770347600ff 13,92
+python/reinforcement-learning/trl/pyproject.toml
+  s_295d213bf014ea::t_42bb1ff9b0d032 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8d146b08e8274d4a5486cc4a336514e49aff27f2",
+  "prompts": {},
+  "sessions": {
+    "s_295d213bf014ea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6b1456affeKwzR3A3Q0vzTtf",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_6cd8d13205f409": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6b1c352ffeDLZ4NUetjLpWfy",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_c7332fe1b8e434": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_df6b1456affeKwzR3A3Q0vzTtf",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
