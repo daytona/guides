@@ -1,0 +1,19 @@
+SDK2-MIGRATION.md
+  s_df0daa35675b59::t_26a8a10d9a2112 1-428
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f55aaf5475bc5973e8d43db060ed8c0221e2f07f",
+  "prompts": {},
+  "sessions": {
+    "s_df0daa35675b59": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df688e52effeyzVy1zLGVRcsGL",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
