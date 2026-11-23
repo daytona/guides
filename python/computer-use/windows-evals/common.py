@@ -8,7 +8,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaConfig, Sandbox
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams, Sandbox
 
 
 def load_dotenv(path: str | os.PathLike[str] = ".env") -> None:
@@ -34,15 +35,7 @@ load_dotenv()
 
 
 def get_client() -> Daytona:
-    """Create a Daytona client from DAYTONA_API_KEY and optional DAYTONA_API_URL."""
-    api_url = os.environ.get("DAYTONA_API_URL")
-    if api_url:
-        return Daytona(
-            DaytonaConfig(
-                api_key=os.environ.get("DAYTONA_API_KEY"),
-                api_url=api_url,
-            )
-        )
+    """Create a Daytona client from DAYTONA_API_KEY."""
     return Daytona()
 
 
@@ -53,7 +46,7 @@ def create_sandbox(
     labels: dict[str, str] | None = None,
 ) -> Sandbox:
     """Create a sandbox from a VM snapshot."""
-    return client.create(
+    return client.v0.create(
         CreateSandboxFromSnapshotParams(
             snapshot=snapshot,
             name=name,

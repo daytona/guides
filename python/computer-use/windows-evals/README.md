@@ -33,7 +33,7 @@ The scripts also load `.env` automatically from this directory, while any variab
 Environment variables:
 
 - `DAYTONA_API_KEY`: required for all scripts. Get it from the [Daytona Dashboard](https://app.daytona.io/dashboard/keys).
-- `DAYTONA_API_URL`: optional, only when targeting a non-default API endpoint.
+- custom API URL: stay on SDK 0.x.
 - `ANTHROPIC_API_KEY`: only for `harness.py --agent claude`.
 - `OPENAI_API_KEY`: only for `harness.py --agent codex`.
 

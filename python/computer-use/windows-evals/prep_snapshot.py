@@ -228,7 +228,7 @@ def _wait_for_snapshot_active(client, name: str, *, timeout_s: int) -> Any:
 
     while True:
         try:
-            snapshot = client.snapshot.get(name)
+            snapshot = client.v0.snapshot.get(name)
         except Exception as exc:  # noqa: BLE001 - snapshots may 404 briefly after create.
             if not _is_transient_snapshot_lookup_error(exc):
                 raise RuntimeError(f"snapshot lookup failed for {name!r}: {exc}") from exc
@@ -242,7 +242,7 @@ def _wait_for_snapshot_active(client, name: str, *, timeout_s: int) -> Any:
                 raise RuntimeError(f"snapshot {name!r} entered state {last_state!r}")
 
         try:
-            page = client.snapshot.list(limit=200)
+            page = client.v0.snapshot.list(limit=200)
         except Exception as exc:  # noqa: BLE001 - list may also race snapshot propagation.
             if not _is_transient_snapshot_lookup_error(exc):
                 raise RuntimeError(f"snapshot list failed while waiting for {name!r}: {exc}") from exc
