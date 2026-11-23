@@ -1,0 +1,23 @@
+python/model-serving/vllm/README.md
+  s_cf1a207d36bf62::t_2810eb6c084244 83,104,113,122-123,128,140
+python/model-serving/vllm/pyproject.toml
+  s_cf1a207d36bf62::t_eb43c6cb03890f 11
+python/model-serving/vllm/serve_vllm.py
+  s_cf1a207d36bf62::t_d3352f749c69ca 13-15,34,115-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "222b650981403bc92a47972eb0bb48191c95c3a6",
+  "prompts": {},
+  "sessions": {
+    "s_cf1a207d36bf62": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6b1940bffeVTPhULWphEjBYa",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
