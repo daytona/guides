@@ -1,0 +1,69 @@
+python/cursor/self-hosted-machines/tests/test_spawn.py
+  s_b60eb97b7aeea4::t_d99b41a5271260 280,504,662,710,757
+python/cursor/self-hosted-machines/tests/test_snapshot.py
+  s_b60eb97b7aeea4::t_d99b41a5271260 160,186,204,226,251,253,297,299,335,362,364,397
+  s_de3d9643221eed::t_1207929213cc9f 11
+python/cursor/self-hosted-machines/cursor_self_hosted/build_snapshot.py
+  s_b60eb97b7aeea4::t_5397bf76f6f934 231-232
+  s_b60eb97b7aeea4::t_faab99811ac152 99
+  s_de3d9643221eed::t_734f08271e80d0 19-21,293
+python/cursor/self-hosted-machines/cursor_self_hosted/spawn.py
+  s_b60eb97b7aeea4::t_faab99811ac152 179,187,201,211
+  s_b60eb97b7aeea4::t_5397bf76f6f934 322-323
+  s_de3d9643221eed::t_2d3355b37cb353 23-25
+python/cursor/self-hosted-machines/tests/test_linux_vm_snapshot.py
+  s_b60eb97b7aeea4::t_d99b41a5271260 133,188,225,266
+python/cursor/self-hosted-machines/cursor_self_hosted/build_linux_vm_snapshot.py
+  s_b60eb97b7aeea4::t_faab99811ac152 63,180,201,217,248,296
+  s_f9d15c7ece5981::t_79affcbefd2102 12
+python/cursor/self-hosted-machines/tests/test_windows_snapshot.py
+  s_b60eb97b7aeea4::t_d99b41a5271260 141,198,262,306
+python/cursor/self-hosted-machines/cursor_self_hosted/build_windows_snapshot.py
+  s_b60eb97b7aeea4::t_faab99811ac152 76,240,262,283,324,346
+  s_f9d15c7ece5981::t_9877e45e181bab 14
+python/cursor/self-hosted-machines/README.md
+  s_b60eb97b7aeea4::t_d99b41a5271260 69-71
+python/cursor/self-hosted-machines/cursor_self_hosted/monitor.py
+  s_b60eb97b7aeea4::t_faab99811ac152 141
+  s_b60eb97b7aeea4::t_5397bf76f6f934 190-191
+python/cursor/self-hosted-machines/tests/test_monitor.py
+  s_b60eb97b7aeea4::t_d99b41a5271260 8,118
+python/cursor/self-hosted-machines/cursor_self_hosted/sandbox_class.py
+  s_b60eb97b7aeea4::t_39212755112a14 5
+python/cursor/self-hosted-machines/pyproject.toml
+  s_b60eb97b7aeea4::t_76dbdd78f502f9 12
+python/cursor/self-hosted-machines/tests/live_e2e.py
+  s_b60eb97b7aeea4::t_e7713b79e42cfd 28-30,288,368,414,685
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dc7c3355c2426f2b60011fa8e19012ca12539274",
+  "prompts": {},
+  "sessions": {
+    "s_b60eb97b7aeea4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6a26ce2ffef0rsaNAko2TgcB",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_de3d9643221eed": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6a2ccb3ffelEQ6C0Ny0eoW1L",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_f9d15c7ece5981": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6a330e1ffeqxb5WB2SUTgWG3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
