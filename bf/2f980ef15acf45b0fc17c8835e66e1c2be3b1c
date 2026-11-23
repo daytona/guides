@@ -1,0 +1,31 @@
+typescript/copilotkit/generative-ui-coding-agent/README.md
+  s_30ada681e8322f::t_f4389467625cc8 9,57
+typescript/copilotkit/generative-ui-coding-agent/app/api/copilotkit/route.ts
+  s_842e43753a3a37::t_20545e6e4dd163 55,81,105,119,133,156,171,188,210,244,288
+typescript/copilotkit/generative-ui-coding-agent/package.json
+  s_842e43753a3a37::t_cf7817e119487c 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf2f980ef15acf45b0fc17c8835e66e1c2be3b1c",
+  "prompts": {},
+  "sessions": {
+    "s_30ada681e8322f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6cee4b0ffeDyOGM4LNrFtJXO",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_842e43753a3a37": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6ce9a7effet5wV9y4qraCBD0",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
