@@ -1,0 +1,27 @@
+python/gemini/gemini-managed-agents/build_snapshot.py
+  s_5953d1007bfc47::t_19bb51815c8a66 14-15,28,42
+python/gemini/gemini-managed-agents/provision_sandbox.py
+  s_5953d1007bfc47::t_0ecb12504a8952 32-33,85,140
+python/gemini/gemini-managed-agents/pyproject.toml
+  s_5953d1007bfc47::t_22e76b927dbe22 7
+python/gemini/gemini-managed-agents/sandbox_lib.py
+  s_5953d1007bfc47::t_f99e9d42c05520 14
+python/gemini/gemini-managed-agents/worker.py
+  s_5953d1007bfc47::t_65c8aeb3251476 18-19,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "775320205b04687eb234c84261847b9fc75b9459",
+  "prompts": {},
+  "sessions": {
+    "s_5953d1007bfc47": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6be2317ffevrRnU34uFccy4q",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
