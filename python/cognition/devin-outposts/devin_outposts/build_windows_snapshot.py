@@ -18,9 +18,9 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 
 import httpx
-from daytona import (
+from daytona import Daytona, DaytonaV0Client
+from daytona.v0 import (
     CreateSandboxFromSnapshotParams,
-    Daytona,
     DaytonaError,
     ExecuteResponse,
     Sandbox,
@@ -193,19 +193,19 @@ def _snapshot_name(
     return f"{DEFAULT_SNAPSHOT_PREFIX}-{digest.hexdigest()[:8]}"
 
 
-def _iter_snapshots(daytona: Daytona) -> Iterator[SnapshotDto]:
+def _iter_snapshots(v0: DaytonaV0Client) -> Iterator[SnapshotDto]:
     page = 1
     while True:
-        result = daytona.snapshot.list(page=page, limit=SNAPSHOT_PAGE_LIMIT)
+        result = v0.snapshot.list(page=page, limit=SNAPSHOT_PAGE_LIMIT)
         yield from result.items
         if page >= result.total_pages:
             return
         page += 1
 
 
-def _find_snapshot(daytona: Daytona, name: str) -> SnapshotDto | None:
+def _find_snapshot(v0: DaytonaV0Client, name: str) -> SnapshotDto | None:
     return next(
-        (snapshot for snapshot in _iter_snapshots(daytona) if snapshot.name == name),
+        (snapshot for snapshot in _iter_snapshots(v0) if snapshot.name == name),
         None,
     )
 
@@ -348,7 +348,7 @@ def _delete_sandbox(
     daytona: Daytona, sandbox: Sandbox, timeout: int, purpose: str
 ) -> bool:
     try:
-        daytona.delete(sandbox, timeout=timeout)
+        daytona.v0.delete(sandbox, timeout=timeout)
     except DaytonaError as exc:
         print(
             f"Failed to delete {purpose} sandbox {sandbox.name}: {exc}", file=sys.stderr
@@ -394,7 +394,8 @@ def main() -> int:
 
     try:
         daytona = Daytona()
-        snapshot = _find_snapshot(daytona, name)
+        v0 = daytona.v0
+        snapshot = _find_snapshot(v0, name)
     except DaytonaError as exc:
         print(f"Unable to inspect Daytona snapshots: {exc}", file=sys.stderr)
         return EXIT_OPERATION
@@ -413,7 +414,7 @@ def main() -> int:
         builder: Sandbox | None = None
         build_failed = False
         try:
-            builder = daytona.create(
+            builder = v0.create(
                 CreateSandboxFromSnapshotParams(
                     snapshot=args.source_snapshot,
                     name=_unique_sandbox_name("builder"),
@@ -439,7 +440,7 @@ def main() -> int:
             else:
                 builder.stop(timeout=args.sandbox_timeout)
                 builder.create_snapshot(name, timeout=args.build_timeout)
-                snapshot = daytona.snapshot.get(name)
+                snapshot = v0.snapshot.get(name)
                 if snapshot.state != SnapshotState.ACTIVE:
                     print(
                         f"Created snapshot is not ACTIVE: {snapshot.name} state={snapshot.state.value}",
@@ -463,7 +464,7 @@ def main() -> int:
     verification_failed = False
     purpose = "serving" if args.create_serving_sandbox else "verifier"
     try:
-        verifier = daytona.create(
+        verifier = v0.create(
             CreateSandboxFromSnapshotParams(
                 snapshot=snapshot.name,
                 name=_unique_sandbox_name(purpose),

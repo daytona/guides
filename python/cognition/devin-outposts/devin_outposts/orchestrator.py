@@ -50,7 +50,8 @@ from .worker import (
 from .worker_windows import powershell_encoded, ps_quote
 
 try:  # Daytona is an install-time dependency; imports stay here for clear failures.
-    from daytona import CreateSandboxFromSnapshotParams, Daytona, ListSandboxesQuery
+    from daytona import Daytona
+    from daytona.v0 import CreateSandboxFromSnapshotParams, ListSandboxesQuery
 except ImportError:  # pragma: no cover - exercised only in an uninstalled environment.
     CreateSandboxFromSnapshotParams = None  # type: ignore[assignment]
     Daytona = None  # type: ignore[assignment]
@@ -407,7 +408,7 @@ class Orchestrator:
         sandbox_name = sandbox_name_for(session_id)
         labels = labels_for(self.config, session_id)
         try:
-            sandbox = self.daytona.get(sandbox_name)
+            sandbox = self.daytona.v0.get(sandbox_name)
             self._validate_sandbox_labels(sandbox, labels)
             self._ensure_started(sandbox)
             return sandbox, False
@@ -427,7 +428,7 @@ class Orchestrator:
             auto_stop_interval=0,
             auto_delete_interval=-1,
         )
-        sandbox = self.daytona.create(params, timeout=120)
+        sandbox = self.daytona.v0.create(params, timeout=120)
         self._ensure_started(sandbox)
         LOGGER.info("Created sandbox %s for session %s", sandbox_name, session_id)
         return sandbox, True
@@ -607,7 +608,7 @@ class Orchestrator:
 
     def _get_sandbox_by_session_id(self, session_id: str) -> Any | None:
         try:
-            return self.daytona.get(sandbox_name_for(session_id))
+            return self.daytona.v0.get(sandbox_name_for(session_id))
         except Exception as exc:
             if is_not_found(exc):
                 return None
@@ -675,7 +676,7 @@ class Orchestrator:
             return
         query = ListSandboxesQuery(labels={"devin.outpost_id": self.config.outpost_id})
         active = self._active_session_ids()
-        for sandbox in self.daytona.list(query):
+        for sandbox in self.daytona.v0.list(query):
             session_id = sandbox_label(sandbox, "devin.session_id")
             if not session_id or session_id in active:
                 continue

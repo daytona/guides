@@ -230,7 +230,9 @@ class SuccessOutputTests(unittest.TestCase):
                 return_value=self.args(create_serving_sandbox=create_serving_sandbox),
             ),
             patch.object(snapshot_builder, "load_dotenv", return_value=False),
-            patch.object(snapshot_builder, "Daytona", return_value=FakeDaytona()),
+            patch.object(
+                snapshot_builder, "Daytona", return_value=SimpleNamespace(v0=FakeDaytona())
+            ),
             patch.object(snapshot_builder, "_find_snapshot", return_value=snapshot),
             patch.object(
                 snapshot_builder,
