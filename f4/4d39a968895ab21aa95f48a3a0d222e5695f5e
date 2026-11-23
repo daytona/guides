@@ -1,0 +1,44 @@
+python/claude/claude-managed-agents/orchestrator_lib.py
+  s_7ad636538f4f05::t_ca0d34f21582b9 409
+  s_0e385ccbd1352a::t_2b5157f51d3c99 20-21,335
+python/claude/claude-managed-agents/README.md
+  s_7ad636538f4f05::t_1bb91cdebc2672 125
+python/claude/claude-managed-agents/build_default_snapshot.py
+  s_8a45ebb4b3150a::t_727408134ba4a5 16-17,34,41
+python/claude/claude-managed-agents/host_lib.py
+  s_8a45ebb4b3150a::t_e1874db828a93c 24-25,113,128,140,142,170
+python/claude/claude-managed-agents/pyproject.toml
+  s_8a45ebb4b3150a::t_91861e92079b8e 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f44d39a968895ab21aa95f48a3a0d222e5695f5e",
+  "prompts": {},
+  "sessions": {
+    "s_0e385ccbd1352a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e0be8347bffeUq4kwPk9uP9ER0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_7ad636538f4f05": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ses_df6b8838effegD0unAn811wpdX",
+        "model": "unknown"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_8a45ebb4b3150a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6b8838effegD0unAn811wpdX",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
