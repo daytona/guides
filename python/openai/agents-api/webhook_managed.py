@@ -29,6 +29,8 @@ import shlex
 
 from daytona import (
     AsyncDaytona,
+)
+from daytona.v0 import (
     CreateSandboxFromImageParams,
     DaytonaNotFoundError,
     Image,
@@ -70,12 +72,12 @@ async def connect_worker(
     """
     name = sandbox_name(session_id)
     try:
-        sandbox = await daytona.get(name)
+        sandbox = await daytona.v0.get(name)
     except DaytonaNotFoundError:
         sandbox = None
 
     if sandbox is None:
-        sandbox = await daytona.create(
+        sandbox = await daytona.v0.create(
             CreateSandboxFromImageParams(
                 name=name,
                 image=build_image(),
@@ -127,7 +129,7 @@ async def connect_worker(
 
 async def delete_worker(daytona: AsyncDaytona, session_id: str) -> None:
     try:
-        await daytona.delete(await daytona.get(sandbox_name(session_id)))
+        await daytona.v0.delete(await daytona.v0.get(sandbox_name(session_id)))
     except DaytonaNotFoundError:
         pass
 
@@ -135,7 +137,7 @@ async def delete_worker(daytona: AsyncDaytona, session_id: str) -> None:
 async def stop_worker(daytona: AsyncDaytona, session_id: str) -> None:
     """Stop the session's sandbox to release compute; the filesystem is preserved."""
     try:
-        sandbox = await daytona.get(sandbox_name(session_id))
+        sandbox = await daytona.v0.get(sandbox_name(session_id))
     except DaytonaNotFoundError:
         return
     if sandbox.state == "started":

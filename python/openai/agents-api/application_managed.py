@@ -12,8 +12,10 @@ import shlex
 from pathlib import Path
 
 from daytona import (
-    CreateSandboxFromImageParams,
     Daytona,
+)
+from daytona.v0 import (
+    CreateSandboxFromImageParams,
     Image,
     Sandbox,
     SessionExecuteRequest,
@@ -44,7 +46,7 @@ def start_sandbox(
     remote_url: str,
 ) -> Sandbox:
     """Create a sandbox, seed the workspace, and start the executor inside it."""
-    sandbox = daytona.create(
+    sandbox = daytona.v0.create(
         CreateSandboxFromImageParams(
             image=build_image(),
             # Only the restricted executor key enters the sandbox. Agent-generated
