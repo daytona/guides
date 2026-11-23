@@ -1,0 +1,47 @@
+python/cognition/devin-outposts/tests/test_builder_review.py
+  s_de3d9643221eed::t_8baed7368566fb 19-20,42
+  s_de3d9643221eed::t_6b6306eea3bdfe 45,52,61,70
+python/cognition/devin-outposts/devin_outposts/build_windows_snapshot.py
+  s_de3d9643221eed::t_356ffc0891b30e 21-22,196,199,206,208,351,397-398,417,443,467
+python/cognition/devin-outposts/tests/test_orchestrator.py
+  s_de3d9643221eed::t_8baed7368566fb 9,47-50,100-102,109-111,171-173
+python/cognition/devin-outposts/README.md
+  s_de3d9643221eed::t_8baed7368566fb 13
+python/cognition/devin-outposts/devin_outposts/orchestrator.py
+  s_de3d9643221eed::t_8baed7368566fb 411,431,611,679
+  s_f9d15c7ece5981::t_80f1fa2fea9f74 53-54
+python/cognition/devin-outposts/tests/test_windows_snapshot_review.py
+  s_de3d9643221eed::t_6b6306eea3bdfe 233-235
+python/cognition/devin-outposts/tests/test_lifecycle_review.py
+  s_de3d9643221eed::t_8baed7368566fb 9,132,242
+python/cognition/devin-outposts/devin_outposts/build_linux_snapshot.py
+  s_de3d9643221eed::t_5f6450aec614c4 16-17,52,116
+python/cognition/devin-outposts/devin_outposts/sandbox.py
+  s_de3d9643221eed::t_b6df63544e3fb4 17,20
+python/cognition/devin-outposts/pyproject.toml
+  s_de3d9643221eed::t_952cb22d295a27 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fbfba504f564793c4f3778b9732d1ed536accfd3",
+  "prompts": {},
+  "sessions": {
+    "s_de3d9643221eed": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6a2ccb3ffelEQ6C0Ny0eoW1L",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    },
+    "s_f9d15c7ece5981": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6a330e1ffeqxb5WB2SUTgWG3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
