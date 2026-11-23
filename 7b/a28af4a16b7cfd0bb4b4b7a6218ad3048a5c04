@@ -1,0 +1,23 @@
+python/fireworks/coding-agent/README.md
+  s_9a7cfcec957d03::t_1746c014a8bfb7 62,72
+python/fireworks/coding-agent/main.py
+  s_9a7cfcec957d03::t_1404eaa4687d4c 19-21,47,50,60,92,153
+python/fireworks/coding-agent/pyproject.toml
+  s_9a7cfcec957d03::t_df47e8c93c8212 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ba28af4a16b7cfd0bb4b4b7a6218ad3048a5c04",
+  "prompts": {},
+  "sessions": {
+    "s_9a7cfcec957d03": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6bea030ffegg7XBgPooY5EpX",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
