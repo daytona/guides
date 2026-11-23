@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
-import { FileUpload } from '@daytona/sdk/src/FileSystem'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
+import type { FileUpload } from '@daytona/sdk/v0'
 
 let daytonaInstance: Daytona | null = null
 
@@ -17,7 +18,7 @@ export const getDaytonaClient = () => {
 
 export const getSandboxById = async (sandboxId: string): Promise<Sandbox> => {
   const daytona = getDaytonaClient()
-  const sandbox = await daytona.get(sandboxId)
+  const sandbox = await daytona.v0.get(sandboxId)
   return sandbox
 }
 
