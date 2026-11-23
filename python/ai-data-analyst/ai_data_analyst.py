@@ -8,7 +8,8 @@ from pathlib import Path
 # pylint: disable=import-error
 from litellm import completion
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams
 
 CODING_MODEL = "anthropic/claude-sonnet-4-6"
 SUMMARY_MODEL = "anthropic/claude-haiku-4-5"
@@ -27,7 +28,7 @@ def main() -> None:
 
     try:
         # Create a Python sandbox
-        sandbox = daytona.create(CreateSandboxFromSnapshotParams(language="python"))
+        sandbox = daytona.v0.create(CreateSandboxFromSnapshotParams(language="python"))
 
         csv_path = "cafe_sales_data.csv"
         sandbox_csv_path = csv_path
@@ -102,7 +103,7 @@ def main() -> None:
 
     finally:
         if sandbox is not None:
-            daytona.delete(sandbox)
+            daytona.v0.delete(sandbox)
 
 
 if __name__ == "__main__":
