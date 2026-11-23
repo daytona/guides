@@ -11,7 +11,8 @@ import json
 import subprocess
 from pathlib import Path
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona, SessionExecuteRequest
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams, SessionExecuteRequest
 from dotenv import load_dotenv
 from notte_sdk import NotteClient
 
@@ -141,7 +142,7 @@ def check_with_notte_cli(url: str) -> None:
 def main() -> None:
     notte = NotteClient()
     daytona = Daytona()
-    sandbox = daytona.create(CreateSandboxFromSnapshotParams(snapshot="daytona-small"))
+    sandbox = daytona.v0.create(CreateSandboxFromSnapshotParams(snapshot="daytona-small"))
     print(f"Created sandbox {sandbox.id}")
 
     try:
@@ -150,7 +151,7 @@ def main() -> None:
         check_with_playwright(notte, url)
         check_with_notte_cli(url)
     finally:
-        daytona.delete(sandbox)
+        daytona.v0.delete(sandbox)
         print("Sandbox deleted")
 
 

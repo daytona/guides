@@ -23,7 +23,7 @@ The browser runs on Notte, not inside the sandbox, so the sandbox never installs
 ## Environment Variables
 
 - `DAYTONA_API_KEY`: Required for Daytona sandbox access. Get it from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
-- `DAYTONA_API_URL`: The Daytona API endpoint, `https://app.daytona.io/api` for Daytona Cloud (already set in `.env.example`)
+- custom API URL: stay on SDK 0.x
 - `NOTTE_API_KEY`: Required for Notte browser sessions. Get it from [Notte Console](https://console.notte.cc)
 
 ## Getting Started
@@ -61,7 +61,7 @@ Open the printed viewer URL to watch the browser while the script runs.
 
 ## How It Works
 
-1. **Sandbox:** `Daytona().create()` starts a sandbox from the `daytona-small` snapshot, uploads `index.html` and runs `python3 -m http.server 3000` in a background session.
+1. **Sandbox:** `Daytona().v0.create()` starts a sandbox from the `daytona-small` snapshot, uploads `index.html` and runs `python3 -m http.server 3000` in a background session.
 2. **Preview URL:** `sandbox.create_signed_preview_url(3000, expires_in_seconds=3600)` returns a URL that anyone can open for an hour, with the token embedded.
 3. **Playwright:** a Notte session opens the URL through `session.page`, reads the two starting to-dos and takes a screenshot to `screenshots/app.png`.
 4. **Notte CLI:** `notte sessions start`, `notte page goto`, `notte page fill`, `notte page click` and `notte page scrape` add a to-do and confirm the page now shows 3 to-dos.
