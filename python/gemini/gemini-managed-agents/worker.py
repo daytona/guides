@@ -15,7 +15,8 @@ import signal
 import sys
 import time
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaError, DaytonaNotFoundError, Sandbox
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams, DaytonaError, DaytonaNotFoundError, Sandbox
 
 import sandbox_lib
 
@@ -55,7 +56,7 @@ def main() -> int:
     signal.signal(signal.SIGTERM, raise_keyboard_interrupt)
 
     daytona = Daytona()
-    sandbox = daytona.create(
+    sandbox = daytona.v0.create(
         CreateSandboxFromSnapshotParams(
             snapshot=sandbox_lib.snapshot_name(),
             # The worker authenticates with the environment-scoped key, never with GEMINI_API_KEY.
