@@ -14,7 +14,8 @@ from langchain_core.messages import HumanMessage, SystemMessage  # pylint: disab
 from langgraph.graph import END, START, StateGraph  # pylint: disable=import-error
 from pydantic import BaseModel, Field  # pylint: disable=import-error
 
-from daytona import Daytona, Sandbox
+from daytona import Daytona
+from daytona.v0 import Sandbox
 
 load_dotenv()
 
@@ -120,7 +121,7 @@ def build_graph(model: BaseChatModel):
 
     def provision(state: AgentState) -> dict:
         print("\n[provision] creating Daytona sandbox...")
-        sandbox = Daytona().create()
+        sandbox = Daytona().v0.create()
         print(f"[provision] sandbox ready (id={sandbox.id})")
         return {"sandbox": sandbox}
 
