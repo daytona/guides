@@ -1,0 +1,21 @@
+python/anakin/research-agent/pyproject.toml
+  s_e82cf66c10613f::t_e08e12c21e79e7 13
+python/anakin/research-agent/research_agent.py
+  s_e82cf66c10613f::t_b5fda2db85fb12 21-22,302,313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e24e730996249f6d227a1b7e5db7cc4b49498a05",
+  "prompts": {},
+  "sessions": {
+    "s_e82cf66c10613f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6ce6727ffeWXQ2pMUCujbB8P",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
