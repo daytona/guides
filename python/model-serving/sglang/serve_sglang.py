@@ -9,9 +9,11 @@ import requests
 from dotenv import load_dotenv
 
 from daytona import (
-    CreateSandboxFromImageParams,
     Daytona,
     DaytonaConfig,
+)
+from daytona.v0 import (
+    CreateSandboxFromImageParams,
     GpuType,
     Image,
     Resources,
@@ -31,7 +33,7 @@ BOOT_TIMEOUT = 900  # max seconds to wait for the server to come up
 daytona = Daytona(DaytonaConfig(target=TARGET))
 env_vars = {"HF_TOKEN": os.environ["HF_TOKEN"]} if os.environ.get("HF_TOKEN") else {}
 print(f"creating GPU sandbox from {SGLANG_IMAGE} ...", flush=True)
-sb = daytona.create(
+sb = daytona.v0.create(
     CreateSandboxFromImageParams(
         image=Image.base(SGLANG_IMAGE),
         resources=Resources(
@@ -114,5 +116,5 @@ finally:
     # auto_stop_interval=0 keeps it from idle-stopping; on failure this also
     # preserves the downloaded weights. Reconnect to reuse, delete when done.
     print(f"\nsandbox left UP: {sb.id}", flush=True)
-    print(f"  reconnect:  daytona.get('{sb.id}')", flush=True)
-    print(f"  delete:     daytona.get('{sb.id}').delete()", flush=True)
+    print(f"  reconnect:  daytona.v0.get('{sb.id}')", flush=True)
+    print(f"  delete:     daytona.v0.get('{sb.id}').delete()", flush=True)
