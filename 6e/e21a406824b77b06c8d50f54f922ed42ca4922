@@ -1,0 +1,25 @@
+python/computer-use/windows-evals/prep_snapshot.py
+  s_f9d15c7ece5981::t_d3c423e7bdc303 231,245
+python/computer-use/windows-evals/README.md
+  s_f9d15c7ece5981::t_d3c423e7bdc303 36
+python/computer-use/windows-evals/common.py
+  s_f9d15c7ece5981::t_d3c423e7bdc303 11-12,38,49
+python/computer-use/windows-evals/pyproject.toml
+  s_f9d15c7ece5981::t_9ab5ace65a9535 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6ee21a406824b77b06c8d50f54f922ed42ca4922",
+  "prompts": {},
+  "sessions": {
+    "s_f9d15c7ece5981": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df6a330e1ffeqxb5WB2SUTgWG3",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
