@@ -7,14 +7,13 @@ on:
     types: [opened, closed, synchronize]
 
 # Least-privilege token. `pull_request_target` runs in the BASE repo context so
-# that PRs from forks can still write the signature file and set the status
-# check. This job must ONLY run the trusted CLA action -- never check out or
+# that PRs from forks can still write the signature file and post the CLA
+# comment. This job must ONLY run the trusted CLA action -- never check out or
 # execute the PR head's code here.
 permissions:
   actions: write # re-run the check via the rerun API
   contents: write # commit the signature file to the signatures branch
   pull-requests: write # post / refresh the CLA comment
-  statuses: write # set the pass/fail commit status that gates merge
 
 # Serialize CLA runs repo-wide: every PR writes the same signatures branch/file,
 # so concurrent signatures could otherwise race and lose a write. Queue, don't
@@ -25,7 +24,20 @@ concurrency:
 
 jobs:
   cla-assistant:
-    name: CLA signed
+    # Only a run that actually executes the CLA action below may report the
+    # required "CLA signed" check. A PR closed without merging still gets a run
+    # whose step is skipped; that job succeeds and posts its check on the PR
+    # head, and reopening the PR triggers nothing to replace it -- so under the
+    # required name it would pass the CLA gate without checking anything.
+    # Keep this condition identical to the step's `if`.
+    name: >-
+      ${{ ((github.event_name == 'issue_comment' &&
+            github.event.issue.pull_request != null &&
+            (github.event.comment.body == 'recheck' ||
+             github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA')) ||
+           (github.event_name == 'pull_request_target' &&
+            (github.event.action != 'closed' || github.event.pull_request.merged == true)))
+          && 'CLA signed' || 'CLA (no-op)' }}
     runs-on: ubuntu-latest
     steps:
       - name: CLA Assistant
