@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Reference implementation for running Gemini Managed Agents self-hosted environments on Daytona."
 requires-python = ">=3.12"
 dependencies = [
-    "daytona[v0-sdk]==2.0.0a13",
+    "daytona[v0-sdk]==2.1.0",
     "google-genai>=3.1",
     "httpx",
     "python-dotenv",
