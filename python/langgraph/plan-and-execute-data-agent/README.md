@@ -45,7 +45,7 @@ Copy `.env.example` to `.env` and fill in your API keys before running.
 2. Install dependencies:
 
    ```bash
-   pip install -U langgraph langchain langchain-anthropic daytona pydantic python-dotenv
+   pip install -U langgraph langchain langchain-anthropic "daytona<1.0.0" pydantic python-dotenv
    ```
 
 3. Set your API keys in `.env`:
