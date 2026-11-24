@@ -22,10 +22,10 @@
   "author": "",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.15.0"
   },
   "dependencies": {
-    "@daytona/sdk": "^0.224.1",
+    "@daytona/sdk": "2.1.0",
     "@omnara/sdk": "^0.1.31",
     "dotenv": "^16.3.1",
     "yaml": "^2.8.0"
