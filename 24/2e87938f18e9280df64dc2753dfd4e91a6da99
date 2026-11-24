@@ -1,0 +1,19 @@
+typescript/anthropic/single-claude-agent-sdk/package.json
+  s_454e35153cd9ab::t_9e4a76fbbcf0c2 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "242e87938f18e9280df64dc2753dfd4e91a6da99",
+  "prompts": {},
+  "sessions": {
+    "s_454e35153cd9ab": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26dd76fffeNbYdcJbA0osBC7",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
