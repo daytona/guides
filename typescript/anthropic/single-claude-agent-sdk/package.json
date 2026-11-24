@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A coding agent powered by the Claude Agent SDK and Daytona sandboxes.",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "scripts": {
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
