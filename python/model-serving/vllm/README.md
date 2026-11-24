@@ -80,7 +80,7 @@ Code running inside the sandbox can skip the preview URL and token and talk to `
 ```python
 from daytona import Daytona
 
-sb = Daytona().get("SANDBOX_ID")
+sb = Daytona().v0.get("SANDBOX_ID")
 print(sb.process.code_run("""
 from openai import OpenAI
 
@@ -101,7 +101,7 @@ Useful for colocated workloads, like batch inference over data uploaded into the
 The sandbox stays up after `serve_vllm.py` exits, so the endpoint keeps working on success and the downloaded weights aren't lost on failure. Delete it when you're done:
 
 ```bash
-python -c "from daytona import Daytona; Daytona().get('SANDBOX_ID').delete()"
+python -c "from daytona import Daytona; Daytona().v0.get('SANDBOX_ID').delete()"
 ```
 
 The sandbox ID is printed by `serve_vllm.py`.
@@ -110,7 +110,7 @@ The sandbox ID is printed by `serve_vllm.py`.
 
 If you use an `HF_TOKEN` at all, the quickstart passes it into the sandbox as a plain environment variable, so anything running inside the sandbox can read the raw token with `env`. [Daytona Secrets](https://www.daytona.io/docs/en/secrets/) keep the raw value out of the sandbox entirely: the environment variable holds only an opaque placeholder (`dtn_secret_<id>`), and Daytona's outbound proxy substitutes the real value into HTTPS request headers at egress - and only for requests to the hosts the Secret allows. Code that dumps the environment or exfiltrates it never sees a usable token.
 
-The Secret-based flow needs `daytona` 0.192.0 or newer and a one-time Secret setup:
+The Secret-based flow uses `daytona.v0` from the `daytona` version this guide pins and a one-time Secret setup:
 
 1. Create the Secret once for your organization - in the [Daytona Dashboard](https://app.daytona.io/dashboard/secrets) or with a one-off script (save as `create_secret.py` next to this guide's `.env` and run `python create_secret.py`):
 
@@ -119,12 +119,13 @@ The Secret-based flow needs `daytona` 0.192.0 or newer and a one-time Secret set
 
    from dotenv import load_dotenv
 
-   from daytona import CreateSecretParams, Daytona
+   from daytona import Daytona
+   from daytona.v0 import CreateSecretParams
 
    load_dotenv()
 
    daytona = Daytona()
-   daytona.secret.create(CreateSecretParams(
+   daytona.v0.secret.create(CreateSecretParams(
        name="hf-token",
        value=os.environ["HF_TOKEN"],
        hosts=["huggingface.co"],  # the only host the real token may be sent to
@@ -136,7 +137,7 @@ The Secret-based flow needs `daytona` 0.192.0 or newer and a one-time Secret set
    ```diff
    -env_vars = {"HF_TOKEN": os.environ["HF_TOKEN"]} if os.environ.get("HF_TOKEN") else {}
     print(f"creating GPU sandbox from {VLLM_IMAGE} ...", flush=True)
-    sb = daytona.create(
+    sb = daytona.v0.create(
         CreateSandboxFromImageParams(
             image=Image.base(VLLM_IMAGE),
             resources=Resources(
