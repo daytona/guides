@@ -36,7 +36,7 @@ Create the application key from the [OpenAI Developer Platform](https://platform
 ### Install dependencies
 
 ```bash
-pip install openai "daytona<1.0.0" python-dotenv
+pip install openai "daytona[v0-sdk]==2.1.0" python-dotenv
 ```
 
 The webhook-managed example additionally needs FastAPI and Uvicorn:
