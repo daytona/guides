@@ -1,0 +1,19 @@
+python/computer-use/openai-computer-use/README.md
+  s_828a741e666060::t_58a0bda764e7f7 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b9126bcd9b4700c3553b35fbc59a8c0073a96db2",
+  "prompts": {},
+  "sessions": {
+    "s_828a741e666060": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df269e3faffeSSa9j70E8obUQe",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
