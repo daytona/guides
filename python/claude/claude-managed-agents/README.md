@@ -122,7 +122,7 @@ To take a sandbox out of management — for debugging, manual investigation, or 
 from daytona import Daytona
 
 dayt = Daytona()
-sb = dayt.get("byoc-sess_01...")  # sandbox id from the Daytona dashboard
+sb = dayt.v0.get("byoc-sess_01...")  # sandbox id from the Daytona dashboard
 labels = dict(sb.labels or {})
 labels.pop("byoc.environment_id", None)
 sb.set_labels(labels)

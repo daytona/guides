@@ -21,7 +21,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaConflictError, DaytonaNotFoundError
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams, DaytonaConflictError, DaytonaNotFoundError
 
 REPO = pathlib.Path(__file__).resolve().parent
 RUNNER_LOG = "/tmp/sandbox_runner.log"
@@ -109,7 +110,7 @@ def get_or_create_sandbox(
     if selection.sandbox_id:
         normal_name = sandbox_name(session_id)
         with contextlib.suppress(DaytonaNotFoundError):
-            normal_sandbox = daytona.get(normal_name)
+            normal_sandbox = daytona.v0.get(normal_name)
             if normal_sandbox.id != selection.sandbox_id:
                 raise SandboxSelectionError(
                     f"session sandbox {normal_name!r} already exists as {normal_sandbox.id!r}; "
@@ -124,7 +125,7 @@ def get_or_create_sandbox(
 
     name = sandbox_name(session_id)
     with contextlib.suppress(DaytonaNotFoundError):
-        return _managed_existing_sandbox(daytona.get(name), name)
+        return _managed_existing_sandbox(daytona.v0.get(name), name)
 
     params = CreateSandboxFromSnapshotParams(
         name=name,
@@ -136,9 +137,9 @@ def get_or_create_sandbox(
         },
     )
     try:
-        sandbox = daytona.create(params, timeout=180)
+        sandbox = daytona.v0.create(params, timeout=180)
     except DaytonaConflictError:
-        return _managed_existing_sandbox(daytona.get(name), name)
+        return _managed_existing_sandbox(daytona.v0.get(name), name)
     try:
         sandbox.set_auto_archive_interval(AUTO_ARCHIVE_INTERVAL_MINUTES)
     except Exception as e:
@@ -166,7 +167,7 @@ def attach_prepared_sandbox(
     environment_id: str,
     sandbox_id: str,
 ):
-    sandbox = daytona.get(sandbox_id)
+    sandbox = daytona.v0.get(sandbox_id)
     sandbox.refresh_data()
     labels = dict(getattr(sandbox, "labels", None) or {})
 
