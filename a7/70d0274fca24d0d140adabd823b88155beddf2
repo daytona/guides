@@ -1,0 +1,19 @@
+python/computer-use/windows-evals/README.md
+  s_69a3857f660636::t_352220256c421e 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a770d0274fca24d0d140adabd823b88155beddf2",
+  "prompts": {},
+  "sessions": {
+    "s_69a3857f660636": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df1dd40ccffeYV3yGY2ZmZEdID",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
