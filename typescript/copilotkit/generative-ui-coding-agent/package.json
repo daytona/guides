@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A generative-UI coding agent powered by CopilotKit and Daytona sandboxes that scaffolds, edits and live-previews a Vite + React + Tailwind app inside the chat.",
   "private": true,
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
