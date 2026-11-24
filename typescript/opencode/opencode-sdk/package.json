@@ -18,7 +18,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@daytona/sdk": "2.0.0-alpha.13",
+    "@daytona/sdk": "2.1.0",
     "@opencode-ai/sdk": "^1.0.0",
     "dotenv": "^16.3.1"
   },
