@@ -1,0 +1,67 @@
+.github/workflows/cla.yml
+  s_e0afe63d6b2786::t_471453be2ea8d5 10-11,27-40
+README.md
+  s_e0afe63d6b2786::t_366f98f1ac27e2 68
+python/ag2/bug-fixer-agent/README.md
+  s_e0afe63d6b2786::t_175ac6be0971ab 38
+python/claude/claude-managed-agents/pyproject.toml
+  s_e0afe63d6b2786::t_1e0d19ddac5fe1 8
+python/cognition/devin-outposts/pyproject.toml
+  s_e0afe63d6b2786::t_bfb4201e1830d2 12
+python/computer-use/windows-evals/README.md
+  s_e0afe63d6b2786::t_af8056b4ceda85 17
+python/computer-use/windows-evals/pyproject.toml
+  s_e0afe63d6b2786::t_37a5ccf3f668ac 7
+python/cursor/self-hosted-machines/pyproject.toml
+  s_e0afe63d6b2786::t_9c6be38e1e9dd4 12
+python/dspy-rlms/pyproject.toml
+  s_e0afe63d6b2786::t_bee6cc0c96bc66 9
+python/gemini/gemini-managed-agents/pyproject.toml
+  s_e0afe63d6b2786::t_fd81e6cd6484f0 7
+python/langchain/data-analysis/README.md
+  s_e0afe63d6b2786::t_1cffa53fcd5e24 58
+python/langgraph/plan-and-execute-data-agent/README.md
+  s_e0afe63d6b2786::t_973ebe5255ec63 48
+python/model-serving/sglang/pyproject.toml
+  s_e0afe63d6b2786::t_119c3d5c2f7dfa 15
+python/model-serving/vllm/pyproject.toml
+  s_e0afe63d6b2786::t_cd3cf76146a87f 11
+python/openai/agents-api/README.md
+  s_e0afe63d6b2786::t_fdf7d4ed430c9c 39
+python/pydantic-ai/coding-agent/README.md
+  s_e0afe63d6b2786::t_4821c7c4e7808f 188
+python/reinforcement-learning/openenv/pyproject.toml
+  s_e0afe63d6b2786::t_c519f011fb227d 9
+typescript/goose/goose-cli/.env.example
+  s_e0afe63d6b2786::t_a39350cbbae1f5 1-6
+typescript/goose/goose-cli/.gitignore
+  s_e0afe63d6b2786::t_338d7de6304eb7 1-3
+typescript/goose/goose-cli/README.md
+  s_e0afe63d6b2786::t_b21633e82eab7c 1-135
+typescript/goose/goose-cli/package.json
+  s_e0afe63d6b2786::t_8773227ba756b7 1-32
+typescript/goose/goose-cli/src/index.ts
+  s_e0afe63d6b2786::t_4bcc9370826f82 1-147
+typescript/goose/goose-cli/src/session.ts
+  s_e0afe63d6b2786::t_6580ba8fcdfd3a 1-198
+typescript/goose/goose-cli/src/types.ts
+  s_e0afe63d6b2786::t_51761def739a1f 1-64
+typescript/goose/goose-cli/tsconfig.json
+  s_e0afe63d6b2786::t_a514e625dedb34 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c315f89a9a94e5aa0c160d05cc7d972190e3174",
+  "prompts": {},
+  "sessions": {
+    "s_e0afe63d6b2786": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c168cffejs2T1fQX6IdUqx",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}

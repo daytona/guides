@@ -1,0 +1,67 @@
+.github/workflows/cla.yml
+  s_b811daad5272c6::t_e6c7ab308c77dd 10-11,27-40
+README.md
+  s_b811daad5272c6::t_96222f9157adda 68
+python/ag2/bug-fixer-agent/README.md
+  s_b811daad5272c6::t_560261ccfd38f1 38
+python/claude/claude-managed-agents/pyproject.toml
+  s_b811daad5272c6::t_97e7a71ebe84ee 8
+python/cognition/devin-outposts/pyproject.toml
+  s_b811daad5272c6::t_45df325c54b708 12
+python/computer-use/windows-evals/README.md
+  s_b811daad5272c6::t_6feb3b23fae805 17
+python/computer-use/windows-evals/pyproject.toml
+  s_b811daad5272c6::t_4444086bd9a8c3 7
+python/cursor/self-hosted-machines/pyproject.toml
+  s_b811daad5272c6::t_13942ed8819225 12
+python/dspy-rlms/pyproject.toml
+  s_b811daad5272c6::t_d9b58215a404d4 9
+python/gemini/gemini-managed-agents/pyproject.toml
+  s_b811daad5272c6::t_c8b5a756a16a90 7
+python/langchain/data-analysis/README.md
+  s_b811daad5272c6::t_9ec3b244ebe5da 58
+python/langgraph/plan-and-execute-data-agent/README.md
+  s_b811daad5272c6::t_c8a9fde1f57966 48
+python/model-serving/sglang/pyproject.toml
+  s_b811daad5272c6::t_694176a2f3fa41 15
+python/model-serving/vllm/pyproject.toml
+  s_b811daad5272c6::t_3a7a1cf43239f9 11
+python/pydantic-ai/coding-agent/README.md
+  s_b811daad5272c6::t_5809bc0479fb66 188
+python/recursive-language-models/pyproject.toml
+  s_b811daad5272c6::t_050b9a8aba95d0 9
+python/reinforcement-learning/openenv/pyproject.toml
+  s_b811daad5272c6::t_beedf7d057378e 9
+typescript/goose/goose-cli/.env.example
+  s_b811daad5272c6::t_f8fef0df7431fc 1-6
+typescript/goose/goose-cli/.gitignore
+  s_b811daad5272c6::t_67b07be16278ef 1-3
+typescript/goose/goose-cli/README.md
+  s_b811daad5272c6::t_3dbd20e8662994 1-135
+typescript/goose/goose-cli/package.json
+  s_b811daad5272c6::t_296a4215b34422 1-32
+typescript/goose/goose-cli/src/index.ts
+  s_b811daad5272c6::t_4092e68f385982 1-147
+typescript/goose/goose-cli/src/session.ts
+  s_b811daad5272c6::t_92b31c8583811f 1-198
+typescript/goose/goose-cli/src/types.ts
+  s_b811daad5272c6::t_034136bad59f62 1-64
+typescript/goose/goose-cli/tsconfig.json
+  s_b811daad5272c6::t_fff5439da6bde3 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f542fc83ba37c36d0f696eacc348777c0a7f0de5",
+  "prompts": {},
+  "sessions": {
+    "s_b811daad5272c6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c2f4fffeiiy3lblteIn5Pc",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}

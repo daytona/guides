@@ -1,0 +1,19 @@
+typescript/ai-data-analyst/package.json
+  s_454e35153cd9ab::t_9e4a76fbbcf0c2 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d02035a3a77690c6aecf28cd3640607f1eba78de",
+  "prompts": {},
+  "sessions": {
+    "s_454e35153cd9ab": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26dd76fffeNbYdcJbA0osBC7",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
