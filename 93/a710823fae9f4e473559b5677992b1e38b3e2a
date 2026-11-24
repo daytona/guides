@@ -1,0 +1,19 @@
+python/openai/agents-api/README.md
+  s_67608a6f2c8d8a::t_3893100c808923 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "93a710823fae9f4e473559b5677992b1e38b3e2a",
+  "prompts": {},
+  "sessions": {
+    "s_67608a6f2c8d8a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26d7e94ffeKh8ZXMNWWOH1KN",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
