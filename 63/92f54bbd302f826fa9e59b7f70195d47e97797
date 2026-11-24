@@ -1,0 +1,19 @@
+typescript/agentkit-inngest/coding-agent/package.json
+  s_7712ba57899650::t_8a7b34cd42333c 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6392f54bbd302f826fa9e59b7f70195d47e97797",
+  "prompts": {},
+  "sessions": {
+    "s_7712ba57899650": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26dae83ffeUFnYcI0LdVVia5",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
