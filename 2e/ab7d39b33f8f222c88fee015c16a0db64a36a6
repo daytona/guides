@@ -1,0 +1,19 @@
+typescript/copilotkit/generative-ui-coding-agent/package.json
+  s_4d13cbae6f5669::t_4f0291ee7be92a 6-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2eab7d39b33f8f222c88fee015c16a0db64a36a6",
+  "prompts": {},
+  "sessions": {
+    "s_4d13cbae6f5669": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df201941cffebcCJ7K7rl6G6PN",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
