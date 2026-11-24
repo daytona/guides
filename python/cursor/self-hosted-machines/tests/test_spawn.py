@@ -277,7 +277,7 @@ class SpawnWorkerTests(unittest.TestCase):
         spawn_worker = spawn_module.spawn_worker
         return spawn_worker(
             self.config,
-            daytona,
+            SimpleNamespace(v0=daytona),
             release_claim=self.release_claim,
             start_monitor=cast(Any, self.start_monitor),
         )
@@ -501,7 +501,7 @@ class SpawnWorkerTests(unittest.TestCase):
 
         spawn_worker(
             config,
-            daytona,
+            SimpleNamespace(v0=daytona),
             release_claim=self.release_claim,
             start_monitor=cast(Any, self.start_monitor),
         )
@@ -659,7 +659,7 @@ class SpawnWorkerTests(unittest.TestCase):
         ):
             spawn_worker(
                 config,
-                daytona,
+                SimpleNamespace(v0=daytona),
                 release_claim=fail_release,
                 start_monitor=cast(Any, self.start_monitor),
             )
@@ -707,7 +707,7 @@ class SpawnCommandTests(unittest.TestCase):
 
         with (
             patch.object(spawn_module, "Config", ConfigFactory, create=True),
-            patch.object(spawn_module, "Daytona", lambda *args, **kwargs: FakeDaytona(), create=True),
+            patch.object(spawn_module, "Daytona", lambda *args, **kwargs: SimpleNamespace(v0=FakeDaytona()), create=True),
             patch.object(spawn_module, "release_claim", lambda *args: None, create=True),
             patch.object(spawn_module, "start_monitor", lambda *args: None, create=True),
             patch.object(spawn_module, "spawn_worker", return_value=result, create=True),
@@ -754,7 +754,7 @@ class SpawnCommandTests(unittest.TestCase):
             patch.object(
                 spawn_module,
                 "Daytona",
-                lambda *args, **kwargs: FakeDaytona(),
+                lambda *args, **kwargs: SimpleNamespace(v0=FakeDaytona()),
                 create=True,
             ),
             patch.object(

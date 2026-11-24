@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from importlib.resources.abc import Traversable
 from typing import Any
 
-from daytona import CreateSandboxFromSnapshotParams, SandboxClass
+from daytona.v0 import CreateSandboxFromSnapshotParams, SandboxClass
 
 
 _LINUX_VM_PROVISIONER = resources.files("cursor_self_hosted").joinpath(
@@ -60,7 +60,7 @@ def linux_vm_snapshot_name_for(
 def _iter_snapshots(daytona: Any) -> Iterator[object]:
     page = 1
     while True:
-        result = daytona.snapshot.list(page=page, limit=_SNAPSHOT_PAGE_LIMIT)
+        result = daytona.v0.snapshot.list(page=page, limit=_SNAPSHOT_PAGE_LIMIT)
         snapshots = getattr(result, "items", None) or []
         yield from snapshots
 
@@ -177,7 +177,7 @@ def _delete_sandbox(
     primary_error: Exception | None,
 ) -> None:
     try:
-        daytona.delete(sandbox, timeout=timeout)
+        daytona.v0.delete(sandbox, timeout=timeout)
     except Exception as cleanup_error:
         sandbox_name = getattr(sandbox, "name", "unknown")
         message = (
@@ -198,7 +198,7 @@ def _capture_snapshot(
     build_timeout: int,
     sandbox_timeout: int,
 ) -> tuple[object, Exception | None]:
-    builder = daytona.create(
+    builder = daytona.v0.create(
         _sandbox_params(
             _sandbox_name_for(name, source_snapshot, "builder"),
             source_snapshot,
@@ -214,7 +214,7 @@ def _capture_snapshot(
         )
         builder.stop(timeout=sandbox_timeout)
         builder.create_snapshot(name, timeout=build_timeout)
-        snapshot = daytona.snapshot.get(name)
+        snapshot = daytona.v0.snapshot.get(name)
         _validate_linux_vm_snapshot(snapshot, name)
     except Exception as primary_error:
         _delete_sandbox(
@@ -245,7 +245,7 @@ def _verify_snapshot(
     sandbox_timeout: int,
 ) -> None:
     name = str(getattr(snapshot, "name"))
-    verifier = daytona.create(
+    verifier = daytona.v0.create(
         _sandbox_params(
             _sandbox_name_for(name, source_snapshot, "verifier"),
             name,
@@ -293,7 +293,7 @@ def _verify_or_delete_snapshot(
     except Exception as error:
         name = str(getattr(snapshot, "name"))
         try:
-            daytona.snapshot.delete(snapshot)
+            daytona.v0.snapshot.delete(snapshot)
         except Exception as cleanup_error:
             error.add_note(
                 f"Cleanup also failed for uncertified Linux VM snapshot "

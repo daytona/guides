@@ -23,9 +23,11 @@ from pathlib import Path
 from typing import Any
 
 from daytona import (
-    CreateSandboxFromSnapshotParams,
     Daytona,
     DaytonaConfig,
+)
+from daytona.v0 import (
+    CreateSandboxFromSnapshotParams,
     ListSandboxesQuery,
 )
 
@@ -283,7 +285,7 @@ def decode_text(content: object) -> str:
 
 def find_sandbox(daytona: Daytona, route_name: str) -> Any | None:
     sandboxes = list(
-        daytona.list(
+        daytona.v0.list(
             ListSandboxesQuery(labels={"cursor.pool": route_name})
         )
     )
@@ -363,7 +365,7 @@ def stop_worker(sandbox: Any, sandbox_class: str, pid: str) -> None:
 def wait_for_deletion(daytona: Daytona, sandbox_id: str, deadline: float) -> None:
     while time.monotonic() < deadline:
         try:
-            daytona.get(sandbox_id)
+            daytona.v0.get(sandbox_id)
         except Exception as error:
             if is_not_found(error):
                 return
@@ -409,7 +411,7 @@ def cleanup_with_retries(
 def delete_sandbox_and_wait(daytona: Daytona, sandbox: Any) -> None:
     sandbox_id = str(sandbox.id)
     try:
-        daytona.delete(sandbox, timeout=300)
+        daytona.v0.delete(sandbox, timeout=300)
     except Exception as error:
         if is_not_found(error):
             return
@@ -680,7 +682,7 @@ def start_direct_worker(
         sandbox_create_timeout_seconds=300,
         sandbox_launch_timeout_seconds=180,
     )
-    sandbox = daytona.create(
+    sandbox = daytona.v0.create(
         CreateSandboxFromSnapshotParams(
             name=f"cursor-live-{sandbox_class.replace('-', '')}-{secrets.token_hex(4)}",
             snapshot=snapshot,

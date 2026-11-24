@@ -138,7 +138,7 @@ def monitor_worker(
     """Wait for a live worker to exit, then delete its sandbox."""
 
     try:
-        sandbox = daytona.get(config.sandbox_id)
+        sandbox = daytona.v0.get(config.sandbox_id)
     except Exception as error:
         return 0 if _is_not_found(error) else 1
 
@@ -187,6 +187,8 @@ def main(argv: list[str] | None = None) -> int:
                 target=config.daytona_target,
             )
         )
+        # The SDK initializes the v0 client lazily; keep startup errors in this handler.
+        _ = daytona.v0
         status = monitor_worker(config, daytona)
     except Exception as error:
         secrets = (config.daytona_api_key,) if config is not None else ()

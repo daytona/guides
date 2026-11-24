@@ -18,9 +18,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from daytona import (
-    CreateSandboxFromSnapshotParams,
     Daytona,
     DaytonaConfig,
+)
+from daytona.v0 import (
+    CreateSandboxFromSnapshotParams,
     SandboxClass,
 )
 from .config import (
@@ -174,7 +176,7 @@ def spawn_worker(
 ) -> SpawnResult:
     """Replace the deterministic sandbox, then launch its Cursor worker."""
 
-    snapshot = daytona.snapshot.get(config.snapshot_name)
+    snapshot = daytona.v0.snapshot.get(config.snapshot_name)
     sandbox_class = snapshot_sandbox_class(snapshot)
     sandbox_class_name = sandbox_class.value
     sandbox_name = sandbox_name_for(config.cursor_agent_worker_id)
@@ -182,7 +184,7 @@ def spawn_worker(
 
     try:
         try:
-            existing_sandbox = daytona.get(sandbox_name)
+            existing_sandbox = daytona.v0.get(sandbox_name)
         except Exception as error:
             if not _is_not_found(error):
                 raise
@@ -196,7 +198,7 @@ def spawn_worker(
                         "to become absent before creating its replacement"
                     )
                 try:
-                    daytona.get(sandbox_name)
+                    daytona.v0.get(sandbox_name)
                 except Exception as error:
                     if _is_not_found(error):
                         break
@@ -206,7 +208,7 @@ def spawn_worker(
         auto_stop_minutes = max(
             1, math.ceil(config.idle_release_timeout_seconds / 60)
         )
-        sandbox = daytona.create(
+        sandbox = daytona.v0.create(
             CreateSandboxFromSnapshotParams(
                 name=sandbox_name,
                 snapshot=config.snapshot_name,
@@ -317,6 +319,8 @@ def main(argv: list[str] | None = None) -> int:
                 target=parsed_config.daytona_target,
             )
         )
+        # The SDK initializes the v0 client lazily; keep startup errors in this handler.
+        _ = daytona.v0
         result = spawn_worker(
             parsed_config,
             daytona,

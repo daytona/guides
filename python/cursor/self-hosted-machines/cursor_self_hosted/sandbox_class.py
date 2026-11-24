@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from daytona import SandboxClass
+from daytona.v0 import SandboxClass
 
 
 SUPPORTED_SANDBOX_CLASSES = (
