@@ -45,7 +45,7 @@ Copy `.env.example` to `.env` and fill in your API keys before running.
 2. Install dependencies:
 
    ```bash
-   pip install -U langgraph langchain langchain-anthropic "daytona<1.0.0" pydantic python-dotenv
+   pip install -U langgraph langchain langchain-anthropic "daytona[v0-sdk]==2.1.0" pydantic python-dotenv
    ```
 
 3. Set your API keys in `.env`:
@@ -74,7 +74,7 @@ Copy `.env.example` to `.env` and fill in your API keys before running.
 
 ## How It Works
 
-1. **`provision`**: `Daytona().create()` provisions a fresh sandbox and stores it in graph state
+1. **`provision`**: `Daytona().v0.create()` provisions a fresh sandbox and stores it in graph state
 2. **`plan`**: the LLM (called via `with_structured_output(Plan)`) emits an ordered `list[str]` of plan steps into `state["plan"]`
 3. **`execute`**: given the original user request, the full plan, the current step index, all prior steps' code and stdout, and any previous-attempt error, the LLM emits Python for the current step; the graph runs it in the sandbox via `sandbox.code_interpreter.run_code(code)`, which executes inside the sandbox's persistent shared interpreter context so imports and variables from earlier steps remain in scope
 4. **`check`**: deterministic. On success it advances `step_idx` and resets `attempts`. On failure it increments `attempts`. Then a conditional edge routes back to `execute` (retry or advance) or forward to `summarize` (done or gave up after `max_attempts`)
