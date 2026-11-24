@@ -1,0 +1,43 @@
+typescript/letta-code/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 19-21
+typescript/ai-data-analyst/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 10-12
+typescript/amp/amp-sdk/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 21-23
+typescript/gemini/gemini-cli/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 21-23
+typescript/anchor/cloud-browser/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 19-21
+typescript/kiro/kiro-cli/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 21-23
+typescript/openai/codex-sdk/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 19-21
+typescript/opencode/opencode-web/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 19-21
+typescript/cognition/devin-cli/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 21-23
+typescript/vercel-ai-sdk/multi-language-benchmark-agent/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 22-24
+typescript/kimi/kimi-cli/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 21-23
+typescript/anthropic/multi-agent-claude-sdk/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 19-21
+typescript/openclaw/package.json
+  s_0781cc2747e5c9::t_eddbce2cdd7108 7-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e9c4a9a1894faf4eec302973378c76048f8344eb",
+  "prompts": {},
+  "sessions": {
+    "s_0781cc2747e5c9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df1fcafecffeFtsIc1OO9cV025",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
