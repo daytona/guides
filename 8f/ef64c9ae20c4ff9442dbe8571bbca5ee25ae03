@@ -1,0 +1,19 @@
+python/dspy-rlms/daytona_interpreter.py
+  s_69a3857f660636::t_352220256c421e 324-340
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8fef64c9ae20c4ff9442dbe8571bbca5ee25ae03",
+  "prompts": {},
+  "sessions": {
+    "s_69a3857f660636": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df1dd40ccffeYV3yGY2ZmZEdID",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}

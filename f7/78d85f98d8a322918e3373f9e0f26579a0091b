@@ -1,0 +1,19 @@
+python/fireworks/coding-agent/main.py
+  s_69a3857f660636::t_352220256c421e 48-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f778d85f98d8a322918e3373f9e0f26579a0091b",
+  "prompts": {},
+  "sessions": {
+    "s_69a3857f660636": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df1dd40ccffeYV3yGY2ZmZEdID",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
