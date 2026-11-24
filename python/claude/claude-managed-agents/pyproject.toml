@@ -5,7 +5,7 @@ description = "Reference implementation for running Claude Managed Agents on Day
 requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.103",
-    "daytona[v0-sdk]==2.0.0a13",
+    "daytona[v0-sdk]==2.1.0",
     "python-dotenv",
 ]
 
