@@ -9,7 +9,7 @@ description = "Run claimed Cursor self-hosted workers in Daytona sandboxes"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "daytona[v0-sdk]==2.0.0a13",
+  "daytona[v0-sdk]==2.1.0",
   "python-dotenv",
 ]
 
