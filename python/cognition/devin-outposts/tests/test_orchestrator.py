@@ -6,6 +6,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
@@ -43,6 +44,10 @@ class AbsentEntryQueue(DevinQueue):
 class FakeSandbox:
     def __init__(self) -> None:
         self.state: str = "started"
+        self.labels = {
+            "devin.session_id": SESSION_ID,
+            "devin.outpost_id": "outpost_env-outpost",
+        }
         self.stopped: bool = False
         self.deleted: bool = False
 
@@ -92,13 +97,18 @@ class AbsentQueueEntryTests(unittest.TestCase):
     def make_orchestrator(self, sandbox: FakeSandbox) -> Orchestrator:
         state_dir = self.enterContext(tempfile.TemporaryDirectory())
         daytona = FakeDaytona({sandbox_name_for(SESSION_ID): sandbox})
-        orchestrator = Orchestrator(make_config(Path(state_dir)), AbsentEntryQueue(), daytona)
+        orchestrator = Orchestrator(
+            make_config(Path(state_dir)), AbsentEntryQueue(), SimpleNamespace(v0=daytona)
+        )
         orchestrator.stop_event = ImmediateEvent()
         return orchestrator
 
     def test_supervise_stops_but_keeps_sandbox_when_entry_disappears(self) -> None:
         sandbox = FakeSandbox()
         orchestrator = self.make_orchestrator(sandbox)
+        attached, created = orchestrator.ensure_sandbox(SESSION_ID, create_if_missing=False)
+        self.assertIs(attached, sandbox)
+        self.assertFalse(created)
         worker = WorkerHandle(
             sandbox_name=sandbox_name_for(SESSION_ID),
             pid="4242",
@@ -158,7 +168,9 @@ class PendingPollTests(unittest.TestCase):
         )
         state_dir = self.enterContext(tempfile.TemporaryDirectory())
         queue = PendingListQueue(entry)
-        orchestrator = Orchestrator(make_config(Path(state_dir)), queue, FakeDaytona({}))
+        orchestrator = Orchestrator(
+            make_config(Path(state_dir)), queue, SimpleNamespace(v0=FakeDaytona({}))
+        )
         orchestrator.stop_event = ImmediateEvent()
 
         reconciled: list[Any] = []

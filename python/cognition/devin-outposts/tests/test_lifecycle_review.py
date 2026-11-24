@@ -6,6 +6,7 @@ import threading
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
@@ -128,7 +129,7 @@ class SandboxAdoptionTests(unittest.TestCase):
                     orchestrator = Orchestrator(
                         make_config(Path(state_dir)),
                         NullQueue(),
-                        LookupDaytona(sandbox),
+                        SimpleNamespace(v0=LookupDaytona(sandbox)),
                     )
                     self.addCleanup(orchestrator._serve_executor.shutdown, wait=True)
                     with self.assertRaisesRegex(RuntimeError, "labels do not match"):
@@ -238,7 +239,7 @@ class JanitorTests(unittest.TestCase):
                     orchestrator = Orchestrator(
                         make_config(Path(state_dir)),
                         JanitorQueue(entry),
-                        JanitorDaytona(sandbox),
+                        SimpleNamespace(v0=JanitorDaytona(sandbox)),
                     )
                     self.addCleanup(orchestrator._serve_executor.shutdown, wait=True)
                     with patch(

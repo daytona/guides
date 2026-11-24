@@ -9,7 +9,7 @@ description = "Reference implementation for running Devin Outposts workers on Da
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "daytona>=0.202.0,<1.0.0",
+  "daytona[v0-sdk]==2.1.0",
   "daytona-api-client>=0.202.0",
   "httpx",
   "python-dotenv",

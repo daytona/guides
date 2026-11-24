@@ -16,8 +16,8 @@ class LinuxSnapshotReuseTests(unittest.TestCase):
         self, state: SnapshotState
     ) -> tuple[int, str, str, Mock]:
         snapshot = SimpleNamespace(name="review-snapshot", state=state)
-        daytona = Mock()
-        daytona.snapshot.list.return_value = SimpleNamespace(
+        daytona = Mock(spec_set=["v0"])
+        daytona.v0.snapshot.list.return_value = SimpleNamespace(
             items=[snapshot], total_pages=1
         )
         stdout = io.StringIO()
@@ -39,17 +39,17 @@ class LinuxSnapshotReuseTests(unittest.TestCase):
         ):
             result = main()
 
-        return result, stdout.getvalue(), stderr.getvalue(), daytona
+        return result, stdout.getvalue(), stderr.getvalue(), daytona.v0
 
     def test_active_existing_snapshot_is_reused(self) -> None:
-        result, stdout, stderr, daytona = self.run_with_existing_snapshot(
+        result, stdout, stderr, v0 = self.run_with_existing_snapshot(
             SnapshotState.ACTIVE
         )
 
         self.assertEqual(result, 0)
         self.assertIn("Reusing snapshot: review-snapshot state=active", stdout)
         self.assertEqual(stderr, "")
-        daytona.snapshot.create.assert_not_called()
+        v0.snapshot.create.assert_not_called()
 
     def test_unusable_existing_snapshot_is_a_collision(self) -> None:
         for state in (
@@ -58,7 +58,7 @@ class LinuxSnapshotReuseTests(unittest.TestCase):
             SnapshotState.INACTIVE,
         ):
             with self.subTest(state=state):
-                result, stdout, stderr, daytona = self.run_with_existing_snapshot(state)
+                result, stdout, stderr, v0 = self.run_with_existing_snapshot(state)
 
                 self.assertEqual(result, EXIT_COLLISION)
                 self.assertIn("Snapshot name: review-snapshot", stdout)
@@ -67,7 +67,7 @@ class LinuxSnapshotReuseTests(unittest.TestCase):
                     "Snapshot name collision: review-snapshot "
                     f"state={state.value}; expected active\n",
                 )
-                daytona.snapshot.create.assert_not_called()
+                v0.snapshot.create.assert_not_called()
 
 
 if __name__ == "__main__":

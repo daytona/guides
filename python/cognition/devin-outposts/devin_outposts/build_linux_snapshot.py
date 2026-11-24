@@ -13,7 +13,8 @@ import sys
 from pathlib import Path
 from typing import Iterator
 
-from daytona import CreateSnapshotParams, Daytona, Image, Resources
+from daytona import Daytona
+from daytona.v0 import CreateSnapshotParams, Image, Resources
 from daytona_api_client import SnapshotState
 from dotenv import load_dotenv
 
@@ -48,7 +49,7 @@ def iter_snapshots(daytona: Daytona) -> Iterator[object]:
     """Page through snapshots so an existing hash-derived snapshot can be reused."""
     page = 1
     while True:
-        result = daytona.snapshot.list(page=page, limit=SNAPSHOT_PAGE_LIMIT)
+        result = daytona.v0.snapshot.list(page=page, limit=SNAPSHOT_PAGE_LIMIT)
         items = getattr(result, "items", []) or []
         yield from items
 
@@ -112,7 +113,7 @@ def main() -> int:
             ),
         )
 
-        snapshot = daytona.snapshot.create(params, on_logs=stream_log, timeout=0)
+        snapshot = daytona.v0.snapshot.create(params, on_logs=stream_log, timeout=0)
     state = getattr(snapshot, "state", "unknown")
     print(f"Snapshot ready: {getattr(snapshot, 'name', name)} state={state}")
     return 0

@@ -14,10 +14,10 @@ from typing import Any, Mapping
 from .config import Config
 
 try:
-    from daytona import DaytonaError, DaytonaNotFoundError
+    from daytona.v0 import DaytonaError, DaytonaNotFoundError
 except ImportError:
     try:
-        from daytona.exceptions import DaytonaError, DaytonaNotFoundError
+        from daytona.v0.exceptions import DaytonaError, DaytonaNotFoundError
     except ImportError:
 
         class DaytonaError(Exception):
