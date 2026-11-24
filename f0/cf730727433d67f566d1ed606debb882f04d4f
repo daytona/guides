@@ -1,0 +1,19 @@
+python/claude/claude-managed-agents/pyproject.toml
+  s_716f85bc8fb9d2::t_512dd25e9d62f7 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f0cf730727433d67f566d1ed606debb882f04d4f",
+  "prompts": {},
+  "sessions": {
+    "s_716f85bc8fb9d2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c9700ffeflym1ApVy031LS",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}

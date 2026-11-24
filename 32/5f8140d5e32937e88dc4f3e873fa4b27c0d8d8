@@ -1,0 +1,19 @@
+python/computer-use/windows-evals/pyproject.toml
+  s_716f85bc8fb9d2::t_a510da283aae06 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "325f8140d5e32937e88dc4f3e873fa4b27c0d8d8",
+  "prompts": {},
+  "sessions": {
+    "s_716f85bc8fb9d2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c9700ffeflym1ApVy031LS",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}

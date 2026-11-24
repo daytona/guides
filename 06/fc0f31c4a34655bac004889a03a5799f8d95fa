@@ -1,0 +1,19 @@
+python/model-serving/sglang/pyproject.toml
+  s_b811daad5272c6::t_30dbf4aa8312e3 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "06fc0f31c4a34655bac004889a03a5799f8d95fa",
+  "prompts": {},
+  "sessions": {
+    "s_b811daad5272c6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c2f4fffeiiy3lblteIn5Pc",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
