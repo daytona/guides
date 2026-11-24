@@ -1,0 +1,19 @@
+python/reinforcement-learning/trl/pyproject.toml
+  s_828a741e666060::t_58a0bda764e7f7 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "10df64aae6c830fc52a9e7e9e7cfc1e2c0db8c85",
+  "prompts": {},
+  "sessions": {
+    "s_828a741e666060": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df269e3faffeSSa9j70E8obUQe",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
