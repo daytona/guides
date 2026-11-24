@@ -386,8 +386,6 @@ def run_claude_agent(sandbox_id: str, task: Task, agent: AgentOptions) -> None:
         raise EpisodeError("DAYTONA_API_KEY is required for Claude's Daytona MCP server")
 
     mcp_env = {"DAYTONA_API_KEY": api_key}
-    if os.environ.get("DAYTONA_API_URL"):
-        mcp_env["DAYTONA_API_URL"] = os.environ["DAYTONA_API_URL"]
 
     with tempfile.TemporaryDirectory(prefix="windows-evals-claude-") as temp_dir:
         config_path = Path(temp_dir) / "mcp.json"
@@ -496,8 +494,6 @@ def codex_mcp_overrides(timeout_s: int) -> list[str]:
     """Build Codex `-c` overrides for the Daytona MCP server."""
 
     env_vars = ["DAYTONA_API_KEY"]
-    if os.environ.get("DAYTONA_API_URL"):
-        env_vars.append("DAYTONA_API_URL")
 
     return [
         'mcp_servers.daytona.command="daytona"',
