@@ -12,7 +12,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 dependencies = [
-    "daytona[v0-sdk]==2.0.0a13",
+    "daytona[v0-sdk]==2.1.0",
     "daytona-api-client>=0.226.0,<1.0.0",
     "python-dotenv>=1.0.0,<2.0.0",
 ]
