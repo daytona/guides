@@ -4,6 +4,9 @@
   "description": "AgentKit coding agent powered by Daytona",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "scripts": {
     "start": "tsc; node dist/index.js"
   },
