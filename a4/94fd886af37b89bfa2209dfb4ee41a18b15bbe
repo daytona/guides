@@ -1,0 +1,21 @@
+python/cursor/self-hosted-machines/pyproject.toml
+  s_591ee1974caaa3::t_1e3b437f951943 12
+python/cursor/self-hosted-machines/README.md
+  s_591ee1974caaa3::t_1e3b437f951943 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a494fd886af37b89bfa2209dfb4ee41a18b15bbe",
+  "prompts": {},
+  "sessions": {
+    "s_591ee1974caaa3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c4f10ffeS70XZzvZ4LlJ91",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}

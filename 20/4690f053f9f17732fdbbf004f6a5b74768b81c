@@ -1,0 +1,19 @@
+python/gemini/gemini-managed-agents/pyproject.toml
+  s_591ee1974caaa3::t_767e33ac15a844 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "204690f053f9f17732fdbbf004f6a5b74768b81c",
+  "prompts": {},
+  "sessions": {
+    "s_591ee1974caaa3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c4f10ffeS70XZzvZ4LlJ91",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
