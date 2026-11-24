@@ -33,7 +33,7 @@ Copy `.env.example` to `.env` and fill in the values.
 ### Install dependencies
 
 ```bash
-pip install "openai==3.31.0" "daytona[v0-sdk]==2.0.0a13" python-dotenv
+pip install "openai==3.31.0" "daytona[v0-sdk]==2.1.0" python-dotenv
 ```
 
 ### Run the example
