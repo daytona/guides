@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Sandbox, PtyHandle } from '@daytona/sdk'
+import { Sandbox, PtyHandle } from '@daytona/sdk/v0'
 import {
   GeminiStreamEvent,
   InitEvent,
