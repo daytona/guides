@@ -21,10 +21,10 @@
   ],
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.15.0"
   },
   "dependencies": {
-    "@daytona/sdk": "^0.201.0",
+    "@daytona/sdk": "2.1.0",
     "@flue/cli": "^0.3.10",
     "@flue/sdk": "^0.3.10",
     "valibot": "^1.0.0"
