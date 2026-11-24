@@ -9,10 +9,11 @@ from typing import TYPE_CHECKING, Any
 
 from rlm.budget import SandboxBudget
 
-from daytona import CreateSandboxFromImageParams, Daytona, DaytonaConfig, Image
+from daytona import Daytona, DaytonaConfig
+from daytona.v0 import CreateSandboxFromImageParams, Image
 
 if TYPE_CHECKING:
-    from daytona import Sandbox
+    from daytona.v0 import Sandbox
 
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ class SandboxManager:
             )
 
             logger.info(f"Creating sandbox from base image for repo: {repo_url}")
-            sandbox = self.daytona.create(
+            sandbox = self.daytona.v0.create(
                 CreateSandboxFromImageParams(image=base_image),
                 timeout=0,  # No timeout for image build
                 on_snapshot_create_logs=lambda msg: logger.debug(f"Image build: {msg}"),

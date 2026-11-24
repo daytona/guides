@@ -24,10 +24,10 @@ from typing import TYPE_CHECKING, Callable
 import requests
 from rlm.types import CodeBlockResult
 
-from daytona import SessionExecuteRequest
+from daytona.v0 import SessionExecuteRequest
 
 if TYPE_CHECKING:
-    from daytona import Sandbox
+    from daytona.v0 import Sandbox
 
 
 def _retry_file_op(op_func, max_retries: int = 3, operation_name: str = "file operation"):
