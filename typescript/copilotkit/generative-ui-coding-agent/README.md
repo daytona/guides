@@ -6,7 +6,7 @@ A [CopilotKit](https://docs.showcase.copilotkit.ai/) Built-in Agent backed by a 
 
 ## Prerequisites
 
-- **Node.js 20 or newer**
+- **Node.js 22.15 or newer**
 - A **Daytona API key**, from the [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
 - An **OpenAI API key**, from [platform.openai.com](https://platform.openai.com/api-keys)
 
@@ -54,7 +54,7 @@ The backend in `app/api/copilotkit/route.ts` exposes 11 tools to the `BuiltInAge
 
 | Tool | What it does | Daytona SDK call |
 |---|---|---|
-| `createSandbox({envVars?, labels?, autoStopInterval?})` | Create an ephemeral Daytona sandbox (auto-deletes on stop) with optional creation params | `daytona.create({ public: true, ephemeral: true, envVars, labels, autoStopInterval })` |
+| `createSandbox({envVars?, labels?, autoStopInterval?})` | Create an ephemeral Daytona sandbox (auto-deletes on stop) with optional creation params | `daytona.v0.create({ public: true, ephemeral: true, envVars, labels, autoStopInterval })` |
 | `runCommand({sandboxId, command, background?})` | Run a shell command; `background:true` is for fire-and-forget processes (test/build watchers, log followers). Dev servers should use `startWebServer` instead | `sandbox.process.executeCommand` / `executeSessionCommand(..., {runAsync:true})` |
 | `writeFile({sandboxId, path, content})` | Overwrite a file with the FULL new content | `sandbox.fs.uploadFile` |
 | `readFile({sandboxId, path})` | Read a file's text content | `sandbox.fs.downloadFile` |
