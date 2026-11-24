@@ -5,7 +5,7 @@ description = "Test a web app running in a Daytona sandbox with a Notte cloud br
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "daytona[v0-sdk]==2.0.0a13",
+    "daytona[v0-sdk]==2.1.0",
     "notte-sdk[playwright]>=1.9.3",
     "python-dotenv>=1.2.1",
 ]
