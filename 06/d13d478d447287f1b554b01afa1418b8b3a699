@@ -1,0 +1,19 @@
+python/langgraph/plan-and-execute-data-agent/README.md
+  s_b811daad5272c6::t_78001153d66658 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "06d13d478d447287f1b554b01afa1418b8b3a699",
+  "prompts": {},
+  "sessions": {
+    "s_b811daad5272c6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c2f4fffeiiy3lblteIn5Pc",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}

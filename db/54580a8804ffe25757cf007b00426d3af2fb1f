@@ -1,0 +1,19 @@
+typescript/amp/amp-sdk/package.json
+  s_454e35153cd9ab::t_9e4a76fbbcf0c2 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db54580a8804ffe25757cf007b00426d3af2fb1f",
+  "prompts": {},
+  "sessions": {
+    "s_454e35153cd9ab": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26dd76fffeNbYdcJbA0osBC7",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
