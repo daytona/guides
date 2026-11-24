@@ -4,6 +4,9 @@
   "description": "AgentKit coding agent powered by Daytona",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "scripts": {
     "start": "tsc; node dist/index.js"
   },
@@ -13,7 +16,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@daytona/sdk": "^0.163.0",
+    "@daytona/sdk": "2.1.0",
     "@inngest/agent-kit": "^0.13.2",
     "dotenv": "^17.2.3",
     "zod": "^4.1.13"
