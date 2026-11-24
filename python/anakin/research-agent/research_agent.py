@@ -18,7 +18,8 @@ from datetime import datetime
 from pathlib import Path
 
 from anakin import Anakin, AnakinError
-from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaError, Sandbox
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams, DaytonaError, Sandbox
 from dotenv import load_dotenv
 from litellm import completion, completion_cost
 
@@ -298,7 +299,7 @@ def main() -> None:
 
     # No env_vars are passed, so no API key ever reaches the sandbox.
     # An ephemeral sandbox deletes itself once stopped, even if this script is killed.
-    sandbox = daytona.create(
+    sandbox = daytona.v0.create(
         CreateSandboxFromSnapshotParams(language="python", network_block_all=True, ephemeral=True)
     )
     try:
@@ -309,7 +310,7 @@ def main() -> None:
             report = run_agent(question, ResearchTools(anakin, sandbox))
         save_report(report, sandbox)
     finally:
-        daytona.delete(sandbox)
+        daytona.v0.delete(sandbox)
 
 
 if __name__ == "__main__":
