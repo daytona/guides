@@ -321,19 +321,23 @@ class DaytonaInterpreter:
         self._sandbox = self._daytona.v0.create(**self.sandbox_params)
         logger.info("Sandbox created: %s", self._sandbox.id)
 
-        # Create isolated interpreter context
-        self._context = self._sandbox.code_interpreter.create_context()
-        logger.info("Interpreter context created: %s", self._context.id)
+        try:
+            # Create isolated interpreter context
+            self._context = self._sandbox.code_interpreter.create_context()
+            logger.info("Interpreter context created: %s", self._context.id)
 
-        # Run setup code to define SUBMIT and FinalOutput
-        self._run_setup_code()
+            # Run setup code to define SUBMIT and FinalOutput
+            self._run_setup_code()
 
-        # Start broker and inject tools if we have any at init time.
-        # Tools may also be added later (e.g. RLM injects llm_query after
-        # start), so execute() checks for new tools on every call.
-        if self.tools:
-            self._start_broker()
-            self._inject_tool_wrappers()
+            # Start broker and inject tools if we have any at init time.
+            # Tools may also be added later (e.g. RLM injects llm_query after
+            # start), so execute() checks for new tools on every call.
+            if self.tools:
+                self._start_broker()
+                self._inject_tool_wrappers()
+        except Exception:
+            self.shutdown()
+            raise
 
         self._initialized = True
 
