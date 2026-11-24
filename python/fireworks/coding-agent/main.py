@@ -16,9 +16,11 @@ import sys
 from dotenv import load_dotenv
 
 from daytona import (
+    Daytona,
+)
+from daytona.v0 import (
     CreateSandboxFromSnapshotParams,
     CreateSecretParams,
-    Daytona,
     DaytonaError,
     DaytonaForbiddenError,
     UpdateSecretParams,
@@ -42,10 +44,14 @@ def upsert_fireworks_secret(daytona: Daytona, value: str) -> None:
     try:
         # Server-side name filter: exact lookup no matter how many secrets
         # (and pages) the organization has.
-        page = daytona.secret.list(name=SECRET_NAME)
-        existing = next((secret for secret in page.items if secret.name == SECRET_NAME), None)
+        page = daytona.v0.secret.list(name=SECRET_NAME)
+        secrets = list(page.items)
+        while page.next_cursor is not None:
+            page = daytona.v0.secret.list(name=SECRET_NAME, cursor=page.next_cursor)
+            secrets.extend(page.items)
+        existing = next((secret for secret in secrets if secret.name == SECRET_NAME), None)
         if existing is None:
-            daytona.secret.create(
+            daytona.v0.secret.create(
                 CreateSecretParams(
                     name=SECRET_NAME,
                     value=value,
@@ -55,7 +61,7 @@ def upsert_fireworks_secret(daytona: Daytona, value: str) -> None:
             )
             print(f"✓ Created secret '{SECRET_NAME}' allowed for {FIREWORKS_HOSTS}")
         else:
-            daytona.secret.update(
+            daytona.v0.secret.update(
                 existing.id, UpdateSecretParams(value=value, hosts=FIREWORKS_HOSTS)
             )
             print(f"✓ Rotated secret '{SECRET_NAME}' (placeholder stays the same)")
@@ -87,7 +93,7 @@ def main() -> None:
     try:
         # Mount the secret: the sandbox env var is set to the placeholder,
         # never to the real key.
-        sandbox = daytona.create(
+        sandbox = daytona.v0.create(
             CreateSandboxFromSnapshotParams(
                 language="python",
                 secrets={"FIREWORKS_API_KEY": SECRET_NAME},
@@ -148,7 +154,7 @@ def main() -> None:
     finally:
         if sandbox is not None:
             try:
-                daytona.delete(sandbox)
+                daytona.v0.delete(sandbox)
                 print("✓ Sandbox deleted")
             except DaytonaError as error:
                 print(f"! Could not delete sandbox {sandbox.id}: {error}")
