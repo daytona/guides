@@ -1,0 +1,67 @@
+.github/workflows/cla.yml
+  s_591ee1974caaa3::t_e28586476fe119 10-11,27-40
+README.md
+  s_591ee1974caaa3::t_faa29ac3cf38ca 68
+python/ag2/bug-fixer-agent/README.md
+  s_591ee1974caaa3::t_884c97c78a44ae 38
+python/claude/claude-managed-agents/pyproject.toml
+  s_591ee1974caaa3::t_886f5219ca9bcd 8
+python/cognition/devin-outposts/pyproject.toml
+  s_591ee1974caaa3::t_c75e3c21d37b33 12
+python/computer-use/windows-evals/README.md
+  s_591ee1974caaa3::t_20a51a0a9621d9 17
+python/computer-use/windows-evals/pyproject.toml
+  s_591ee1974caaa3::t_f2a6901bfaebff 7
+python/cursor/self-hosted-machines/pyproject.toml
+  s_591ee1974caaa3::t_dc243e1fa32dd2 12
+python/dspy-rlms/pyproject.toml
+  s_591ee1974caaa3::t_82f0787f9df57f 9
+python/langchain/data-analysis/README.md
+  s_591ee1974caaa3::t_0563c24241d188 58
+python/langgraph/plan-and-execute-data-agent/README.md
+  s_591ee1974caaa3::t_5ec949d5886e0f 48
+python/model-serving/sglang/pyproject.toml
+  s_591ee1974caaa3::t_8faa8b0f15fa95 15
+python/model-serving/vllm/pyproject.toml
+  s_591ee1974caaa3::t_2456a1f91c4e1d 11
+python/openai/agents-api/README.md
+  s_591ee1974caaa3::t_dcdac996207bd6 39
+python/pydantic-ai/coding-agent/README.md
+  s_591ee1974caaa3::t_7436ccf84aacb4 188
+python/recursive-language-models/pyproject.toml
+  s_591ee1974caaa3::t_563c273125d96f 9
+python/reinforcement-learning/openenv/pyproject.toml
+  s_591ee1974caaa3::t_ab867030a65eb2 9
+typescript/goose/goose-cli/.env.example
+  s_591ee1974caaa3::t_08ef2695ed37d5 1-6
+typescript/goose/goose-cli/.gitignore
+  s_591ee1974caaa3::t_ef2d6e5837c6d1 1-3
+typescript/goose/goose-cli/README.md
+  s_591ee1974caaa3::t_11aef40c1055f0 1-135
+typescript/goose/goose-cli/package.json
+  s_591ee1974caaa3::t_7b6a4b41c23abe 1-32
+typescript/goose/goose-cli/src/index.ts
+  s_591ee1974caaa3::t_313f45647b239c 1-147
+typescript/goose/goose-cli/src/session.ts
+  s_591ee1974caaa3::t_3e9a22c0fe7b40 1-198
+typescript/goose/goose-cli/src/types.ts
+  s_591ee1974caaa3::t_938fb200612db5 1-64
+typescript/goose/goose-cli/tsconfig.json
+  s_591ee1974caaa3::t_84d584730cc182 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f8de9ab23b2bef3a444db026075fd0d997049205",
+  "prompts": {},
+  "sessions": {
+    "s_591ee1974caaa3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26c4f10ffeS70XZzvZ4LlJ91",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
