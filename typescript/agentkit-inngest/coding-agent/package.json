@@ -13,7 +13,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@daytona/sdk": "2.0.0-alpha.13",
+    "@daytona/sdk": "2.1.0",
     "@inngest/agent-kit": "^0.13.2",
     "dotenv": "^17.2.3",
     "zod": "^4.1.13"
