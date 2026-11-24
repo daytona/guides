@@ -1,0 +1,19 @@
+typescript/opencode/opencode-sdk/package.json
+  s_4d13cbae6f5669::t_c0675a20db61f2 4-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "186b0ffe23727230c690cd1f11784e393dc8e950",
+  "prompts": {},
+  "sessions": {
+    "s_4d13cbae6f5669": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df201941cffebcCJ7K7rl6G6PN",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
