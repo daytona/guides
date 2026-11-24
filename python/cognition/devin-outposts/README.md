@@ -10,7 +10,7 @@ Run Devin Outposts sessions on Daytona sandboxes, Linux or Windows. A user runs 
 - A Devin organization administrator who can manage enterprise settings and service users.
 - Linux or Windows worker sandboxes. Each outpost serves one platform; run one orchestrator process per outpost.
 
-Install the package. It pins `daytona[v0-sdk]==2.0.0a13` and uses the SDK 2.x `v0` compatibility namespace for both Linux and Windows:
+Install the package. It pins `daytona[v0-sdk]==2.1.0` and uses the SDK 2.x `v0` compatibility namespace for both Linux and Windows:
 
 ```bash
 python3.12 -m venv .venv
