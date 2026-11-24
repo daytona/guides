@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 import * as readline from 'readline'
 import { AmpSession } from './session.js'
@@ -56,7 +57,7 @@ async function main() {
   try {
     // Create a new Daytona sandbox with Amp API key
     console.log('Creating sandbox...')
-    sandbox = await daytona.create({
+    sandbox = await daytona.v0.create({
       envVars: { AMP_API_KEY: process.env.SANDBOX_AMP_API_KEY },
     })
     const activeSandbox = sandbox
