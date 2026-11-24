@@ -1,0 +1,21 @@
+python/cognition/devin-outposts/README.md
+  s_3c36f56e7ab10b::t_56669c00b4aa3e 13
+python/cognition/devin-outposts/pyproject.toml
+  s_3c36f56e7ab10b::t_17d2ac6bea3dd3 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ece8e86c604ad4029ccbd5b9c2cb278b87994e4",
+  "prompts": {},
+  "sessions": {
+    "s_3c36f56e7ab10b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26d1dd3ffeMzC56Ze15n2OkQ",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
