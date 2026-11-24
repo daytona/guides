@@ -1,0 +1,19 @@
+python/recursive-language-models/pyproject.toml
+  s_67608a6f2c8d8a::t_2d906502481019 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ab1dd0adc56f11953588d2e453fab81396535c73",
+  "prompts": {},
+  "sessions": {
+    "s_67608a6f2c8d8a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df26d7e94ffeKh8ZXMNWWOH1KN",
+        "model": "gpt-6-luna-fast"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
