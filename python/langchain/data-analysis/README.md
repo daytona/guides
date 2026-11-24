@@ -55,7 +55,7 @@ Before proceeding, complete the following steps:
 2. Install dependencies:
 
    ```bash
-   pip install -U langchain langchain-anthropic langchain-daytona-data-analysis python-dotenv
+   pip install -U langchain langchain-anthropic "langchain-daytona-data-analysis<1" python-dotenv
    ```
 
 3. Download the dataset:
