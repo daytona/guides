@@ -23,7 +23,7 @@ The browser runs on Notte, not inside the sandbox, so the sandbox never installs
 ## Environment Variables
 
 - `DAYTONA_API_KEY`: Required for Daytona sandbox access. Get it from [Daytona Dashboard](https://app.daytona.io/dashboard/keys)
-- custom API URL: stay on SDK 0.x
+- `DAYTONA_API_URL`: Ignored by the SDK 2.x setup; use the SDK 0.x package and corresponding code if you need a custom API endpoint.
 - `NOTTE_API_KEY`: Required for Notte browser sessions. Get it from [Notte Console](https://console.notte.cc)
 
 ## Getting Started
