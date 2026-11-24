@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Daytona, Sandbox } from '@daytona/sdk'
+import { Daytona } from '@daytona/sdk'
+import { Sandbox } from '@daytona/sdk/v0'
 import * as dotenv from 'dotenv'
 
 // Load environment variables from .env file
@@ -33,7 +34,7 @@ async function main() {
 
   try {
     console.log('Creating sandbox...')
-    sandbox = await daytona.create()
+    sandbox = await daytona.v0.create()
 
     // Register cleanup handler immediately after sandbox creation
     process.once('SIGINT', async () => {
