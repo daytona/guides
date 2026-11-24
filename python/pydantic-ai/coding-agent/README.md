@@ -185,7 +185,7 @@ Use the native integration to run harness capabilities such as `Coder` in Dayton
 Install it in the same virtual environment as the harness; the Anthropic provider is already installed above:
 
 ```bash
-pip install -U "pydantic-ai-daytona>=0.2.1"
+pip install -U "pydantic-ai-daytona>=0.2.1,<1"
 ```
 
 With the same API keys loaded, inside an async function:
