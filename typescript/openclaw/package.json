@@ -4,6 +4,9 @@
   "description": "OpenClaw AI assistant running in a Daytona sandbox.",
   "type": "module",
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "scripts": {
     "start": "tsx src/index.ts",
     "serve": "tsx src/index.ts"

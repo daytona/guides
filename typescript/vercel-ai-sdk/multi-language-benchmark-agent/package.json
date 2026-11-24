@@ -19,6 +19,9 @@
   ],
   "author": "",
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",
     "@daytona/sdk": "2.1.0",
