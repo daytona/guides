@@ -1,0 +1,19 @@
+python/notte/browser-testing/README.md
+  s_fe3f1af823e616::t_c758bedde7e8c2 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "219fd6f4ba2adc9bbc0e0d11ca11a04b78ac09c0",
+  "prompts": {},
+  "sessions": {
+    "s_fe3f1af823e616": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1b113f24ffeYw46WAie4Uve6K",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Mislav Ivanda <mislavivanda454@gmail.com>"
+    }
+  }
+}
