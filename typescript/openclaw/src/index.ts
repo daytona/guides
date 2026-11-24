@@ -5,7 +5,7 @@
 
 import 'dotenv/config'
 import { Daytona } from '@daytona/sdk'
-import type { Sandbox } from '@daytona/sdk'
+import type { Sandbox } from '@daytona/sdk/v0'
 import { randomBytes } from 'crypto'
 import { readFileSync } from 'fs'
 import { join } from 'path'
@@ -165,7 +165,7 @@ async function main() {
 
   // Create a new sandbox
   console.log('Creating Daytona sandbox...')
-  const sandbox = await daytona.create({
+  const sandbox = await daytona.v0.create({
     snapshot: DAYTONA_SNAPSHOT,
     autoStopInterval: 0,
     envVars: readEnvFile(ENV_SANDBOX_PATH),
