@@ -45,7 +45,11 @@ def upsert_fireworks_secret(daytona: Daytona, value: str) -> None:
         # Server-side name filter: exact lookup no matter how many secrets
         # (and pages) the organization has.
         page = daytona.v0.secret.list(name=SECRET_NAME)
-        existing = next((secret for secret in page.items if secret.name == SECRET_NAME), None)
+        secrets = list(page.items)
+        while page.next_cursor is not None:
+            page = daytona.v0.secret.list(name=SECRET_NAME, cursor=page.next_cursor)
+            secrets.extend(page.items)
+        existing = next((secret for secret in secrets if secret.name == SECRET_NAME), None)
         if existing is None:
             daytona.v0.secret.create(
                 CreateSecretParams(
