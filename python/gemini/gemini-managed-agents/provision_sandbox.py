@@ -29,7 +29,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaError, DaytonaNotFoundError, Sandbox
+from daytona import Daytona
+from daytona.v0 import CreateSandboxFromSnapshotParams, DaytonaError, DaytonaNotFoundError, Sandbox
 
 import sandbox_lib
 
@@ -81,7 +82,7 @@ def provision(payload: dict[str, Any]) -> int:
     snapshot = custom_snapshot or sandbox_lib.snapshot_name()
 
     daytona = Daytona()
-    sandbox = daytona.create(
+    sandbox = daytona.v0.create(
         CreateSandboxFromSnapshotParams(
             snapshot=snapshot,
             labels={
@@ -136,7 +137,7 @@ def watch(sandbox_id: str, cmd_id: str, interaction_id: str) -> int:
     log_read_failures = 0
     while True:
         try:
-            sandbox = daytona.get(sandbox_id)
+            sandbox = daytona.v0.get(sandbox_id)
             # Toolbox calls like this one count as activity, so the sandbox is not
             # auto-stopped while the interaction runs.
             exit_code = sandbox_lib.worker_exit_code(sandbox, cmd_id)

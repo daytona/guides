@@ -11,7 +11,7 @@ import shlex
 from pathlib import Path
 
 import dotenv
-from daytona import Sandbox, SessionExecuteRequest
+from daytona.v0 import Sandbox, SessionExecuteRequest
 
 HERE = Path(__file__).resolve().parent
 DOCKERFILE = HERE / "Dockerfile"

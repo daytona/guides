@@ -11,7 +11,8 @@ exists and is active. Streams the build logs.
 
 import sys
 
-from daytona import CreateSnapshotParams, Daytona, DaytonaNotFoundError, Image, Resources
+from daytona import Daytona
+from daytona.v0 import CreateSnapshotParams, DaytonaNotFoundError, Image, Resources
 
 import sandbox_lib
 
@@ -24,7 +25,7 @@ def main() -> int:
 
     daytona = Daytona()
     try:
-        existing = daytona.snapshot.get(name)
+        existing = daytona.v0.snapshot.get(name)
         if existing.state != "active":
             # For example a failed or unfinished build. Sandboxes can't be created from it.
             print(
@@ -38,7 +39,7 @@ def main() -> int:
         pass
 
     print(f"building snapshot {name} from {sandbox_lib.DOCKERFILE}...")
-    snapshot = daytona.snapshot.create(
+    snapshot = daytona.v0.snapshot.create(
         CreateSnapshotParams(
             name=name,
             image=Image.from_dockerfile(str(sandbox_lib.DOCKERFILE)),
