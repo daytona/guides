@@ -1,8 +1,8 @@
 import { Daytona } from '@daytona/sdk'
 import { pathToFileURL } from 'node:url'
 
-// Public API evidence: https://registry.npmjs.org/@daytona/sdk/2.0.0-alpha.13
-// Targets @daytona/sdk 2.0.0-alpha.13. Requires v2 Linux access.
+// Public API evidence: https://registry.npmjs.org/@daytona/sdk/2.2.0
+// Targets @daytona/sdk 2.2.0. Requires v2 Linux access.
 export async function runWorkflow(daytona: Daytona, image: string) {
   const sandbox = await daytona.v2.create(image, {
     waitSeconds: 60,
